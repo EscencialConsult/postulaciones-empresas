@@ -179,6 +179,12 @@
         password: document.getElementById('password').value
       });
       if (r.ok) {
+        // Si es administrador, lo enviamos a su panel propio.
+        if (r.rol === 'admin') {
+          sessionStorage.setItem('admtoken', r.token);
+          window.location.href = 'admin.html';
+          return;
+        }
         token = r.token; empresa = r.empresa;
         sessionStorage.setItem('token', token);
         sessionStorage.setItem('empresa', empresa);
