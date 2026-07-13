@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>free one talent — Administración</title>
+<link rel="stylesheet" href="estilos.css">
+<style>
+  .login-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 16px; gap: 24px; }
+  .login { padding: 34px; width: 100%; max-width: 400px; }
+  .login h1 { font-size: 1.5rem; margin: 14px 0 4px; }
+  .login > p { color: var(--muted); margin: 0 0 24px; font-size: .92rem; }
+  .err { color: var(--error); font-size: .85rem; margin-top: 10px; display: none; }
+
+  .topbar { background: #fff; border-bottom: 1px solid var(--borde); }
+  .topbar .inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; max-width: 1200px; margin: 0 auto; padding: 14px 22px; }
+  .topbar .quien { color: var(--muted); font-size: .9rem; font-weight: 600; }
+  .panel { max-width: 1200px; margin: 0 auto; padding: 26px 16px 48px; }
+  .panel-head { margin: 0 0 18px; }
+  .panel-head h1 { font-size: 1.5rem; margin: 10px 0 2px; }
+  .panel-head p { color: var(--muted); margin: 0; font-size: .92rem; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .tab { padding: 10px 18px; border-radius: 999px; border: 1px solid var(--borde); background: #fff; cursor: pointer; font-weight: 700; font-size: .9rem; color: var(--muted); }
+  .tab.activo { background: var(--grad); color: var(--dark); border-color: transparent; }
+
+  .resumen { color: var(--muted); font-size: .9rem; margin-bottom: 12px; font-weight: 600; }
+  .barra-busqueda { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .barra-busqueda input { max-width: 340px; }
+
+  .tabla-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--borde); white-space: nowrap; }
+  th { background: #faf9fd; font-size: .76rem; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); font-weight: 700; }
+  tbody tr:last-child td { border-bottom: none; }
+  .fila-click { cursor: pointer; }
+  .fila-click:hover { background: #faf7fd; }
+
+  .cargando, .vacio { text-align: center; padding: 48px; color: var(--muted); }
+
+  .est { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: .78rem; font-weight: 700; }
+  .est-pendiente { background: rgba(228,199,106,.22); color: #92700a; }
+  .est-aprobado { background: rgba(18,185,129,.16); color: #0f766e; }
+  .est-rechazado { background: rgba(209,67,111,.16); color: #b0234f; }
+
+  .btn-mini { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--borde); background: #fff; cursor: pointer; font-weight: 700; font-size: .82rem; color: var(--dark); }
+  .btn-aprobar { border-color: transparent; background: linear-gradient(135deg,#6be1e3,#12b981); color: #04352a; }
+  .btn-rechazar { color: var(--error); border-color: rgba(209,67,111,.4); }
+  .btn-mini:disabled { opacity: .5; cursor: default; }
+  .acciones-cel { display: flex; gap: 6px; }
+
+  /* Modal detalle postulante */
+  .overlay { position: fixed; inset: 0; background: rgba(26,24,29,.55); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+  .modal { background: #fff; border-radius: var(--radio); max-width: 700px; width: 100%; max-height: 88vh; overflow-y: auto; padding: 30px; box-shadow: 0 30px 60px rgba(26,24,29,.25); }
+  .modal h2 { margin: 0 0 2px; font-size: 1.5rem; }
+  .modal .puesto { color: var(--acento); font-weight: 700; margin: 0 0 20px; }
+  .modal-cerrar { float: right; background: none; border: none; font-size: 1.7rem; cursor: pointer; color: var(--gris); line-height: 1; }
+  .seccion { margin-bottom: 20px; }
+  .seccion h3 { font-size: .8rem; text-transform: uppercase; color: var(--muted); letter-spacing: .04em; margin: 0 0 8px; border-bottom: 1px solid var(--borde); padding-bottom: 6px; }
+  .dato { display: flex; gap: 8px; margin-bottom: 4px; font-size: .92rem; }
+  .dato .k { color: var(--muted); min-width: 150px; }
+  .item-list { background: #faf9fd; border: 1px solid var(--borde); border-radius: 10px; padding: 12px; margin-bottom: 8px; font-size: .9rem; }
+  .item-list strong { display: block; margin-bottom: 2px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginWrap">
+  <a class="logo" href="index.html"><span class="marca-txt">free</span><img class="logo-img" src="assets/logo-trim.png" alt="ONE"><span class="marca-txt">talent</span></a>
+  <form class="card login" id="loginForm">
+    <span class="pill"><span class="dot"></span>Administración</span>
+    <h1>Acceso de administrador</h1>
+    <p>Ingresá con tu usuario de administrador.</p>
+    <div class="campo"><label>Usuario</label><input id="usuario" autocomplete="username" required></div>
+    <div class="campo"><label>Contraseña</label><input id="password" type="password" autocomplete="current-password" required></div>
+    <button class="btn btn-prim btn-w" id="btnLogin">Ingresar</button>
+    <div class="err" id="loginErr"></div>
+  </form>
+</div>
+
+<!-- PANEL -->
+<div id="panelWrap" class="oculto">
+  <div class="topbar">
+    <div class="inner">
+      <a class="logo" href="index.html"><span class="marca-txt">free</span><img class="logo-img" src="assets/logo-trim.png" alt="ONE"><span class="marca-txt">talent</span></a>
+      <div style="display:flex; align-items:center; gap:16px">
+        <span class="quien">Administración</span>
+        <button class="btn btn-sec" id="btnSalir">Salir</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <span class="pill"><span class="dot"></span>Panel de control</span>
+      <h1>Administración</h1>
+      <p>Gestioná los postulantes y aprobá las empresas registradas.</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab activo" data-tab="postulantes">Postulantes</button>
+      <button class="tab" data-tab="empresas">Empresas <span id="badgePend"></span></button>
+    </div>
+
+    <!-- TAB POSTULANTES -->
+    <section id="tabPostulantes">
+      <div class="barra-busqueda">
+        <input id="q" placeholder="Buscar por nombre, email, skill…">
+        <button class="btn btn-prim" id="btnBuscarPost">Buscar</button>
+        <button class="btn btn-sec" id="btnExportar">⬇ Exportar CSV</button>
+      </div>
+      <div class="resumen" id="resumenPost"></div>
+      <div class="card tabla-wrap">
+        <div class="cargando" id="cargandoPost">Cargando postulantes…</div>
+        <table id="tablaPost" class="oculto">
+          <thead><tr>
+            <th>Nombre</th><th>Puesto deseado</th><th>Email</th><th>Teléfono</th>
+            <th>Provincia</th><th>Idiomas</th><th>Registro</th>
+          </tr></thead>
+          <tbody id="tbodyPost"></tbody>
+        </table>
+        <div class="vacio oculto" id="vacioPost">No hay postulantes.</div>
+      </div>
+    </section>
+
+    <!-- TAB EMPRESAS -->
+    <section id="tabEmpresas" class="oculto">
+      <div class="resumen" id="resumenEmp"></div>
+      <div class="card tabla-wrap">
+        <div class="cargando" id="cargandoEmp">Cargando empresas…</div>
+        <table id="tablaEmp" class="oculto">
+          <thead><tr>
+            <th>Empresa</th><th>CUIT/CUIL</th><th>Usuario</th><th>Email</th><th>Registrada</th><th>Estado</th><th>Acciones</th>
+          </tr></thead>
+          <tbody id="tbodyEmp"></tbody>
+        </table>
+        <div class="vacio oculto" id="vacioEmp">No hay empresas registradas.</div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- MODAL DETALLE POSTULANTE -->
+<div class="overlay oculto" id="overlay">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script src="config.js"></script>
+<script>
+  let token = sessionStorage.getItem('admtoken') || '';
+  let postulantes = [];
+
+  const loginWrap = document.getElementById('loginWrap');
+  const panelWrap = document.getElementById('panelWrap');
+
+  /* ---------- LOGIN ---------- */
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btnLogin');
+    const err = document.getElementById('loginErr');
+    err.style.display = 'none';
+    btn.disabled = true; btn.textContent = 'Ingresando…';
+    try {
+      const r = await apiCall({
+        action: 'login',
+        usuario: document.getElementById('usuario').value,
+        password: document.getElementById('password').value
+      });
+      if (!r.ok) throw new Error(r.error || 'Error de acceso');
+      if (r.rol !== 'admin') throw new Error('Esta cuenta no tiene acceso de administrador.');
+      token = r.token;
+      sessionStorage.setItem('admtoken', token);
+      entrarPanel();
+    } catch (ex) {
+      err.textContent = ex.message; err.style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Ingresar';
+    }
+  });
+
+  document.getElementById('btnSalir').onclick = () => {
+    sessionStorage.removeItem('admtoken'); token = '';
+    panelWrap.classList.add('oculto'); loginWrap.classList.remove('oculto');
+  };
+
+  function entrarPanel() {
+    loginWrap.classList.add('oculto');
+    panelWrap.classList.remove('oculto');
+    cargarPostulantes();
+    cargarEmpresas();
+  }
+
+  /* ---------- TABS ---------- */
+  document.querySelectorAll('.tab').forEach(t => {
+    t.onclick = () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('activo'));
+      t.classList.add('activo');
+      const tab = t.dataset.tab;
+      document.getElementById('tabPostulantes').classList.toggle('oculto', tab !== 'postulantes');
+      document.getElementById('tabEmpresas').classList.toggle('oculto', tab !== 'empresas');
+    };
+  });
+
+  function sesionExpirada(msg) {
+    if (/sesión|exclusivo|administrador/i.test(msg || '')) { document.getElementById('btnSalir').click(); return true; }
+    return false;
+  }
+
+  /* ---------- POSTULANTES ---------- */
+  async function cargarPostulantes() {
+    const cargando = document.getElementById('cargandoPost');
+    const tabla = document.getElementById('tablaPost');
+    const vacio = document.getElementById('vacioPost');
+    cargando.classList.remove('oculto'); tabla.classList.add('oculto'); vacio.classList.add('oculto');
+    try {
+      const r = await apiCall({ action: 'listar', token: token, q: document.getElementById('q').value });
+      if (!r.ok) { if (sesionExpirada(r.error)) return; throw new Error(r.error); }
+      postulantes = r.registros;
+      pintarPostulantes(postulantes);
+      document.getElementById('resumenPost').textContent = `${r.total} postulante(s)`;
+    } catch (ex) {
+      document.getElementById('resumenPost').textContent = 'Error: ' + ex.message;
+    } finally { cargando.classList.add('oculto'); }
+  }
+
+  function pintarPostulantes(lista) {
+    const tbody = document.getElementById('tbodyPost');
+    const tabla = document.getElementById('tablaPost');
+    const vacio = document.getElementById('vacioPost');
+    tbody.innerHTML = '';
+    if (!lista.length) { vacio.classList.remove('oculto'); tabla.classList.add('oculto'); return; }
+    vacio.classList.add('oculto'); tabla.classList.remove('oculto');
+    lista.forEach(r => {
+      const idiomas = parseArr(r.Idiomas).map(x => x.idioma).filter(Boolean).join(', ');
+      const tr = document.createElement('tr');
+      tr.className = 'fila-click';
+      tr.innerHTML = `
+        <td><strong>${esc(r.Nombre)} ${esc(r.Apellido)}</strong></td>
+        <td>${r.PuestoDeseado ? `<span class="badge">${esc(r.PuestoDeseado)}</span>` : '—'}</td>
+        <td>${esc(r.Email)}</td>
+        <td>${esc(r.Telefono) || '—'}</td>
+        <td>${esc(r.Provincia) || '—'}</td>
+        <td>${esc(idiomas) || '—'}</td>
+        <td>${fecha(r.FechaRegistro)}</td>`;
+      tr.onclick = () => abrirDetalle(r);
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('btnBuscarPost').onclick = cargarPostulantes;
+  document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') cargarPostulantes(); });
+
+  /* ---------- EMPRESAS ---------- */
+  async function cargarEmpresas() {
+    const cargando = document.getElementById('cargandoEmp');
+    const tabla = document.getElementById('tablaEmp');
+    const vacio = document.getElementById('vacioEmp');
+    cargando.classList.remove('oculto'); tabla.classList.add('oculto'); vacio.classList.add('oculto');
+    try {
+      const r = await apiCall({ action: 'listarEmpresas', token: token });
+      if (!r.ok) { if (sesionExpirada(r.error)) return; throw new Error(r.error); }
+      pintarEmpresas(r.empresas);
+      const pend = r.empresas.filter(e => e.estado === 'pendiente').length;
+      document.getElementById('resumenEmp').textContent = `${r.total} empresa(s) · ${pend} pendiente(s)`;
+      document.getElementById('badgePend').textContent = pend ? ` (${pend})` : '';
+    } catch (ex) {
+      document.getElementById('resumenEmp').textContent = 'Error: ' + ex.message;
+    } finally { cargando.classList.add('oculto'); }
+  }
+
+  function pintarEmpresas(lista) {
+    const tbody = document.getElementById('tbodyEmp');
+    const tabla = document.getElementById('tablaEmp');
+    const vacio = document.getElementById('vacioEmp');
+    tbody.innerHTML = '';
+    if (!lista.length) { vacio.classList.remove('oculto'); tabla.classList.add('oculto'); return; }
+    vacio.classList.add('oculto'); tabla.classList.remove('oculto');
+    lista.forEach(e => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${esc(e.empresa)}</strong></td>
+        <td>${esc(e.cuit) || '—'}</td>
+        <td>${esc(e.usuario)}</td>
+        <td>${esc(e.email) || '—'}</td>
+        <td>${fecha(e.fecha)}</td>
+        <td><span class="est est-${esc(e.estado)}">${esc(e.estado)}</span></td>
+        <td class="acciones-cel"></td>`;
+      const cel = tr.querySelector('.acciones-cel');
+      if (e.estado !== 'aprobado') {
+        const b = document.createElement('button');
+        b.className = 'btn-mini btn-aprobar'; b.textContent = 'Aprobar';
+        b.onclick = () => cambiarEstado(e.usuario, 'aprobado');
+        cel.appendChild(b);
+      }
+      if (e.estado !== 'rechazado') {
+        const b = document.createElement('button');
+        b.className = 'btn-mini btn-rechazar'; b.textContent = 'Rechazar';
+        b.onclick = () => cambiarEstado(e.usuario, 'rechazado');
+        cel.appendChild(b);
+      }
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function cambiarEstado(usuario, estado) {
+    try {
+      const r = await apiCall({ action: 'aprobarEmpresa', token: token, usuario: usuario, estado: estado });
+      if (!r.ok) { if (sesionExpirada(r.error)) return; throw new Error(r.error); }
+      cargarEmpresas();
+    } catch (ex) { alert('Error: ' + ex.message); }
+  }
+
+  /* ---------- DETALLE POSTULANTE ---------- */
+  function abrirDetalle(r) {
+    const form = parseArr(r.Formacion);
+    const exp = parseArr(r.Experiencias);
+    const idiomas = parseArr(r.Idiomas);
+
+    let html = `
+      <button class="modal-cerrar" onclick="cerrarModal()">×</button>
+      <h2>${esc(r.Nombre)} ${esc(r.Apellido)}</h2>
+      <p class="puesto">${esc(r.PuestoDeseado) || 'Sin puesto especificado'}</p>
+      <div class="seccion"><h3>Contacto</h3>
+        ${dato('Email', r.Email)}${dato('Teléfono', r.Telefono)}
+        ${dato('Identificación', r.Identificacion)}${dato('Fecha de nacimiento', r.FechaNacimiento)}
+        ${dato('Provincia', r.Provincia)}${dato('Ciudad / CP', r.CodigoPostalCiudad)}
+      </div>
+      <div class="seccion"><h3>Perfil profesional</h3>
+        <p>${esc(r.PerfilProfesional) || '—'}</p>
+        ${r.DescripcionPerfil ? `<p>${esc(r.DescripcionPerfil)}</p>` : ''}
+      </div>`;
+    if (form.length) {
+      html += `<div class="seccion"><h3>Formación</h3>` + form.map(f => `
+        <div class="item-list"><strong>${esc(f.nivel)} ${f.centro ? '· ' + esc(f.centro) : ''}</strong>
+          ${esc(f.estado)} ${f.desde ? '· ' + esc(f.desde) : ''} ${f.hasta ? '→ ' + esc(f.hasta) : ''}</div>`).join('') + `</div>`;
+    }
+    html += `<div class="seccion"><h3>Disponibilidad e idiomas</h3>
+        ${dato('Viajar', r.DispViajar)}${dato('Cambio de residencia', r.DispCambioResidencia)}
+        ${dato('Idiomas', idiomas.map(x => `${x.idioma} (${x.nivel || '—'})`).join(', '))}
+      </div>`;
+    if (r.PrimerEmpleo === 'Sí') {
+      html += `<div class="seccion"><h3>Experiencia</h3><p><span class="badge">Busca su primer empleo</span></p></div>`;
+    } else if (exp.length) {
+      html += `<div class="seccion"><h3>Experiencia laboral</h3>` + exp.map(x => `
+        <div class="item-list"><strong>${esc(x.cargo)} ${x.empresa ? '· ' + esc(x.empresa) : ''}</strong>
+          ${esc(x.funciones) || ''}</div>`).join('') + `</div>`;
+    }
+    document.getElementById('modal').innerHTML = html;
+    document.getElementById('overlay').classList.remove('oculto');
+  }
+  function cerrarModal() { document.getElementById('overlay').classList.add('oculto'); }
+  document.getElementById('overlay').onclick = (e) => { if (e.target.id === 'overlay') cerrarModal(); };
+
+  /* ---------- EXPORTAR CSV ---------- */
+  document.getElementById('btnExportar').onclick = () => {
+    if (!postulantes.length) { alert('No hay datos para exportar.'); return; }
+    const cols = ['Nombre','Apellido','Email','Telefono','PuestoDeseado','FechaNacimiento',
+      'Identificacion','Provincia','CodigoPostalCiudad','PerfilProfesional','DescripcionPerfil',
+      'DispViajar','DispCambioResidencia','PrimerEmpleo'];
+    const cab = cols.concat(['Formacion','Idiomas','Experiencias','FechaRegistro']);
+    const filas = postulantes.map(r => {
+      const base = cols.map(c => csvCampo(r[c]));
+      base.push(csvCampo(parseArr(r.Formacion).map(f => `${f.nivel} en ${f.centro} (${f.estado}, ${f.desde}-${f.hasta})`).join(' | ')));
+      base.push(csvCampo(parseArr(r.Idiomas).map(x => `${x.idioma}: ${x.nivel}`).join(' | ')));
+      base.push(csvCampo(parseArr(r.Experiencias).map(x => `${x.cargo} en ${x.empresa}: ${x.funciones}`).join(' | ')));
+      base.push(csvCampo(fecha(r.FechaRegistro)));
+      return base.join(',');
+    });
+    const csv = '﻿' + cab.join(',') + '\n' + filas.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'postulantes_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+  };
+
+  /* ---------- Helpers ---------- */
+  function parseArr(v) {
+    if (!v) return [];
+    if (Array.isArray(v)) return v;
+    try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch { return []; }
+  }
+  function esc(s) { return (s == null ? '' : String(s)).replace(/[&<>"]/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function csvCampo(s) { const t = (s == null ? '' : String(s)).replace(/"/g, '""'); return `"${t}"`; }
+  function dato(k, v) { return v ? `<div class="dato"><span class="k">${k}</span><span>${esc(v)}</span></div>` : ''; }
+  function fecha(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso); if (isNaN(d)) return String(iso).slice(0,10);
+    return d.toLocaleDateString('es');
+  }
+
+  // Restaurar sesión
+  if (token) entrarPanel();
+</script>
+</body>
+</html>

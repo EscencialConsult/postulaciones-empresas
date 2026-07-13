@@ -1,0 +1,12 @@
+# Despliegue en Netlify — sitio estático (sin paso de build)
+# Publica la raíz del repo tal cual. Cada archivo .html es una página real.
+[build]
+  publish = "."
+
+# Encabezados de seguridad básicos para todo el sitio.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "strict-origin-when-cross-origin"

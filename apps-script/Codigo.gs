@@ -42,7 +42,7 @@ var COLUMNAS_POSTULANTES = [
   'PrimerEmpleo', 'Experiencias'
 ];
 
-var COLUMNAS_USUARIOS = ['Usuario', 'Password', 'Empresa', 'Token', 'TokenExpira', 'Email', 'FechaRegistro'];
+var COLUMNAS_USUARIOS = ['Usuario', 'Password', 'Empresa', 'Token', 'TokenExpira', 'Email', 'FechaRegistro', 'Rol', 'Estado', 'Cuit'];
 
 // Duración del token de sesión (horas)
 var TOKEN_HORAS = 12;
@@ -71,6 +71,8 @@ function manejar(e) {
       case 'login':     return json(login(datos));
       case 'listar':    return json(listarPostulantes(datos));
       case 'exportar':  return json(exportarPostulantes(datos));
+      case 'listarEmpresas': return json(listarEmpresas(datos));
+      case 'aprobarEmpresa': return json(aprobarEmpresa(datos));
       default:
         return json({ ok: false, error: 'Acción no reconocida: ' + accion });
     }
@@ -116,9 +118,20 @@ function setup() {
   var post = obtenerHoja(ss, HOJA_POSTULANTES, COLUMNAS_POSTULANTES);
   var usu  = obtenerHoja(ss, HOJA_USUARIOS, COLUMNAS_USUARIOS);
 
-  // Crea un usuario de ejemplo si la hoja está vacía.
+  // Crea un usuario de ejemplo (empresa) si la hoja está vacía.
   if (usu.getLastRow() < 2) {
-    usu.appendRow(['empresa1', 'cambiar123', 'Empresa Demo S.A.', '', '']);
+    usu.appendRow(['empresa1', 'cambiar123', 'Empresa Demo S.A.', '', '', '', new Date(), 'empresa', 'aprobado']);
+  }
+
+  // Garantiza que exista un usuario ADMINISTRADOR (cambiar la contraseña luego).
+  var valores = usu.getDataRange().getValues();
+  var hayAdmin = false;
+  for (var i = 1; i < valores.length; i++) {
+    if (String(valores[i][7]).trim().toLowerCase() === 'admin') hayAdmin = true;
+  }
+  if (!hayAdmin) {
+    usu.appendRow(['admin', 'admin123', 'Administración', '', '', '', new Date(), 'admin', 'aprobado']);
+    Logger.log('Usuario admin creado -> usuario: admin / contraseña: admin123 (CAMBIAR).');
   }
 
   Logger.log('Setup completo. Hojas listas: %s, %s', HOJA_POSTULANTES, HOJA_USUARIOS);
@@ -236,9 +249,13 @@ function registrarEmpresa(d) {
   var usuario  = limpiar(d.usuario).toLowerCase();
   var password = String(d.password || '');
   var email    = limpiar(d.email);
+  var cuit     = limpiar(d.cuit).replace(/[^0-9]/g, '');
 
   if (!empresa || !usuario || !password) {
     return { ok: false, error: 'Completá nombre de empresa, usuario y contraseña.' };
+  }
+  if (cuit.length !== 11) {
+    return { ok: false, error: 'El CUIT/CUIL debe tener 11 dígitos.' };
   }
   if (!/^[a-z0-9._-]{3,}$/.test(usuario)) {
     return { ok: false, error: 'El usuario debe tener al menos 3 caracteres (letras, números y . _ -), sin espacios.' };
@@ -260,12 +277,14 @@ function registrarEmpresa(d) {
     }
   }
 
-  var token = Utilities.getUuid();
-  var expira = new Date().getTime() + TOKEN_HORAS * 3600 * 1000;
-  // Orden según COLUMNAS_USUARIOS: Usuario, Password, Empresa, Token, TokenExpira, Email, FechaRegistro
-  hoja.appendRow([usuario, password, empresa, token, expira, email, new Date()]);
+  // La empresa queda PENDIENTE de aprobación por el administrador (sin token de acceso).
+  // Orden: Usuario, Password, Empresa, Token, TokenExpira, Email, FechaRegistro, Rol, Estado, Cuit
+  hoja.appendRow([usuario, password, empresa, '', '', email, new Date(), 'empresa', 'pendiente', cuit]);
 
-  return { ok: true, token: token, empresa: empresa };
+  return {
+    ok: true, pendiente: true,
+    mensaje: 'Tu cuenta fue creada y quedó pendiente de aprobación. Te avisaremos cuando esté habilitada.'
+  };
 }
 
 function login(d) {
@@ -285,11 +304,17 @@ function login(d) {
     var u = String(fila[0]).trim().toLowerCase();
     var p = String(fila[1]);
     if (u === usuario && p === password) {
+      var rol = String(fila[7] || 'empresa').toLowerCase();
+      var estado = String(fila[8] || 'aprobado').toLowerCase();
+      if (rol !== 'admin') {
+        if (estado === 'pendiente') return { ok: false, error: 'Tu cuenta está pendiente de aprobación por el administrador.' };
+        if (estado === 'rechazado') return { ok: false, error: 'Tu cuenta fue rechazada. Contactá al administrador.' };
+      }
       var token = Utilities.getUuid();
       var expira = new Date().getTime() + TOKEN_HORAS * 3600 * 1000;
       hoja.getRange(i + 1, 4).setValue(token);      // columna Token
       hoja.getRange(i + 1, 5).setValue(expira);     // columna TokenExpira
-      return { ok: true, token: token, empresa: String(fila[2] || usuario) };
+      return { ok: true, token: token, empresa: String(fila[2] || usuario), rol: rol };
     }
   }
   return { ok: false, error: 'Usuario o contraseña incorrectos.' };
@@ -309,7 +334,11 @@ function validarToken(token) {
     if (String(valores[i][3]) === String(token)) {
       var expira = Number(valores[i][4] || 0);
       if (expira && expira < ahora) return null; // expirado
-      return { usuario: valores[i][0], empresa: valores[i][2] };
+      return {
+        usuario: valores[i][0], empresa: valores[i][2],
+        rol: String(valores[i][7] || 'empresa').toLowerCase(),
+        estado: String(valores[i][8] || 'aprobado').toLowerCase()
+      };
     }
   }
   return null;
@@ -379,4 +408,81 @@ function exportarPostulantes(d) {
   if (!resultado.ok) return resultado;
 
   return { ok: true, registros: resultado.registros };
+}
+
+/* -------------------------------------------------------------------
+ *  ADMINISTRACIÓN (solo rol admin)
+ * ----------------------------------------------------------------- */
+
+function requireAdmin(token) {
+  var sesion = validarToken(token);
+  if (!sesion) return null;
+  if (String(sesion.rol) !== 'admin') return null;
+  return sesion;
+}
+
+/**
+ * Lista todas las empresas registradas (para el panel de administración).
+ */
+function listarEmpresas(d) {
+  if (!requireAdmin(d.token)) return { ok: false, error: 'Acceso exclusivo del administrador.' };
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_USUARIOS, COLUMNAS_USUARIOS);
+  var valores = hoja.getDataRange().getValues();
+
+  var empresas = [];
+  for (var i = 1; i < valores.length; i++) {
+    var fila = valores[i];
+    var rol = String(fila[7] || 'empresa').toLowerCase();
+    if (rol === 'admin') continue; // no listar administradores
+    empresas.push({
+      usuario: fila[0],
+      empresa: fila[2],
+      email: fila[5],
+      fecha: (fila[6] instanceof Date) ? fila[6].toISOString() : fila[6],
+      estado: String(fila[8] || 'aprobado').toLowerCase(),
+      cuit: fila[9] || ''
+    });
+  }
+  // Pendientes primero.
+  empresas.sort(function (a, b) {
+    var orden = { pendiente: 0, aprobado: 1, rechazado: 2 };
+    return (orden[a.estado] || 9) - (orden[b.estado] || 9);
+  });
+
+  return { ok: true, total: empresas.length, empresas: empresas };
+}
+
+/**
+ * Cambia el estado de una empresa: aprobado | rechazado | pendiente.
+ */
+function aprobarEmpresa(d) {
+  if (!requireAdmin(d.token)) return { ok: false, error: 'Acceso exclusivo del administrador.' };
+
+  var usuario = limpiar(d.usuario).toLowerCase();
+  var nuevo = limpiar(d.estado).toLowerCase();
+  if (['aprobado', 'rechazado', 'pendiente'].indexOf(nuevo) === -1) {
+    return { ok: false, error: 'Estado inválido.' };
+  }
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_USUARIOS, COLUMNAS_USUARIOS);
+  var valores = hoja.getDataRange().getValues();
+
+  for (var i = 1; i < valores.length; i++) {
+    if (String(valores[i][0]).trim().toLowerCase() === usuario) {
+      if (String(valores[i][7] || 'empresa').toLowerCase() === 'admin') {
+        return { ok: false, error: 'No se puede modificar una cuenta de administrador.' };
+      }
+      hoja.getRange(i + 1, 9).setValue(nuevo);   // columna Estado
+      // Si se rechaza o se deja pendiente, invalida su sesión activa.
+      if (nuevo !== 'aprobado') {
+        hoja.getRange(i + 1, 4).setValue('');    // Token
+        hoja.getRange(i + 1, 5).setValue('');    // TokenExpira
+      }
+      return { ok: true, estado: nuevo };
+    }
+  }
+  return { ok: false, error: 'Empresa no encontrada.' };
 }

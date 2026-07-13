@@ -12,6 +12,8 @@
   .login h1 { font-size: 1.5rem; margin: 14px 0 4px; }
   .login > p { color: var(--muted); margin: 0 0 24px; font-size: .92rem; }
   .err { color: var(--error); font-size: .85rem; margin-top: 10px; display: none; }
+  .info { background: rgba(107,225,227,.14); border: 1px solid rgba(107,225,227,.5); color: #0f766e;
+          font-size: .88rem; padding: 12px 14px; border-radius: 10px; margin-bottom: 16px; }
   .alt { text-align: center; margin: 18px 0 0; font-size: .9rem; color: var(--muted); }
   .alt a { color: var(--acento); font-weight: 700; text-decoration: none; }
   .alt a:hover { text-decoration: underline; }
@@ -66,6 +68,7 @@
     <span class="pill"><span class="dot"></span>Panel de empresas</span>
     <h1>Iniciá sesión</h1>
     <p>Ingresá con las credenciales de tu empresa o consultora.</p>
+    <div class="info oculto" id="loginInfo"></div>
     <div class="campo"><label>Usuario</label><input id="usuario" autocomplete="username" required></div>
     <div class="campo"><label>Contraseña</label><input id="password" type="password" autocomplete="current-password" required></div>
     <button class="btn btn-prim btn-w" id="btnLogin">Iniciar sesión</button>
@@ -81,6 +84,8 @@
     <p>Creá una cuenta para acceder a los perfiles de postulantes.</p>
     <div class="campo"><label>Nombre de la empresa / consultora</label>
       <input id="rEmpresa" required placeholder="Ej: Consultora XYZ"></div>
+    <div class="campo"><label>CUIT / CUIL</label>
+      <input id="rCuit" required inputmode="numeric" placeholder="Ej: 30-12345678-9"></div>
     <div class="campo"><label>Email de contacto <span class="muted">(opcional)</span></label>
       <input id="rEmail" type="email" autocomplete="email"></div>
     <div class="campo"><label>Usuario</label>
@@ -216,15 +221,19 @@
       const r = await apiCall({
         action: 'registrar',
         empresa: document.getElementById('rEmpresa').value,
+        cuit: document.getElementById('rCuit').value,
         email: document.getElementById('rEmail').value,
         usuario: document.getElementById('rUsuario').value,
         password: pass
       });
       if (r.ok) {
-        token = r.token; empresa = r.empresa;
-        sessionStorage.setItem('token', token);
-        sessionStorage.setItem('empresa', empresa);
-        entrarPanel();
+        // La cuenta queda pendiente de aprobación: volvemos al login con aviso.
+        registroForm.reset();
+        registroForm.classList.add('oculto');
+        loginForm.classList.remove('oculto');
+        const info = document.getElementById('loginInfo');
+        info.textContent = r.mensaje || 'Tu cuenta fue creada y quedó pendiente de aprobación.';
+        info.classList.remove('oculto');
       } else { throw new Error(r.error || 'No se pudo crear la cuenta.'); }
     } catch (ex) {
       err.textContent = ex.message; err.style.display = 'block';
