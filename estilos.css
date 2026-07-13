@@ -59,10 +59,9 @@ h1, h2, h3 { color: var(--dark); letter-spacing: -.01em; }
 }
 .logo-img { height: 30px; width: auto; display: block; flex: none; transform: skewX(-9deg); }
 .logo .marca-txt {
-  font-weight: 500; font-size: 1.7rem;
-  text-transform: uppercase; font-style: italic; letter-spacing: -.01em; line-height: .9;
-  background: linear-gradient(100deg, #6be1e3 0%, #a86fd8 55%, #e17bd7 100%);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
+  font-weight: 700; font-size: 1.55rem;
+  letter-spacing: -.01em; line-height: .95;
+  color: var(--dark);
 }
 
 /* ---------- Barra superior ---------- */

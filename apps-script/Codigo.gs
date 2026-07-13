@@ -49,7 +49,7 @@ var COLUMNAS_POSTULANTES = [
   'CVNombre', 'CVUrl'
 ];
 
-var COLUMNAS_USUARIOS = ['Usuario', 'Password', 'Empresa', 'Token', 'TokenExpira', 'Email', 'FechaRegistro', 'Rol', 'Estado', 'Cuit'];
+var COLUMNAS_USUARIOS = ['Usuario', 'Password', 'Empresa', 'Token', 'TokenExpira', 'Email', 'FechaRegistro', 'Rol', 'Estado', 'Cuit', 'Rubro', 'Nombre', 'Apellido', 'Telefono'];
 
 // Duración del token de sesión (horas)
 var TOKEN_HORAS = 12;
@@ -300,9 +300,16 @@ function registrarEmpresa(d) {
   var password = String(d.password || '');
   var email    = limpiar(d.email);
   var cuit     = limpiar(d.cuit).replace(/[^0-9]/g, '');
+  var rubro    = limpiar(d.rubro);
+  var nombre   = limpiar(d.nombre);
+  var apellido = limpiar(d.apellido);
+  var telefono = limpiar(d.telefono);
 
   if (!empresa || !usuario || !password) {
-    return { ok: false, error: 'Completá nombre de empresa, usuario y contraseña.' };
+    return { ok: false, error: 'Completá razón social, usuario y contraseña.' };
+  }
+  if (!rubro || !nombre || !apellido || !telefono) {
+    return { ok: false, error: 'Completá rubro, nombre, apellido y teléfono del contacto.' };
   }
   if (cuit.length !== 11) {
     return { ok: false, error: 'El CUIT/CUIL debe tener 11 dígitos.' };
@@ -313,8 +320,8 @@ function registrarEmpresa(d) {
   if (password.length < 6) {
     return { ok: false, error: 'La contraseña debe tener al menos 6 caracteres.' };
   }
-  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-    return { ok: false, error: 'El email no tiene un formato válido.' };
+  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    return { ok: false, error: 'Ingresá un email válido.' };
   }
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -328,8 +335,8 @@ function registrarEmpresa(d) {
   }
 
   // La empresa queda PENDIENTE de aprobación por el administrador (sin token de acceso).
-  // Orden: Usuario, Password, Empresa, Token, TokenExpira, Email, FechaRegistro, Rol, Estado, Cuit
-  hoja.appendRow([usuario, password, empresa, '', '', email, new Date(), 'empresa', 'pendiente', cuit]);
+  // Orden: Usuario, Password, Empresa, Token, TokenExpira, Email, FechaRegistro, Rol, Estado, Cuit, Rubro, Nombre, Apellido, Telefono
+  hoja.appendRow([usuario, password, empresa, '', '', email, new Date(), 'empresa', 'pendiente', cuit, rubro, nombre, apellido, telefono]);
 
   return {
     ok: true, pendiente: true,
@@ -492,7 +499,11 @@ function listarEmpresas(d) {
       email: fila[5],
       fecha: (fila[6] instanceof Date) ? fila[6].toISOString() : fila[6],
       estado: String(fila[8] || 'aprobado').toLowerCase(),
-      cuit: fila[9] || ''
+      cuit: fila[9] || '',
+      rubro: fila[10] || '',
+      nombre: fila[11] || '',
+      apellido: fila[12] || '',
+      telefono: fila[13] || ''
     });
   }
   // Pendientes primero.

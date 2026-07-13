@@ -10,7 +10,7 @@ Ruta completa:
 
 Recomendaciones:
 - Preferentemente el ícono/isotipo (el anillo de ONE) sin texto,
-  porque al lado se muestra el nombre "free one talent".
+  porque al lado se muestra el nombre "Talent Hub".
   Si tu PNG ya incluye el texto completo, avisá y quito el nombre.
 - Fondo transparente (PNG con transparencia).
 - Alto sugerido: 64–128 px (se reescala solo a 32 px de alto).

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>free one talent — Panel de empresas</title>
+<title>ONE Talent Hub — Panel de empresas</title>
 <link rel="stylesheet" href="estilos.css">
 <style>
   /* LOGIN / REGISTRO */
@@ -61,7 +61,7 @@
 
 <!-- LOGIN -->
 <div class="login-wrap" id="loginWrap">
-  <a class="logo" href="index.html"><span class="marca-txt">free</span><img class="logo-img" src="assets/logo-trim.png" alt="ONE" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-block'"><span class="ring" style="display:none"></span><span class="marca-txt">talent</span></a>
+  <a class="logo" href="index.html"><img class="logo-img" src="assets/logo-trim.png" alt="ONE" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-block'"><span class="ring" style="display:none"></span><span class="marca-txt">Talent Hub</span></a>
 
   <!-- Formulario: Iniciar sesión -->
   <form class="card login" id="loginForm">
@@ -82,12 +82,20 @@
     <span class="pill"><span class="dot"></span>Nueva cuenta</span>
     <h1>Registrá tu empresa</h1>
     <p>Creá una cuenta para acceder a los perfiles de postulantes.</p>
-    <div class="campo"><label>Nombre de la empresa / consultora</label>
-      <input id="rEmpresa" required placeholder="Ej: Consultora XYZ"></div>
+    <div class="campo"><label>Razón social</label>
+      <input id="rEmpresa" required placeholder="Ej: Consultora XYZ S.A."></div>
     <div class="campo"><label>CUIT / CUIL</label>
       <input id="rCuit" required inputmode="numeric" placeholder="Ej: 30-12345678-9"></div>
-    <div class="campo"><label>Email de contacto <span class="muted">(opcional)</span></label>
-      <input id="rEmail" type="email" autocomplete="email"></div>
+    <div class="campo"><label>Rubro</label>
+      <input id="rRubro" required placeholder="Ej: Comercio, Salud, Tecnología…"></div>
+    <div class="campo"><label>Nombre</label>
+      <input id="rNombre" required autocomplete="given-name" placeholder="Nombre del contacto"></div>
+    <div class="campo"><label>Apellido</label>
+      <input id="rApellido" required autocomplete="family-name" placeholder="Apellido del contacto"></div>
+    <div class="campo"><label>Email</label>
+      <input id="rEmail" type="email" required autocomplete="email" placeholder="contacto@empresa.com"></div>
+    <div class="campo"><label>Teléfono</label>
+      <input id="rTelefono" type="tel" required autocomplete="tel" inputmode="tel" placeholder="Ej: +54 9 11 5555-5555"></div>
     <div class="campo"><label>Usuario</label>
       <input id="rUsuario" autocomplete="username" required placeholder="Sin espacios. Ej: consultora_xyz"></div>
     <div class="campo"><label>Contraseña</label>
@@ -105,7 +113,7 @@
 <div id="panelWrap" class="oculto">
   <div class="topbar">
     <div class="inner">
-      <a class="logo" href="index.html"><span class="marca-txt">free</span><img class="logo-img" src="assets/logo-trim.png" alt="ONE" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-block'"><span class="ring" style="display:none"></span><span class="marca-txt">talent</span></a>
+      <a class="logo" href="index.html"><img class="logo-img" src="assets/logo-trim.png" alt="ONE" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-block'"><span class="ring" style="display:none"></span><span class="marca-txt">Talent Hub</span></a>
       <div style="display:flex; align-items:center; gap:16px">
         <span class="empresa" id="empresaNombre"></span>
         <button class="btn btn-sec" id="btnSalir">Salir</button>
@@ -228,7 +236,11 @@
         action: 'registrar',
         empresa: document.getElementById('rEmpresa').value,
         cuit: document.getElementById('rCuit').value,
+        rubro: document.getElementById('rRubro').value,
+        nombre: document.getElementById('rNombre').value,
+        apellido: document.getElementById('rApellido').value,
         email: document.getElementById('rEmail').value,
+        telefono: document.getElementById('rTelefono').value,
         usuario: document.getElementById('rUsuario').value,
         password: pass
       });

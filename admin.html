@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>free one talent — Administración</title>
+<title>ONE Talent Hub — Administración</title>
 <link rel="stylesheet" href="estilos.css">
 <style>
   .login-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 16px; gap: 24px; }
@@ -67,7 +67,7 @@
 
 <!-- LOGIN -->
 <div class="login-wrap" id="loginWrap">
-  <a class="logo" href="index.html"><span class="marca-txt">free</span><img class="logo-img" src="assets/logo-trim.png" alt="ONE"><span class="marca-txt">talent</span></a>
+  <a class="logo" href="index.html"><img class="logo-img" src="assets/logo-trim.png" alt="ONE"><span class="marca-txt">Talent Hub</span></a>
   <form class="card login" id="loginForm">
     <span class="pill"><span class="dot"></span>Administración</span>
     <h1>Acceso de administrador</h1>
@@ -83,7 +83,7 @@
 <div id="panelWrap" class="oculto">
   <div class="topbar">
     <div class="inner">
-      <a class="logo" href="index.html"><span class="marca-txt">free</span><img class="logo-img" src="assets/logo-trim.png" alt="ONE"><span class="marca-txt">talent</span></a>
+      <a class="logo" href="index.html"><img class="logo-img" src="assets/logo-trim.png" alt="ONE"><span class="marca-txt">Talent Hub</span></a>
       <div style="display:flex; align-items:center; gap:16px">
         <span class="quien">Administración</span>
         <button class="btn btn-sec" id="btnSalir">Salir</button>
@@ -126,12 +126,15 @@
 
     <!-- TAB EMPRESAS -->
     <section id="tabEmpresas" class="oculto">
+      <div class="barra-busqueda">
+        <button class="btn btn-sec" id="btnExportarEmp">⬇ Exportar CSV</button>
+      </div>
       <div class="resumen" id="resumenEmp"></div>
       <div class="card tabla-wrap">
         <div class="cargando" id="cargandoEmp">Cargando empresas…</div>
         <table id="tablaEmp" class="oculto">
           <thead><tr>
-            <th>Empresa</th><th>CUIT/CUIL</th><th>Usuario</th><th>Email</th><th>Registrada</th><th>Estado</th><th>Acciones</th>
+            <th>Empresa</th><th>CUIT/CUIL</th><th>Rubro</th><th>Contacto</th><th>Usuario</th><th>Email</th><th>Teléfono</th><th>Registrada</th><th>Estado</th><th>Acciones</th>
           </tr></thead>
           <tbody id="tbodyEmp"></tbody>
         </table>
@@ -150,6 +153,7 @@
 <script>
   let token = sessionStorage.getItem('admtoken') || '';
   let postulantes = [];
+  let empresas = [];
 
   const loginWrap = document.getElementById('loginWrap');
   const panelWrap = document.getElementById('panelWrap');
@@ -260,6 +264,7 @@
     try {
       const r = await apiCall({ action: 'listarEmpresas', token: token });
       if (!r.ok) { if (sesionExpirada(r.error)) return; throw new Error(r.error); }
+      empresas = r.empresas;
       pintarEmpresas(r.empresas);
       const pend = r.empresas.filter(e => e.estado === 'pendiente').length;
       document.getElementById('resumenEmp').textContent = `${r.total} empresa(s) · ${pend} pendiente(s)`;
@@ -278,11 +283,15 @@
     vacio.classList.add('oculto'); tabla.classList.remove('oculto');
     lista.forEach(e => {
       const tr = document.createElement('tr');
+      const contacto = [e.nombre, e.apellido].filter(Boolean).join(' ');
       tr.innerHTML = `
         <td><strong>${esc(e.empresa)}</strong></td>
         <td>${esc(e.cuit) || '—'}</td>
+        <td>${esc(e.rubro) || '—'}</td>
+        <td>${esc(contacto) || '—'}</td>
         <td>${esc(e.usuario)}</td>
         <td>${esc(e.email) || '—'}</td>
+        <td>${esc(e.telefono) || '—'}</td>
         <td>${fecha(e.fecha)}</td>
         <td><span class="est est-${esc(e.estado)}">${esc(e.estado)}</span></td>
         <td class="acciones-cel"></td>`;
@@ -373,6 +382,22 @@
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'postulantes_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+  };
+
+  document.getElementById('btnExportarEmp').onclick = () => {
+    if (!empresas.length) { alert('No hay datos para exportar.'); return; }
+    const cab = ['Empresa','CUIT/CUIL','Rubro','Nombre','Apellido','Usuario','Email','Telefono','Registrada','Estado'];
+    const filas = empresas.map(e => [
+      csvCampo(e.empresa), csvCampo(e.cuit), csvCampo(e.rubro),
+      csvCampo(e.nombre), csvCampo(e.apellido), csvCampo(e.usuario),
+      csvCampo(e.email), csvCampo(e.telefono), csvCampo(fecha(e.fecha)), csvCampo(e.estado)
+    ].join(','));
+    const csv = '﻿' + cab.join(',') + '\n' + filas.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'empresas_' + new Date().toISOString().slice(0,10) + '.csv';
     a.click();
   };
 
