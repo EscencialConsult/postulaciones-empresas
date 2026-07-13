@@ -296,17 +296,20 @@ function limpiar(v) {
  */
 function registrarEmpresa(d) {
   var empresa  = limpiar(d.empresa);
-  var usuario  = limpiar(d.usuario).toLowerCase();
   var password = String(d.password || '');
-  var email    = limpiar(d.email);
+  var email    = limpiar(d.email).toLowerCase();
+  var usuario  = email; // el email es el usuario de acceso, para que sea fácil de recordar
   var cuit     = limpiar(d.cuit).replace(/[^0-9]/g, '');
   var rubro    = limpiar(d.rubro);
   var nombre   = limpiar(d.nombre);
   var apellido = limpiar(d.apellido);
   var telefono = limpiar(d.telefono);
 
-  if (!empresa || !usuario || !password) {
-    return { ok: false, error: 'Completá razón social, usuario y contraseña.' };
+  if (!empresa || !password) {
+    return { ok: false, error: 'Completá razón social y contraseña.' };
+  }
+  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    return { ok: false, error: 'Ingresá un email válido (será tu usuario de acceso).' };
   }
   if (!rubro || !nombre || !apellido || !telefono) {
     return { ok: false, error: 'Completá rubro, nombre, apellido y teléfono del contacto.' };
@@ -314,14 +317,8 @@ function registrarEmpresa(d) {
   if (cuit.length !== 11) {
     return { ok: false, error: 'El CUIT/CUIL debe tener 11 dígitos.' };
   }
-  if (!/^[a-z0-9._-]{3,}$/.test(usuario)) {
-    return { ok: false, error: 'El usuario debe tener al menos 3 caracteres (letras, números y . _ -), sin espacios.' };
-  }
   if (password.length < 6) {
     return { ok: false, error: 'La contraseña debe tener al menos 6 caracteres.' };
-  }
-  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-    return { ok: false, error: 'Ingresá un email válido.' };
   }
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -330,7 +327,7 @@ function registrarEmpresa(d) {
 
   for (var i = 1; i < valores.length; i++) {
     if (String(valores[i][0]).trim().toLowerCase() === usuario) {
-      return { ok: false, error: 'Ese usuario ya está en uso. Elegí otro.' };
+      return { ok: false, error: 'Ya existe una cuenta registrada con ese email.' };
     }
   }
 

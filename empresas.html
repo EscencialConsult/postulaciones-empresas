@@ -69,7 +69,7 @@
     <h1>Iniciá sesión</h1>
     <p>Ingresá con las credenciales de tu empresa o consultora.</p>
     <div class="info oculto" id="loginInfo"></div>
-    <div class="campo"><label>Usuario</label><input id="usuario" autocomplete="username" required></div>
+    <div class="campo"><label>Email</label><input id="usuario" autocomplete="username" required placeholder="El email con el que te registraste"></div>
     <div class="campo"><label>Contraseña</label><input id="password" type="password" autocomplete="current-password" required></div>
     <button class="btn btn-prim btn-w" id="btnLogin">Iniciar sesión</button>
     <div class="err" id="loginErr"></div>
@@ -92,12 +92,10 @@
       <input id="rNombre" required autocomplete="given-name" placeholder="Nombre del contacto"></div>
     <div class="campo"><label>Apellido</label>
       <input id="rApellido" required autocomplete="family-name" placeholder="Apellido del contacto"></div>
-    <div class="campo"><label>Email</label>
-      <input id="rEmail" type="email" required autocomplete="email" placeholder="contacto@empresa.com"></div>
+    <div class="campo"><label>Email <span class="muted">(será tu usuario de acceso)</span></label>
+      <input id="rEmail" type="email" required autocomplete="username email" placeholder="contacto@empresa.com"></div>
     <div class="campo"><label>Teléfono</label>
       <input id="rTelefono" type="tel" required autocomplete="tel" inputmode="tel" placeholder="Ej: +54 9 11 5555-5555"></div>
-    <div class="campo"><label>Usuario</label>
-      <input id="rUsuario" autocomplete="username" required placeholder="Sin espacios. Ej: consultora_xyz"></div>
     <div class="campo"><label>Contraseña</label>
       <input id="rPassword" type="password" autocomplete="new-password" required placeholder="Mínimo 6 caracteres"></div>
     <div class="campo"><label>Repetir contraseña</label>
@@ -241,7 +239,6 @@
         apellido: document.getElementById('rApellido').value,
         email: document.getElementById('rEmail').value,
         telefono: document.getElementById('rTelefono').value,
-        usuario: document.getElementById('rUsuario').value,
         password: pass
       });
       if (r.ok) {
