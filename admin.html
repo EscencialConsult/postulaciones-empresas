@@ -134,7 +134,7 @@
         <div class="cargando" id="cargandoEmp">Cargando empresas…</div>
         <table id="tablaEmp" class="oculto">
           <thead><tr>
-            <th>Empresa</th><th>CUIT/CUIL</th><th>Rubro</th><th>Contacto</th><th>Usuario</th><th>Email</th><th>Teléfono</th><th>Registrada</th><th>Estado</th><th>Acciones</th>
+            <th>Empresa</th><th>CUIT/CUIL</th><th>Rubro</th><th>Contacto</th><th>Estado</th><th>Acciones</th>
           </tr></thead>
           <tbody id="tbodyEmp"></tbody>
         </table>
@@ -283,29 +283,27 @@
     vacio.classList.add('oculto'); tabla.classList.remove('oculto');
     lista.forEach(e => {
       const tr = document.createElement('tr');
+      tr.className = 'fila-click';
       const contacto = [e.nombre, e.apellido].filter(Boolean).join(' ');
       tr.innerHTML = `
         <td><strong>${esc(e.empresa)}</strong></td>
         <td>${esc(e.cuit) || '—'}</td>
         <td>${esc(e.rubro) || '—'}</td>
         <td>${esc(contacto) || '—'}</td>
-        <td>${esc(e.usuario)}</td>
-        <td>${esc(e.email) || '—'}</td>
-        <td>${esc(e.telefono) || '—'}</td>
-        <td>${fecha(e.fecha)}</td>
         <td><span class="est est-${esc(e.estado)}">${esc(e.estado)}</span></td>
         <td class="acciones-cel"></td>`;
+      tr.onclick = () => abrirEmpresa(e);
       const cel = tr.querySelector('.acciones-cel');
       if (e.estado !== 'aprobado') {
         const b = document.createElement('button');
         b.className = 'btn-mini btn-aprobar'; b.textContent = 'Aprobar';
-        b.onclick = () => cambiarEstado(e.usuario, 'aprobado');
+        b.onclick = (ev) => { ev.stopPropagation(); cambiarEstado(e.usuario, 'aprobado'); };
         cel.appendChild(b);
       }
       if (e.estado !== 'rechazado') {
         const b = document.createElement('button');
         b.className = 'btn-mini btn-rechazar'; b.textContent = 'Rechazar';
-        b.onclick = () => cambiarEstado(e.usuario, 'rechazado');
+        b.onclick = (ev) => { ev.stopPropagation(); cambiarEstado(e.usuario, 'rechazado'); };
         cel.appendChild(b);
       }
       tbody.appendChild(tr);
@@ -318,6 +316,27 @@
       if (!r.ok) { if (sesionExpirada(r.error)) return; throw new Error(r.error); }
       cargarEmpresas();
     } catch (ex) { alert('Error: ' + ex.message); }
+  }
+
+  /* ---------- DETALLE EMPRESA ---------- */
+  function abrirEmpresa(e) {
+    const contacto = [e.nombre, e.apellido].filter(Boolean).join(' ');
+    const html = `
+      <button class="modal-cerrar" onclick="cerrarModal()">×</button>
+      <h2>${esc(e.empresa)}</h2>
+      <p class="puesto">${esc(e.rubro) || 'Sin rubro especificado'}</p>
+      <div class="seccion"><h3>Datos de la empresa</h3>
+        ${dato('Razón social', e.empresa)}${dato('CUIT / CUIL', e.cuit)}
+        ${dato('Rubro', e.rubro)}
+        ${dato('Estado', e.estado)}${dato('Registrada', fecha(e.fecha))}
+      </div>
+      <div class="seccion"><h3>Contacto</h3>
+        ${dato('Nombre y apellido', contacto)}
+        ${dato('Email', e.email)}${dato('Teléfono', e.telefono)}
+        ${dato('Usuario', e.usuario)}
+      </div>`;
+    document.getElementById('modal').innerHTML = html;
+    document.getElementById('overlay').classList.remove('oculto');
   }
 
   /* ---------- DETALLE POSTULANTE ---------- */
