@@ -1,0 +1,382 @@
+/**
+ * ===================================================================
+ *  PLATAFORMA DE POSTULANTES — Backend (Google Apps Script)
+ * ===================================================================
+ *
+ *  Este script actúa como API para:
+ *    - Recibir postulaciones (formulario público) y guardarlas en Sheets.
+ *    - Autenticar empresas/consultoras (login por usuario).
+ *    - Listar / buscar perfiles y exportarlos.
+ *
+ *  CÓMO INSTALAR (resumido — ver README.md para el paso a paso):
+ *    1. Crea una Hoja de Cálculo de Google (Google Sheet).
+ *    2. Menú Extensiones > Apps Script. Borra el contenido y pega este archivo.
+ *    3. Guarda. Ejecuta una vez la función setup() (autoriza permisos).
+ *    4. Implementar > Nueva implementación > Aplicación web:
+ *          - Ejecutar como:  Yo (tu cuenta)
+ *          - Quién tiene acceso: Cualquier usuario
+ *       Copia la URL /exec y pégala en config.js del frontend.
+ *
+ * ===================================================================
+ */
+
+/* -------------------------------------------------------------------
+ *  CONFIGURACIÓN
+ * ----------------------------------------------------------------- */
+
+var HOJA_POSTULANTES = 'Postulantes';
+var HOJA_USUARIOS    = 'Usuarios';
+
+// Columnas de la hoja Postulantes (el ORDEN define las columnas del Sheet).
+var COLUMNAS_POSTULANTES = [
+  'ID', 'FechaRegistro',
+  // Etapa 1
+  'Nombre', 'Apellido', 'Email', 'Telefono', 'PuestoDeseado',
+  // Etapa 2
+  'FechaNacimiento', 'Identificacion', 'Provincia', 'CodigoPostalCiudad', 'PerfilProfesional',
+  // Etapa 3
+  'Formacion', 'DescripcionPerfil',
+  // Etapa 4
+  'DispViajar', 'DispCambioResidencia', 'Idiomas',
+  // Etapa 5
+  'PrimerEmpleo', 'Experiencias'
+];
+
+var COLUMNAS_USUARIOS = ['Usuario', 'Password', 'Empresa', 'Token', 'TokenExpira', 'Email', 'FechaRegistro'];
+
+// Duración del token de sesión (horas)
+var TOKEN_HORAS = 12;
+
+/* -------------------------------------------------------------------
+ *  PUNTOS DE ENTRADA HTTP
+ * ----------------------------------------------------------------- */
+
+function doGet(e) {
+  return manejar(e);
+}
+
+function doPost(e) {
+  return manejar(e);
+}
+
+function manejar(e) {
+  try {
+    var datos = leerPayload(e);
+    var accion = (datos.action || '').toString();
+
+    switch (accion) {
+      case 'ping':      return json({ ok: true, mensaje: 'API activa' });
+      case 'postular':  return json(guardarPostulante(datos));
+      case 'registrar': return json(registrarEmpresa(datos));
+      case 'login':     return json(login(datos));
+      case 'listar':    return json(listarPostulantes(datos));
+      case 'exportar':  return json(exportarPostulantes(datos));
+      default:
+        return json({ ok: false, error: 'Acción no reconocida: ' + accion });
+    }
+  } catch (err) {
+    return json({ ok: false, error: String(err && err.message ? err.message : err) });
+  }
+}
+
+/**
+ * Une los parámetros GET (?action=...) con el cuerpo POST (JSON de texto plano).
+ */
+function leerPayload(e) {
+  var datos = {};
+  if (e && e.parameter) {
+    for (var k in e.parameter) datos[k] = e.parameter[k];
+  }
+  if (e && e.postData && e.postData.contents) {
+    try {
+      var cuerpo = JSON.parse(e.postData.contents);
+      for (var j in cuerpo) datos[j] = cuerpo[j];
+    } catch (ignore) {}
+  }
+  return datos;
+}
+
+function json(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/* -------------------------------------------------------------------
+ *  SETUP / UTILIDADES DE HOJAS
+ * ----------------------------------------------------------------- */
+
+/**
+ * Ejecuta esta función UNA VEZ desde el editor para crear las hojas
+ * y un usuario de ejemplo. También puedes volver a ejecutarla sin problema.
+ */
+function setup() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  var post = obtenerHoja(ss, HOJA_POSTULANTES, COLUMNAS_POSTULANTES);
+  var usu  = obtenerHoja(ss, HOJA_USUARIOS, COLUMNAS_USUARIOS);
+
+  // Crea un usuario de ejemplo si la hoja está vacía.
+  if (usu.getLastRow() < 2) {
+    usu.appendRow(['empresa1', 'cambiar123', 'Empresa Demo S.A.', '', '']);
+  }
+
+  Logger.log('Setup completo. Hojas listas: %s, %s', HOJA_POSTULANTES, HOJA_USUARIOS);
+}
+
+/**
+ * Devuelve la hoja por nombre; la crea con encabezados si no existe.
+ */
+function obtenerHoja(ss, nombre, columnas) {
+  var hoja = ss.getSheetByName(nombre);
+  if (!hoja) {
+    hoja = ss.insertSheet(nombre);
+  }
+  if (hoja.getLastRow() === 0) {
+    hoja.appendRow(columnas);
+    hoja.getRange(1, 1, 1, columnas.length).setFontWeight('bold');
+    hoja.setFrozenRows(1);
+  } else {
+    asegurarColumnas(hoja, columnas);
+  }
+  return hoja;
+}
+
+/**
+ * Agrega al encabezado cualquier columna que falte (para hojas ya creadas
+ * con una versión anterior del esquema). Idempotente y no destructivo.
+ */
+function asegurarColumnas(hoja, columnas) {
+  var ultimaCol = Math.max(hoja.getLastColumn(), 1);
+  var encabezados = hoja.getRange(1, 1, 1, ultimaCol).getValues()[0];
+  var faltantes = [];
+  columnas.forEach(function (c) {
+    if (encabezados.indexOf(c) === -1) faltantes.push(c);
+  });
+  if (faltantes.length) {
+    hoja.getRange(1, encabezados.length + 1, 1, faltantes.length).setValues([faltantes]);
+    hoja.getRange(1, 1, 1, encabezados.length + faltantes.length).setFontWeight('bold');
+  }
+}
+
+/* -------------------------------------------------------------------
+ *  GUARDAR POSTULANTE
+ * ----------------------------------------------------------------- */
+
+function guardarPostulante(d) {
+  // Validación mínima obligatoria (Etapa 1).
+  if (!d.nombre || !d.apellido || !d.email) {
+    return { ok: false, error: 'Faltan datos obligatorios (nombre, apellido, email).' };
+  }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(d.email))) {
+    return { ok: false, error: 'El email no tiene un formato válido.' };
+  }
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_POSTULANTES, COLUMNAS_POSTULANTES);
+
+  var id = Utilities.getUuid();
+  var ahora = new Date();
+
+  // Los campos repetibles llegan como arrays -> se guardan como JSON.
+  var formacion    = normalizarJSON(d.formacion);
+  var experiencias = normalizarJSON(d.experiencias);
+  var idiomas      = normalizarJSON(d.idiomas);
+
+  var fila = [
+    id,
+    ahora,
+    limpiar(d.nombre),
+    limpiar(d.apellido),
+    limpiar(d.email),
+    limpiar(d.telefono),
+    limpiar(d.puestoDeseado),
+    limpiar(d.fechaNacimiento),
+    limpiar(d.identificacion),
+    limpiar(d.provincia),
+    limpiar(d.codigoPostalCiudad),
+    limpiar(d.perfilProfesional),
+    formacion,
+    limpiar(d.descripcionPerfil),
+    limpiar(d.dispViajar),
+    limpiar(d.dispCambioResidencia),
+    idiomas,
+    d.primerEmpleo ? 'Sí' : 'No',
+    experiencias
+  ];
+
+  hoja.appendRow(fila);
+  return { ok: true, id: id, mensaje: '¡Postulación registrada correctamente!' };
+}
+
+function normalizarJSON(valor) {
+  if (valor == null) return '[]';
+  if (typeof valor === 'string') {
+    // Ya viene como string JSON o texto plano
+    return valor;
+  }
+  return JSON.stringify(valor);
+}
+
+function limpiar(v) {
+  if (v == null) return '';
+  return String(v).trim();
+}
+
+/* -------------------------------------------------------------------
+ *  AUTENTICACIÓN
+ * ----------------------------------------------------------------- */
+
+/**
+ * Registro de una nueva empresa/consultora. Crea el usuario y devuelve
+ * un token para entrar directamente al panel.
+ */
+function registrarEmpresa(d) {
+  var empresa  = limpiar(d.empresa);
+  var usuario  = limpiar(d.usuario).toLowerCase();
+  var password = String(d.password || '');
+  var email    = limpiar(d.email);
+
+  if (!empresa || !usuario || !password) {
+    return { ok: false, error: 'Completá nombre de empresa, usuario y contraseña.' };
+  }
+  if (!/^[a-z0-9._-]{3,}$/.test(usuario)) {
+    return { ok: false, error: 'El usuario debe tener al menos 3 caracteres (letras, números y . _ -), sin espacios.' };
+  }
+  if (password.length < 6) {
+    return { ok: false, error: 'La contraseña debe tener al menos 6 caracteres.' };
+  }
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    return { ok: false, error: 'El email no tiene un formato válido.' };
+  }
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_USUARIOS, COLUMNAS_USUARIOS);
+  var valores = hoja.getDataRange().getValues();
+
+  for (var i = 1; i < valores.length; i++) {
+    if (String(valores[i][0]).trim().toLowerCase() === usuario) {
+      return { ok: false, error: 'Ese usuario ya está en uso. Elegí otro.' };
+    }
+  }
+
+  var token = Utilities.getUuid();
+  var expira = new Date().getTime() + TOKEN_HORAS * 3600 * 1000;
+  // Orden según COLUMNAS_USUARIOS: Usuario, Password, Empresa, Token, TokenExpira, Email, FechaRegistro
+  hoja.appendRow([usuario, password, empresa, token, expira, email, new Date()]);
+
+  return { ok: true, token: token, empresa: empresa };
+}
+
+function login(d) {
+  var usuario  = limpiar(d.usuario).toLowerCase();
+  var password = String(d.password || '');
+
+  if (!usuario || !password) {
+    return { ok: false, error: 'Ingresa usuario y contraseña.' };
+  }
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_USUARIOS, COLUMNAS_USUARIOS);
+  var valores = hoja.getDataRange().getValues();
+
+  for (var i = 1; i < valores.length; i++) {
+    var fila = valores[i];
+    var u = String(fila[0]).trim().toLowerCase();
+    var p = String(fila[1]);
+    if (u === usuario && p === password) {
+      var token = Utilities.getUuid();
+      var expira = new Date().getTime() + TOKEN_HORAS * 3600 * 1000;
+      hoja.getRange(i + 1, 4).setValue(token);      // columna Token
+      hoja.getRange(i + 1, 5).setValue(expira);     // columna TokenExpira
+      return { ok: true, token: token, empresa: String(fila[2] || usuario) };
+    }
+  }
+  return { ok: false, error: 'Usuario o contraseña incorrectos.' };
+}
+
+/**
+ * Valida un token y devuelve la fila del usuario, o null.
+ */
+function validarToken(token) {
+  if (!token) return null;
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_USUARIOS, COLUMNAS_USUARIOS);
+  var valores = hoja.getDataRange().getValues();
+  var ahora = new Date().getTime();
+
+  for (var i = 1; i < valores.length; i++) {
+    if (String(valores[i][3]) === String(token)) {
+      var expira = Number(valores[i][4] || 0);
+      if (expira && expira < ahora) return null; // expirado
+      return { usuario: valores[i][0], empresa: valores[i][2] };
+    }
+  }
+  return null;
+}
+
+/* -------------------------------------------------------------------
+ *  LISTAR / BUSCAR
+ * ----------------------------------------------------------------- */
+
+function listarPostulantes(d) {
+  var sesion = validarToken(d.token);
+  if (!sesion) return { ok: false, error: 'Sesión inválida o expirada. Vuelve a iniciar sesión.' };
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_POSTULANTES, COLUMNAS_POSTULANTES);
+  var valores = hoja.getDataRange().getValues();
+
+  var registros = [];
+  for (var i = 1; i < valores.length; i++) {
+    registros.push(filaAObjeto(COLUMNAS_POSTULANTES, valores[i]));
+  }
+
+  // Búsqueda por texto libre.
+  var q = limpiar(d.q).toLowerCase();
+  if (q) {
+    registros = registros.filter(function (r) {
+      return JSON.stringify(r).toLowerCase().indexOf(q) !== -1;
+    });
+  }
+
+  // Filtros específicos opcionales.
+  if (d.puesto)    registros = filtrarCampo(registros, 'PuestoDeseado', d.puesto);
+  if (d.provincia) registros = filtrarCampo(registros, 'Provincia', d.provincia);
+
+  // Más recientes primero.
+  registros.reverse();
+
+  return { ok: true, total: registros.length, registros: registros };
+}
+
+function filtrarCampo(registros, campo, valor) {
+  var v = String(valor).toLowerCase();
+  return registros.filter(function (r) {
+    return String(r[campo] || '').toLowerCase().indexOf(v) !== -1;
+  });
+}
+
+function filaAObjeto(columnas, fila) {
+  var obj = {};
+  for (var i = 0; i < columnas.length; i++) {
+    var valor = fila[i];
+    if (valor instanceof Date) valor = valor.toISOString();
+    obj[columnas[i]] = valor;
+  }
+  return obj;
+}
+
+/* -------------------------------------------------------------------
+ *  EXPORTAR (CSV plano)
+ * ----------------------------------------------------------------- */
+
+function exportarPostulantes(d) {
+  var sesion = validarToken(d.token);
+  if (!sesion) return { ok: false, error: 'Sesión inválida o expirada.' };
+
+  var resultado = listarPostulantes(d);
+  if (!resultado.ok) return resultado;
+
+  return { ok: true, registros: resultado.registros };
+}

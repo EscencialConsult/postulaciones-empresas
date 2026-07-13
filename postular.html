@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>free one talent — Postúlate</title>
+<link rel="stylesheet" href="estilos.css">
+<style>
+  .contenedor { max-width: 720px; margin: 0 auto; padding: 8px 16px 64px; }
+  .intro h1 { font-size: 1.9rem; font-weight: 800; margin: 6px 0 6px; }
+  .intro p { color: var(--muted); margin: 0 0 26px; }
+
+  /* Barra de progreso */
+  .pasos { display: flex; gap: 6px; margin-bottom: 14px; }
+  .pasos .p { flex: 1; height: 7px; border-radius: 99px; background: var(--gris-cl); transition: background .3s, opacity .3s; }
+  .pasos .p.hecho { background: var(--grad); }
+  .pasos .p.activo { background: var(--grad); }
+  .paso-label { color: var(--muted); font-size: .85rem; margin-bottom: 18px; font-weight: 700; }
+
+  .tarjeta { padding: 26px; }
+  .etapa { display: none; }
+  .etapa.activa { display: block; animation: aparecer .25s ease; }
+  @keyframes aparecer { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; } }
+
+  .etapa h2 { font-size: 1.25rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: .92rem; margin: 0 0 20px; }
+  .req { color: var(--error); }
+
+  .fila { display: flex; gap: 12px; flex-wrap: wrap; }
+  .fila .campo { flex: 1; min-width: 160px; }
+
+  .check { display: flex; align-items: center; gap: 10px; }
+  .check input { width: auto; }
+  .check label { margin: 0; font-weight: 600; }
+
+  /* Bloques repetibles */
+  .bloque { border: 1px dashed var(--gris-cl); border-radius: 12px; padding: 16px; margin-bottom: 12px; background: #fbfaff; }
+  .bloque-cab { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .bloque-cab strong { font-size: .9rem; color: var(--dark); }
+  .btn-quitar { background: none; border: none; color: var(--error); cursor: pointer; font-size: .85rem; font-weight: 700; }
+  .btn-agregar {
+    background: #fff; border: 1px dashed var(--pink); color: var(--acento);
+    padding: 11px; width: 100%; border-radius: 11px; cursor: pointer; font-weight: 700; font-size: .9rem;
+  }
+  .btn-agregar:hover { background: rgba(225,123,215,.06); }
+
+  .error-msg { color: var(--error); font-size: .8rem; margin-top: 4px; display: none; }
+  .campo.invalido input, .campo.invalido select { border-color: var(--error); box-shadow: 0 0 0 3px rgba(209,67,111,.15); }
+  .campo.invalido .error-msg { display: block; }
+
+  .navegacion { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 24px; }
+
+  /* Éxito */
+  .final { text-align: center; padding: 48px 24px; }
+  .final .icono {
+    width: 74px; height: 74px; border-radius: 50%; background: var(--grad);
+    color: #fff; font-size: 38px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;
+  }
+  .aviso { background: rgba(209,67,111,.08); color: var(--error); padding: 12px 14px; border-radius: 10px; font-size: .9rem; margin-bottom: 16px; display: none; }
+</style>
+</head>
+<body>
+<div class="appbar">
+  <a class="logo" href="index.html"><span class="marca-txt">free</span><img class="logo-img" src="assets/logo-trim.png" alt="ONE" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-block'"><span class="ring" style="display:none"></span><span class="marca-txt">talent</span></a>
+  <a class="btn btn-sec" href="index.html">← Inicio</a>
+</div>
+
+<div class="contenedor">
+  <div class="intro">
+    <span class="pill"><span class="dot"></span>Carga de CV</span>
+    <h1>Postúlate</h1>
+    <p>Completá tus datos en 5 pasos. Tu perfil quedará disponible para empresas y consultoras.</p>
+  </div>
+
+  <div class="pasos" id="pasos">
+    <div class="p activo"></div><div class="p"></div><div class="p"></div>
+    <div class="p"></div><div class="p"></div>
+  </div>
+  <div class="paso-label" id="pasoLabel">Paso 1 de 5 · Datos personales</div>
+
+  <div class="aviso" id="aviso"></div>
+
+  <form id="form" class="card tarjeta" novalidate>
+
+    <!-- ETAPA 1 -->
+    <section class="etapa activa" data-etapa="1">
+      <h2>Datos personales</h2>
+      <p class="sub">Empecemos con lo básico.</p>
+      <div class="fila">
+        <div class="campo"><label>Nombre <span class="req">*</span></label>
+          <input name="nombre" required><div class="error-msg">Requerido</div></div>
+        <div class="campo"><label>Apellido <span class="req">*</span></label>
+          <input name="apellido" required><div class="error-msg">Requerido</div></div>
+      </div>
+      <div class="campo"><label>Email <span class="req">*</span></label>
+        <input name="email" type="email" required><div class="error-msg">Email inválido</div></div>
+      <div class="campo"><label>Teléfono</label><input name="telefono" type="tel"></div>
+      <div class="campo"><label>Puesto de trabajo deseado</label>
+        <input name="puestoDeseado" placeholder="Ej: Analista de datos"></div>
+    </section>
+
+    <!-- ETAPA 2 -->
+    <section class="etapa" data-etapa="2">
+      <h2>Información y ubicación</h2>
+      <p class="sub">Datos personales y tu perfil profesional.</p>
+      <div class="fila">
+        <div class="campo"><label>Fecha de nacimiento</label>
+          <input name="fechaNacimiento" type="date"></div>
+        <div class="campo"><label>Identificación (DNI/Cédula)</label>
+          <input name="identificacion"></div>
+      </div>
+      <div class="fila">
+        <div class="campo"><label>Provincia</label><input name="provincia"></div>
+        <div class="campo"><label>Código postal o ciudad</label><input name="codigoPostalCiudad"></div>
+      </div>
+      <div class="campo"><label>Perfil profesional</label>
+        <textarea name="perfilProfesional" placeholder="Breve resumen de quién sos profesionalmente..."></textarea></div>
+    </section>
+
+    <!-- ETAPA 3 -->
+    <section class="etapa" data-etapa="3">
+      <h2>Formación</h2>
+      <p class="sub">Agregá tus estudios (podés añadir varios).</p>
+      <div id="formaciones"></div>
+      <button type="button" class="btn-agregar" id="addFormacion">+ Agregar formación</button>
+      <div class="campo" style="margin-top:20px">
+        <label>Descripción de tu perfil profesional</label>
+        <textarea name="descripcionPerfil" placeholder="Contanos sobre tus fortalezas, objetivos y áreas de interés..."></textarea>
+      </div>
+    </section>
+
+    <!-- ETAPA 4 -->
+    <section class="etapa" data-etapa="4">
+      <h2>Disponibilidad e idiomas</h2>
+      <p class="sub">Tu flexibilidad y habilidades lingüísticas.</p>
+      <div class="fila">
+        <div class="campo"><label>Disponibilidad para viajar</label>
+          <select name="dispViajar"><option value="">Seleccionar…</option>
+            <option>Sí</option><option>No</option><option>A convenir</option></select></div>
+        <div class="campo"><label>Disponibilidad de cambio de residencia</label>
+          <select name="dispCambioResidencia"><option value="">Seleccionar…</option>
+            <option>Sí</option><option>No</option><option>A convenir</option></select></div>
+      </div>
+      <label class="lbl" style="margin:12px 0 6px">Idiomas</label>
+      <div id="idiomas"></div>
+      <button type="button" class="btn-agregar" id="addIdioma">+ Agregar idioma</button>
+    </section>
+
+    <!-- ETAPA 5 -->
+    <section class="etapa" data-etapa="5">
+      <h2>Experiencia laboral</h2>
+      <p class="sub">Tu recorrido profesional.</p>
+      <div class="check" style="margin-bottom:20px">
+        <input type="checkbox" id="primerEmpleo" name="primerEmpleo">
+        <label for="primerEmpleo">Busco mi primer empleo</label>
+      </div>
+      <div id="experienciasWrap">
+        <div id="experiencias"></div>
+        <button type="button" class="btn-agregar" id="addExperiencia">+ Agregar experiencia</button>
+      </div>
+    </section>
+
+    <!-- NAVEGACIÓN -->
+    <div class="navegacion">
+      <button type="button" class="btn btn-sec oculto" id="btnAtras">← Atrás</button>
+      <span></span>
+      <button type="button" class="btn btn-prim" id="btnSiguiente">Siguiente →</button>
+      <button type="submit" class="btn btn-prim oculto" id="btnEnviar">Enviar postulación</button>
+    </div>
+  </form>
+
+  <!-- PANTALLA FINAL -->
+  <div class="card tarjeta final oculto" id="pantallaFinal">
+    <div class="icono">✓</div>
+    <h2>¡Postulación enviada!</h2>
+    <p class="sub">Gracias por registrarte. Tu perfil ya está disponible para las empresas.</p>
+    <button class="btn btn-prim" onclick="location.reload()">Cargar otra postulación</button>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <p><a href="https://wa.link/n9zz8z" target="_blank" rel="noopener">Desarrollado por <strong>Fundación para el Desarrollo Profesional</strong> — Contribución de <strong>Escencial Consultora</strong></a></p>
+  <img class="footer-logo" src="assets/logo2-trim.png" alt="ONE">
+</footer>
+
+<script src="config.js"></script>
+<script>
+  const totalEtapas = 5;
+  let etapaActual = 1;
+  const etiquetas = ['Datos personales','Información y ubicación','Formación','Disponibilidad e idiomas','Experiencia laboral'];
+
+  const form = document.getElementById('form');
+  const btnAtras = document.getElementById('btnAtras');
+  const btnSiguiente = document.getElementById('btnSiguiente');
+  const btnEnviar = document.getElementById('btnEnviar');
+  const aviso = document.getElementById('aviso');
+
+  /* ---------- Bloques repetibles ---------- */
+  function bloqueFormacion() {
+    const div = document.createElement('div');
+    div.className = 'bloque';
+    div.innerHTML = `
+      <div class="bloque-cab"><strong>Formación</strong>
+        <button type="button" class="btn-quitar">Quitar</button></div>
+      <div class="fila">
+        <div class="campo"><label>Nivel de estudios</label>
+          <select data-c="nivel">
+            <option value="">Seleccionar…</option>
+            <option>Primaria</option><option>Secundaria</option>
+            <option>Terciario / Técnico</option><option>Universitario</option>
+            <option>Posgrado / Máster</option><option>Doctorado</option>
+          </select></div>
+        <div class="campo"><label>Estado</label>
+          <select data-c="estado"><option value="">Seleccionar…</option>
+            <option>Cursando</option><option>Finalizado</option></select></div>
+      </div>
+      <div class="campo"><label>Centro educativo</label><input data-c="centro"></div>
+      <div class="fila">
+        <div class="campo"><label>Desde (mes/año)</label><input data-c="desde" type="month"></div>
+        <div class="campo"><label>Hasta (mes/año)</label><input data-c="hasta" type="month"></div>
+      </div>`;
+    div.querySelector('.btn-quitar').onclick = () => div.remove();
+    return div;
+  }
+
+  function bloqueIdioma() {
+    const div = document.createElement('div');
+    div.className = 'bloque';
+    div.innerHTML = `
+      <div class="bloque-cab"><strong>Idioma</strong>
+        <button type="button" class="btn-quitar">Quitar</button></div>
+      <div class="fila">
+        <div class="campo"><label>Idioma</label><input data-c="idioma" placeholder="Ej: Inglés"></div>
+        <div class="campo"><label>Nivel</label>
+          <select data-c="nivel"><option value="">Seleccionar…</option>
+            <option>Básico</option><option>Intermedio</option>
+            <option>Avanzado</option><option>Nativo</option></select></div>
+      </div>`;
+    div.querySelector('.btn-quitar').onclick = () => div.remove();
+    return div;
+  }
+
+  function bloqueExperiencia() {
+    const div = document.createElement('div');
+    div.className = 'bloque';
+    div.innerHTML = `
+      <div class="bloque-cab"><strong>Experiencia</strong>
+        <button type="button" class="btn-quitar">Quitar</button></div>
+      <div class="fila">
+        <div class="campo"><label>Cargo</label><input data-c="cargo"></div>
+        <div class="campo"><label>Empresa</label><input data-c="empresa"></div>
+      </div>
+      <div class="campo"><label>Funciones y logros del cargo</label>
+        <textarea data-c="funciones"></textarea></div>`;
+    div.querySelector('.btn-quitar').onclick = () => div.remove();
+    return div;
+  }
+
+  document.getElementById('addFormacion').onclick = () =>
+    document.getElementById('formaciones').appendChild(bloqueFormacion());
+  document.getElementById('addIdioma').onclick = () =>
+    document.getElementById('idiomas').appendChild(bloqueIdioma());
+  document.getElementById('addExperiencia').onclick = () =>
+    document.getElementById('experiencias').appendChild(bloqueExperiencia());
+
+  // Uno de cada por defecto
+  document.getElementById('formaciones').appendChild(bloqueFormacion());
+  document.getElementById('idiomas').appendChild(bloqueIdioma());
+  document.getElementById('experiencias').appendChild(bloqueExperiencia());
+
+  // Ocultar experiencias si es primer empleo
+  document.getElementById('primerEmpleo').addEventListener('change', (e) => {
+    document.getElementById('experienciasWrap').classList.toggle('oculto', e.target.checked);
+  });
+
+  /* ---------- Navegación de etapas ---------- */
+  function mostrarEtapa(n) {
+    document.querySelectorAll('.etapa').forEach(s =>
+      s.classList.toggle('activa', +s.dataset.etapa === n));
+    document.querySelectorAll('#pasos .p').forEach((p, i) => {
+      p.classList.toggle('activo', i === n - 1);
+      p.classList.toggle('hecho', i < n - 1);
+    });
+    document.getElementById('pasoLabel').textContent = `Paso ${n} de ${totalEtapas} · ${etiquetas[n-1]}`;
+    btnAtras.classList.toggle('oculto', n === 1);
+    btnSiguiente.classList.toggle('oculto', n === totalEtapas);
+    btnEnviar.classList.toggle('oculto', n !== totalEtapas);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function validarEtapa(n) {
+    const sec = document.querySelector(`.etapa[data-etapa="${n}"]`);
+    let ok = true;
+    sec.querySelectorAll('[required]').forEach(inp => {
+      const campo = inp.closest('.campo');
+      let malo = !inp.value.trim();
+      if (inp.type === 'email' && inp.value.trim())
+        malo = !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(inp.value.trim());
+      campo.classList.toggle('invalido', malo);
+      if (malo) ok = false;
+    });
+    return ok;
+  }
+
+  btnSiguiente.onclick = () => {
+    if (!validarEtapa(etapaActual)) return;
+    if (etapaActual < totalEtapas) { etapaActual++; mostrarEtapa(etapaActual); }
+  };
+  btnAtras.onclick = () => {
+    if (etapaActual > 1) { etapaActual--; mostrarEtapa(etapaActual); }
+  };
+
+  /* ---------- Recolectar bloques repetibles ---------- */
+  function recolectar(idContenedor) {
+    const items = [];
+    document.querySelectorAll(`#${idContenedor} .bloque`).forEach(b => {
+      const obj = {};
+      let vacio = true;
+      b.querySelectorAll('[data-c]').forEach(el => {
+        obj[el.dataset.c] = el.value.trim();
+        if (el.value.trim()) vacio = false;
+      });
+      if (!vacio) items.push(obj);
+    });
+    return items;
+  }
+
+  /* ---------- Envío ---------- */
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!validarEtapa(etapaActual)) return;
+
+    aviso.style.display = 'none';
+    btnEnviar.disabled = true;
+    btnEnviar.textContent = 'Enviando…';
+
+    const primerEmpleo = document.getElementById('primerEmpleo').checked;
+    const payload = {
+      action: 'postular',
+      nombre: form.nombre.value,
+      apellido: form.apellido.value,
+      email: form.email.value,
+      telefono: form.telefono.value,
+      puestoDeseado: form.puestoDeseado.value,
+      fechaNacimiento: form.fechaNacimiento.value,
+      identificacion: form.identificacion.value,
+      provincia: form.provincia.value,
+      codigoPostalCiudad: form.codigoPostalCiudad.value,
+      perfilProfesional: form.perfilProfesional.value,
+      formacion: JSON.stringify(recolectar('formaciones')),
+      descripcionPerfil: form.descripcionPerfil.value,
+      dispViajar: form.dispViajar.value,
+      dispCambioResidencia: form.dispCambioResidencia.value,
+      idiomas: JSON.stringify(recolectar('idiomas')),
+      primerEmpleo: primerEmpleo,
+      experiencias: JSON.stringify(primerEmpleo ? [] : recolectar('experiencias'))
+    };
+
+    try {
+      const r = await apiCall(payload);
+      if (r.ok) {
+        form.classList.add('oculto');
+        document.getElementById('pasos').classList.add('oculto');
+        document.getElementById('pasoLabel').classList.add('oculto');
+        document.getElementById('pantallaFinal').classList.remove('oculto');
+      } else {
+        throw new Error(r.error || 'No se pudo enviar.');
+      }
+    } catch (err) {
+      aviso.textContent = 'Error: ' + err.message;
+      aviso.style.display = 'block';
+      btnEnviar.disabled = false;
+      btnEnviar.textContent = 'Enviar postulación';
+    }
+  });
+
+  mostrarEtapa(1);
+</script>
+</body>
+</html>

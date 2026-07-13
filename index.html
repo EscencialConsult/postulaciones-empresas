@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>free one talent — Conectamos talento con oportunidades</title>
+<link rel="stylesheet" href="estilos.css">
+<style>
+  .hero { max-width: 900px; margin: 0 auto; padding: 40px 20px 72px; text-align: center; }
+  .hero h1 { font-size: clamp(2.2rem, 5vw, 3.2rem); font-weight: 800; margin: 22px 0 14px; line-height: 1.08; }
+  .hero .lead { color: var(--muted); font-size: 1.12rem; max-width: 560px; margin: 0 auto 44px; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 22px; max-width: 780px; margin: 0 auto; }
+  .cta-card {
+    text-align: left; text-decoration: none; color: inherit; padding: 30px;
+    display: flex; flex-direction: column; gap: 14px; position: relative; overflow: hidden;
+    transition: transform .16s ease, box-shadow .2s ease, border-color .2s ease;
+  }
+  .cta-card:hover { transform: translateY(-5px); box-shadow: 0 22px 44px rgba(26,24,29,.12); border-color: var(--pink); }
+  .cta-card h2 { margin: 4px 0 0; font-size: 1.35rem; }
+  .cta-card p { margin: 0; color: var(--muted); font-size: .96rem; }
+  .cta-card .ir { margin-top: 8px; font-weight: 700; color: var(--acento); display: inline-flex; align-items: center; gap: 6px; }
+  .cta-card:hover .ir { gap: 10px; }
+
+</style>
+</head>
+<body>
+  <div class="appbar">
+    <a class="logo" href="index.html"><span class="marca-txt">free</span><img class="logo-img" src="assets/logo-trim.png" alt="ONE" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-block'"><span class="ring" style="display:none"></span><span class="marca-txt">talent</span></a>
+    <a class="btn btn-sec" href="empresas.html">Acceder</a>
+  </div>
+
+  <main class="hero">
+    <span class="pill"><span class="dot"></span>Plataforma de reclutamiento de talento</span>
+    <h1>Conectamos <span class="grad-text">talento</span><br>con oportunidades.</h1>
+    <p class="lead">Los postulantes cargan su CV en pocos pasos y las empresas encuentran, filtran y exportan los perfiles ideales — todo en un solo lugar.</p>
+
+    <div class="cards">
+      <a class="card cta-card" href="postular.html">
+        <div class="tile tile-a">📝</div>
+        <h2>Soy postulante</h2>
+        <p>Cargá tu CV en 5 pasos simples y quedá visible para las empresas.</p>
+        <span class="ir">Comenzar mi postulación →</span>
+      </a>
+      <a class="card cta-card" href="empresas.html">
+        <div class="tile tile-b">🏢</div>
+        <h2>Soy empresa / consultora</h2>
+        <p>Buscá, filtrá y exportá perfiles de candidatos desde tu panel.</p>
+        <span class="ir">Acceder al panel →</span>
+      </a>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p><a href="https://wa.link/n9zz8z" target="_blank" rel="noopener">Desarrollado por <strong>Fundación para el Desarrollo Profesional</strong> — Contribución de <strong>Escencial Consultora</strong></a></p>
+    <img class="footer-logo" src="assets/logo2-trim.png" alt="ONE">
+  </footer>
+</body>
+</html>

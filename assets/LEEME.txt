@@ -1,0 +1,18 @@
+LOGO DE LA PLATAFORMA
+=====================
+
+Dejá aquí el logo de ONE con este nombre EXACTO:
+
+    logo.png
+
+Ruta completa:
+    c:\Users\perso\Downloads\Postulantes\assets\logo.png
+
+Recomendaciones:
+- Preferentemente el ícono/isotipo (el anillo de ONE) sin texto,
+  porque al lado se muestra el nombre "free one talent".
+  Si tu PNG ya incluye el texto completo, avisá y quito el nombre.
+- Fondo transparente (PNG con transparencia).
+- Alto sugerido: 64–128 px (se reescala solo a 32 px de alto).
+
+Si querés otro nombre de archivo o formato (SVG, etc.), avisá y lo ajusto.

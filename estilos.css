@@ -1,0 +1,148 @@
+/* ===================================================================
+   SISTEMA DE DISEÑO — identidad ONE Core Analytics
+   Paleta: #e17bd7 #6be1e3 #e4c76a #c6c9d7 #a4a8c0 #000000 #1a181d
+   =================================================================== */
+
+:root {
+  --pink:    #e17bd7;
+  --cyan:    #6be1e3;
+  --gold:    #e4c76a;
+  --lavanda: #a86fd8;   /* punto medio del degradado (rosa→cian) */
+  --gris-cl: #c6c9d7;
+  --gris:    #a4a8c0;
+  --negro:   #000000;
+  --dark:    #1a181d;
+
+  --texto:  #1a181d;
+  --muted:  #6f6d7d;     /* texto secundario legible */
+  --acento: #b23ca6;     /* enlaces/acentos (familia rosa, con contraste) */
+  --borde:  #e7e5ee;
+  --bg:     #f6f5fb;
+  --panel:  #ffffff;
+  --error:  #d1436f;
+  --ok:     #12b981;
+
+  --grad:      linear-gradient(120deg, #e17bd7 0%, #6be1e3 100%);
+  --grad-tri:  linear-gradient(120deg, #e17bd7 0%, #a86fd8 45%, #6be1e3 100%);
+  --radio: 16px;
+  --sombra: 0 12px 30px rgba(26, 24, 29, .07);
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--texto);
+  line-height: 1.5;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(900px 420px at 6% -8%, rgba(225,123,215,.20), transparent 60%),
+    radial-gradient(1000px 480px at 100% -6%, rgba(107,225,227,.22), transparent 60%),
+    radial-gradient(rgba(164,168,192,.16) 1px, transparent 1.4px);
+  background-size: auto, auto, 24px 24px;
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+h1, h2, h3 { color: var(--dark); letter-spacing: -.01em; }
+
+/* ---------- Logo / marca ---------- */
+.logo { display: inline-flex; align-items: flex-end; gap: 6px; text-decoration: none; color: var(--dark); }
+.logo .ring {
+  width: 30px; height: 30px; border-radius: 50%; flex: none;
+  background: conic-gradient(from 130deg, #6be1e3, #e17bd7, #e4c76a, #6be1e3);
+  -webkit-mask: radial-gradient(circle 8.5px at 50% 50%, transparent 96%, #000 0);
+          mask: radial-gradient(circle 8.5px at 50% 50%, transparent 96%, #000 0);
+}
+.logo-img { height: 30px; width: auto; display: block; flex: none; transform: skewX(-9deg); }
+.logo .marca-txt {
+  font-weight: 500; font-size: 1.7rem;
+  text-transform: uppercase; font-style: italic; letter-spacing: -.01em; line-height: .9;
+  background: linear-gradient(100deg, #6be1e3 0%, #a86fd8 55%, #e17bd7 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+/* ---------- Barra superior ---------- */
+.appbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  max-width: 1200px; margin: 0 auto; padding: 16px 22px;
+}
+
+/* ---------- Botones ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 22px; border-radius: 12px; border: 1px solid transparent;
+  font-weight: 700; font-size: 1rem; font-family: inherit; cursor: pointer;
+  color: var(--dark); transition: transform .12s ease, box-shadow .2s ease, filter .2s ease;
+}
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn-prim { background: var(--grad); color: var(--dark); }
+.btn-prim:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(225,123,215,.32); }
+.btn-sec { background: #fff; border-color: var(--borde); color: var(--dark); }
+.btn-sec:hover { border-color: var(--gris); }
+.btn-w { width: 100%; }
+
+/* ---------- Tarjetas ---------- */
+.card {
+  background: var(--panel); border: 1px solid var(--borde);
+  border-radius: var(--radio); box-shadow: var(--sombra);
+}
+
+/* ---------- Campos de formulario ---------- */
+.campo { margin-bottom: 16px; }
+.campo label, .lbl { display: block; font-weight: 600; font-size: .9rem; margin-bottom: 6px; color: var(--dark); }
+input, select, textarea {
+  width: 100%; padding: 12px 13px; border: 1px solid var(--borde);
+  border-radius: 11px; font-size: 1rem; font-family: inherit; background: #fff; color: var(--dark);
+}
+input:focus, select:focus, textarea:focus {
+  outline: none; border-color: var(--pink); box-shadow: 0 0 0 3px rgba(225,123,215,.18);
+}
+textarea { resize: vertical; min-height: 92px; }
+
+/* ---------- Píldora / badge / tiles / gradiente de texto ---------- */
+.pill {
+  display: inline-flex; align-items: center; gap: 9px; background: #fff;
+  border: 1px solid var(--borde); border-radius: 999px; padding: 8px 15px;
+  font-size: .85rem; font-weight: 600; color: var(--dark); box-shadow: var(--sombra);
+}
+.pill .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--grad); flex: none; }
+
+.grad-text {
+  background: var(--grad-tri); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+.tile {
+  width: 56px; height: 56px; border-radius: 16px; display: flex; align-items: center;
+  justify-content: center; font-size: 26px; color: #fff; box-shadow: 0 8px 18px rgba(225,123,215,.25);
+}
+.tile-a { background: linear-gradient(135deg, #e17bd7, #6be1e3); }
+.tile-b { background: linear-gradient(135deg, #a86fd8, #e17bd7); }
+
+.badge {
+  display: inline-block; background: rgba(225,123,215,.14); color: var(--acento);
+  padding: 3px 10px; border-radius: 999px; font-size: .78rem; font-weight: 600;
+}
+
+/* ---------- Footer ---------- */
+.site-footer {
+  background: var(--dark);
+  margin-top: 48px; padding: 18px 24px;
+  display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 14px;
+}
+.site-footer .footer-logo { height: 26px; width: auto; opacity: .95; }
+.site-footer p { margin: 0; color: var(--gris-cl); font-size: .85rem; white-space: nowrap; }
+.site-footer p a { color: inherit; text-decoration: none; }
+.site-footer p a:hover { text-decoration: underline; }
+.site-footer strong { color: #fff; font-weight: 700; }
+@media (max-width: 640px) {
+  .site-footer p { white-space: normal; }
+}
+
+/* ---------- Utilidades ---------- */
+.oculto { display: none !important; }
+.muted { color: var(--muted); }
