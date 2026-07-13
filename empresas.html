@@ -325,6 +325,7 @@
         ${dato('Email', r.Email)}${dato('Teléfono', r.Telefono)}
         ${dato('Identificación', r.Identificacion)}${dato('Fecha de nacimiento', r.FechaNacimiento)}
         ${dato('Provincia', r.Provincia)}${dato('Ciudad / CP', r.CodigoPostalCiudad)}
+        ${r.CVUrl ? `<div class="dato"><span class="k">CV</span><a href="${esc(r.CVUrl)}" target="_blank" rel="noopener">📄 Ver / descargar CV</a></div>` : ''}
       </div>
 
       <div class="seccion"><h3>Perfil profesional</h3>
@@ -362,7 +363,7 @@
     if (!registros.length) { alert('No hay datos para exportar.'); return; }
     const cols = ['Nombre','Apellido','Email','Telefono','PuestoDeseado','FechaNacimiento',
       'Identificacion','Provincia','CodigoPostalCiudad','PerfilProfesional','DescripcionPerfil',
-      'DispViajar','DispCambioResidencia','PrimerEmpleo'];
+      'DispViajar','DispCambioResidencia','PrimerEmpleo','CVUrl'];
     const cab = cols.concat(['Formacion','Idiomas','Experiencias','FechaRegistro']);
 
     const filas = registros.map(r => {

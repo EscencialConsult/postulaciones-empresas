@@ -27,6 +27,11 @@
 var HOJA_POSTULANTES = 'Postulantes';
 var HOJA_USUARIOS    = 'Usuarios';
 
+// Carpeta de Google Drive donde se guardan los archivos de CV.
+var CARPETA_CV = 'CVs Postulantes';
+// Tamaño máximo del CV (en MB).
+var CV_MAX_MB = 5;
+
 // Columnas de la hoja Postulantes (el ORDEN define las columnas del Sheet).
 var COLUMNAS_POSTULANTES = [
   'ID', 'FechaRegistro',
@@ -39,7 +44,9 @@ var COLUMNAS_POSTULANTES = [
   // Etapa 4
   'DispViajar', 'DispCambioResidencia', 'Idiomas',
   // Etapa 5
-  'PrimerEmpleo', 'Experiencias'
+  'PrimerEmpleo', 'Experiencias',
+  // Archivo del CV
+  'CVNombre', 'CVUrl'
 ];
 
 var COLUMNAS_USUARIOS = ['Usuario', 'Password', 'Empresa', 'Token', 'TokenExpira', 'Email', 'FechaRegistro', 'Rol', 'Estado', 'Cuit'];
@@ -196,6 +203,10 @@ function guardarPostulante(d) {
   var experiencias = normalizarJSON(d.experiencias);
   var idiomas      = normalizarJSON(d.idiomas);
 
+  // Archivo del CV (opcional): se guarda en Drive y se conserva el enlace.
+  var cv = guardarArchivoCV(d.cvBase64, d.cvNombre, d.cvTipo);
+  if (cv.error) return { ok: false, error: cv.error };
+
   var fila = [
     id,
     ahora,
@@ -215,11 +226,50 @@ function guardarPostulante(d) {
     limpiar(d.dispCambioResidencia),
     idiomas,
     d.primerEmpleo ? 'Sí' : 'No',
-    experiencias
+    experiencias,
+    cv.nombre,
+    cv.url
   ];
 
   hoja.appendRow(fila);
   return { ok: true, id: id, mensaje: '¡Postulación registrada correctamente!' };
+}
+
+/**
+ * Guarda el archivo del CV en una carpeta de Drive y devuelve { nombre, url }.
+ * Devuelve { nombre:'', url:'' } si no se adjuntó archivo, o { error } si falla.
+ */
+function guardarArchivoCV(base64, nombre, tipo) {
+  if (!base64) return { nombre: '', url: '' };
+  try {
+    // Quita el prefijo "data:...;base64," si viene incluido.
+    var idx = String(base64).indexOf('base64,');
+    if (idx !== -1) base64 = String(base64).substring(idx + 7);
+
+    // Control de tamaño (el base64 pesa ~33% más que el binario).
+    var maxBase64 = CV_MAX_MB * 1024 * 1024 * 1.4;
+    if (base64.length > maxBase64) {
+      return { error: 'El CV supera el tamaño máximo de ' + CV_MAX_MB + ' MB.' };
+    }
+
+    var bytes = Utilities.base64Decode(base64);
+    var blob = Utilities.newBlob(bytes, tipo || 'application/octet-stream', limpiar(nombre) || 'cv');
+
+    var carpeta = obtenerCarpetaCV();
+    var archivo = carpeta.createFile(blob);
+    try {
+      archivo.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch (e) { /* algunos dominios restringen el uso compartido público */ }
+
+    return { nombre: archivo.getName(), url: archivo.getUrl() };
+  } catch (err) {
+    return { error: 'No se pudo guardar el CV: ' + String(err && err.message ? err.message : err) };
+  }
+}
+
+function obtenerCarpetaCV() {
+  var it = DriveApp.getFoldersByName(CARPETA_CV);
+  return it.hasNext() ? it.next() : DriveApp.createFolder(CARPETA_CV);
 }
 
 function normalizarJSON(valor) {

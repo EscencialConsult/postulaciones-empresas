@@ -29,6 +29,10 @@
   .fila { display: flex; gap: 12px; flex-wrap: wrap; }
   .fila .campo { flex: 1; min-width: 160px; }
 
+  input[type="file"] { padding: 10px 12px; background: #fbfaff; cursor: pointer; }
+  .cv-nota { font-size: .8rem; margin-top: 6px; color: var(--muted); }
+  .cv-nota.error { color: var(--error); }
+
   .check { display: flex; align-items: center; gap: 10px; }
   .check input { width: auto; }
   .check label { margin: 0; font-weight: 600; }
@@ -97,6 +101,11 @@
       <div class="campo"><label>Teléfono</label><input name="telefono" type="tel"></div>
       <div class="campo"><label>Puesto de trabajo deseado</label>
         <input name="puestoDeseado" placeholder="Ej: Analista de datos"></div>
+      <div class="campo">
+        <label>Adjuntá tu CV <span class="muted">(PDF o Word · máx. 5 MB)</span></label>
+        <input type="file" id="cvArchivo" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+        <div class="cv-nota" id="cvNota"></div>
+      </div>
     </section>
 
     <!-- ETAPA 2 -->
@@ -273,6 +282,32 @@
     document.getElementById('experienciasWrap').classList.toggle('oculto', e.target.checked);
   });
 
+  // CV: validación de tamaño y feedback al seleccionar
+  const cvArchivo = document.getElementById('cvArchivo');
+  const cvNota = document.getElementById('cvNota');
+  const CV_MAX_BYTES = 5 * 1024 * 1024;
+  cvArchivo.addEventListener('change', () => {
+    cvNota.classList.remove('error');
+    const f = cvArchivo.files[0];
+    if (!f) { cvNota.textContent = ''; return; }
+    if (f.size > CV_MAX_BYTES) {
+      cvNota.textContent = 'El archivo supera 5 MB. Elegí uno más liviano.';
+      cvNota.classList.add('error');
+      cvArchivo.value = '';
+      return;
+    }
+    cvNota.textContent = '✓ ' + f.name;
+  });
+
+  function leerArchivo(file) {
+    return new Promise((res, rej) => {
+      const rd = new FileReader();
+      rd.onload = () => res(rd.result);
+      rd.onerror = () => rej(new Error('No se pudo leer el archivo del CV.'));
+      rd.readAsDataURL(file);
+    });
+  }
+
   /* ---------- Navegación de etapas ---------- */
   function mostrarEtapa(n) {
     document.querySelectorAll('.etapa').forEach(s =>
@@ -334,6 +369,28 @@
     btnEnviar.disabled = true;
     btnEnviar.textContent = 'Enviando…';
 
+    // Leer el CV (si se adjuntó) a base64.
+    let cvBase64 = '', cvNombre = '', cvTipo = '';
+    const cvFile = cvArchivo.files[0];
+    if (cvFile) {
+      if (cvFile.size > CV_MAX_BYTES) {
+        aviso.textContent = 'El CV supera 5 MB. Elegí un archivo más liviano.';
+        aviso.style.display = 'block';
+        btnEnviar.disabled = false; btnEnviar.textContent = 'Enviar postulación';
+        return;
+      }
+      try {
+        cvBase64 = await leerArchivo(cvFile);
+        cvNombre = cvFile.name;
+        cvTipo = cvFile.type;
+      } catch (e) {
+        aviso.textContent = e.message;
+        aviso.style.display = 'block';
+        btnEnviar.disabled = false; btnEnviar.textContent = 'Enviar postulación';
+        return;
+      }
+    }
+
     const primerEmpleo = document.getElementById('primerEmpleo').checked;
     const payload = {
       action: 'postular',
@@ -353,7 +410,10 @@
       dispCambioResidencia: form.dispCambioResidencia.value,
       idiomas: JSON.stringify(recolectar('idiomas')),
       primerEmpleo: primerEmpleo,
-      experiencias: JSON.stringify(primerEmpleo ? [] : recolectar('experiencias'))
+      experiencias: JSON.stringify(primerEmpleo ? [] : recolectar('experiencias')),
+      cvBase64: cvBase64,
+      cvNombre: cvNombre,
+      cvTipo: cvTipo
     };
 
     try {
