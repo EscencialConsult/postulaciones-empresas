@@ -145,3 +145,22 @@ textarea { resize: vertical; min-height: 92px; }
 /* ---------- Utilidades ---------- */
 .oculto { display: none !important; }
 .muted { color: var(--muted); }
+
+/* ---------- Responsive (global) ---------- */
+@media (max-width: 640px) {
+  .appbar { padding: 14px 16px; gap: 12px; }
+  .logo { gap: 5px; }
+  .logo-img { height: 26px; }
+  .logo .marca-txt { font-size: 1.3rem; }
+  .btn { padding: 11px 18px; font-size: .95rem; }
+  .tile { width: 48px; height: 48px; font-size: 22px; }
+  .site-footer { padding: 16px; gap: 10px; }
+  .site-footer p { font-size: .8rem; }
+}
+@media (max-width: 380px) {
+  .logo .marca-txt { font-size: 1.12rem; }
+  .logo-img { height: 24px; }
+}
+
+/* Evita que un campo desborde el ancho en pantallas muy chicas */
+input, select, textarea { max-width: 100%; }

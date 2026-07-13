@@ -55,6 +55,24 @@
   .dato .k { color: var(--muted); min-width: 150px; }
   .item-list { background: #faf9fd; border: 1px solid var(--borde); border-radius: 10px; padding: 12px; margin-bottom: 8px; font-size: .9rem; }
   .item-list strong { display: block; margin-bottom: 2px; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 640px) {
+    .login-wrap { padding: 20px 14px; gap: 18px; }
+    .login { padding: 24px 20px; }
+    .topbar .inner { padding: 12px 16px; }
+    .panel { padding: 20px 12px 44px; }
+    .panel-head h1 { font-size: 1.3rem; }
+    .filtros { padding: 16px; gap: 10px; }
+    .filtros .campo { min-width: 0; flex-basis: 100%; }
+    .filtros .acciones { width: 100%; }
+    .filtros .acciones .btn { flex: 1; }
+    th, td { padding: 10px 12px; }
+    .modal { padding: 22px 18px; }
+    .modal h2 { font-size: 1.25rem; }
+    .dato { flex-direction: column; gap: 2px; margin-bottom: 8px; }
+    .dato .k { min-width: 0; }
+  }
 </style>
 </head>
 <body>

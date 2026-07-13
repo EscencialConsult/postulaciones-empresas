@@ -61,6 +61,22 @@
     color: #fff; font-size: 38px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;
   }
   .aviso { background: rgba(209,67,111,.08); color: var(--error); padding: 12px 14px; border-radius: 10px; font-size: .9rem; margin-bottom: 16px; display: none; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 640px) {
+    .contenedor { padding: 8px 12px 48px; }
+    .intro h1 { font-size: 1.5rem; }
+    .tarjeta { padding: 20px 16px; }
+    .fila { gap: 10px; }
+    .fila .campo { min-width: 140px; }
+    .navegacion { gap: 10px; }
+    .navegacion .btn { flex: 1; padding: 12px 14px; }
+    .final { padding: 36px 16px; }
+  }
+  @media (max-width: 400px) {
+    .fila { flex-direction: column; gap: 0; }
+    .fila .campo { min-width: 0; }
+  }
 </style>
 </head>
 <body>
