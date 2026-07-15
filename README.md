@@ -10,7 +10,7 @@ Plataforma para que **postulantes carguen su CV** y **empresas/consultoras busqu
 ```
 Postulantes/
 ├── index.html            → Página de inicio (elige postulante o empresa)
-├── postular.html         → Formulario del postulante (5 etapas)
+├── postular.html         → Formulario del postulante (6 pasos)
 ├── empresas.html         → Panel de empresas (login + búsqueda + exportar)
 ├── config.js             → Config: aquí pegás la URL del backend
 ├── README.md             → Este archivo
@@ -77,8 +77,10 @@ a cualquier hosting estático gratuito:
 
 ## Uso
 
-- **Postulantes:** entran a `postular.html`, completan las 5 etapas y envían. Cada
+- **Postulantes:** entran a `postular.html`, completan los 6 pasos y envían. Cada
   postulación se agrega como una fila en la pestaña `Postulantes`.
+  Los pasos son: datos personales, información y ubicación, formación,
+  disponibilidad e idiomas, experiencia laboral, y firmas/consentimiento.
 - **Empresas:** entran a `empresas.html`, inician sesión, buscan/filtran perfiles,
   ven el detalle completo haciendo clic en una fila y exportan a CSV.
 

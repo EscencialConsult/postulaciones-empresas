@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -9,6 +9,19 @@
   /* LOGIN / REGISTRO */
   .login-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 16px; gap: 24px; }
   .login { padding: 34px; width: 100%; max-width: 400px; }
+  .registro-card { max-width: 760px; }
+  .registro-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 18px 0 24px; }
+  .registro-step { min-height: 38px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px 10px; border: 1px solid var(--borde); border-radius: 10px; background: #fff; color: var(--muted); font-size: .82rem; font-weight: 700; }
+  .registro-step.activo { background: var(--grad); border-color: transparent; color: var(--dark); }
+  .registro-step.completo { border-color: rgba(18,185,129,.36); background: rgba(18,185,129,.10); color: #0f766e; }
+  .registro-paso { display: none; }
+  .registro-paso.activo { display: block; }
+  .registro-paso h2 { font-size: 1.02rem; margin: 0 0 16px; }
+  .registro-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
+  .registro-grid .campo { margin-bottom: 16px; }
+  .registro-nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 18px; }
+  .registro-nav .btn { min-width: 140px; }
+  .registro-nav .btn-prim { margin-left: auto; }
   .login h1 { font-size: 1.5rem; margin: 14px 0 4px; }
   .login > p { color: var(--muted); margin: 0 0 24px; font-size: .92rem; }
   .err { color: var(--error); font-size: .85rem; margin-top: 10px; display: none; }
@@ -26,6 +39,24 @@
   .panel-head { margin: 0 0 18px; }
   .panel-head h1 { font-size: 1.5rem; margin: 10px 0 2px; }
   .panel-head p { color: var(--muted); margin: 0; font-size: .92rem; }
+
+  .cuenta-panel { margin-bottom: 20px; padding: 18px; }
+  .cuenta-head { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 16px; }
+  .cuenta-head h2 { font-size: 1.05rem; margin: 0 0 4px; }
+  .cuenta-head p { margin: 0; color: var(--muted); font-size: .88rem; }
+  .estado-linea { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .estado-badge { display: inline-flex; align-items: center; min-height: 28px; padding: 4px 10px; border-radius: 999px; font-size: .78rem; font-weight: 800; border: 1px solid transparent; }
+  .estado-pendiente { background: rgba(228,199,106,.18); color: #92700a; border-color: rgba(228,199,106,.38); }
+  .estado-aprobado { background: rgba(18,185,129,.14); color: #0f766e; border-color: rgba(18,185,129,.32); }
+  .estado-rechazado { background: rgba(209,67,111,.14); color: #b0234f; border-color: rgba(209,67,111,.32); }
+  .estado-verificacion-pendiente { background: rgba(107,225,227,.14); color: #0f766e; border-color: rgba(107,225,227,.38); }
+  .estado-verificacion-aprobado { background: rgba(18,185,129,.14); color: #0f766e; border-color: rgba(18,185,129,.32); }
+  .estado-verificacion-rechazado { background: rgba(209,67,111,.14); color: #b0234f; border-color: rgba(209,67,111,.32); }
+  .cuenta-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 14px; }
+  .cuenta-grid .campo { margin-bottom: 14px; }
+  .cuenta-grid .span-2 { grid-column: span 2; }
+  .cuenta-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .cuenta-msg { color: var(--muted); font-size: .88rem; font-weight: 700; }
 
   .filtros { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; margin-bottom: 20px; padding: 18px; }
   .filtros .campo { margin: 0; flex: 1; min-width: 150px; }
@@ -60,6 +91,11 @@
   @media (max-width: 640px) {
     .login-wrap { padding: 20px 14px; gap: 18px; }
     .login { padding: 24px 20px; }
+    .registro-card { max-width: 100%; }
+    .registro-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .registro-grid { grid-template-columns: 1fr; }
+    .registro-nav { flex-direction: column-reverse; }
+    .registro-nav .btn { width: 100%; min-width: 0; }
     .topbar .inner { padding: 12px 16px; }
     .panel { padding: 20px 12px 44px; }
     .panel-head h1 { font-size: 1.3rem; }
@@ -67,6 +103,9 @@
     .filtros .campo { min-width: 0; flex-basis: 100%; }
     .filtros .acciones { width: 100%; }
     .filtros .acciones .btn { flex: 1; }
+    .cuenta-grid { grid-template-columns: 1fr; }
+    .cuenta-grid .span-2 { grid-column: auto; }
+    .cuenta-actions .btn { width: 100%; }
     th, td { padding: 10px 12px; }
     .modal { padding: 22px 18px; }
     .modal h2 { font-size: 1.25rem; }
@@ -96,30 +135,89 @@
   </form>
 
   <!-- Formulario: Registro -->
-  <form class="card login oculto" id="registroForm">
+  <form class="card login registro-card oculto" id="registroForm" novalidate>
     <span class="pill"><span class="dot"></span>Nueva cuenta</span>
     <h1>Registrá tu empresa</h1>
-    <p>Creá una cuenta para acceder a los perfiles de postulantes.</p>
-    <div class="campo"><label>Razón social</label>
-      <input id="rEmpresa" required placeholder="Ej: Consultora XYZ S.A."></div>
-    <div class="campo"><label>CUIT / CUIL</label>
-      <input id="rCuit" required inputmode="numeric" placeholder="Ej: 30-12345678-9"></div>
-    <div class="campo"><label>Rubro</label>
-      <input id="rRubro" required placeholder="Ej: Comercio, Salud, Tecnología…"></div>
-    <div class="campo"><label>Nombre</label>
-      <input id="rNombre" required autocomplete="given-name" placeholder="Nombre del contacto"></div>
-    <div class="campo"><label>Apellido</label>
-      <input id="rApellido" required autocomplete="family-name" placeholder="Apellido del contacto"></div>
-    <div class="campo"><label>Email <span class="muted">(será tu usuario de acceso)</span></label>
-      <input id="rEmail" type="email" required autocomplete="username email" placeholder="contacto@empresa.com"></div>
-    <div class="campo"><label>Teléfono</label>
-      <input id="rTelefono" type="tel" required autocomplete="tel" inputmode="tel" placeholder="Ej: +54 9 11 5555-5555"></div>
-    <div class="campo"><label>Contraseña</label>
-      <input id="rPassword" type="password" autocomplete="new-password" required placeholder="Mínimo 6 caracteres"></div>
-    <div class="campo"><label>Repetir contraseña</label>
-      <input id="rPassword2" type="password" autocomplete="new-password" required></div>
-    <button class="btn btn-prim btn-w" id="btnRegistro">Crear cuenta</button>
+    <p>Completá los datos en pasos breves para solicitar el acceso al panel.</p>
+
+    <div class="registro-steps" aria-label="Progreso del registro">
+      <span class="registro-step activo" data-step-label="1">Empresa</span>
+      <span class="registro-step" data-step-label="2">Representante</span>
+      <span class="registro-step" data-step-label="3">Acceso</span>
+      <span class="registro-step" data-step-label="4">Verificación</span>
+    </div>
+
+    <section class="registro-paso activo" data-reg-step="1">
+      <h2>Datos de la empresa</h2>
+      <div class="registro-grid">
+        <div class="campo"><label>Razón social</label>
+          <input id="rEmpresa" required placeholder="Ej: Consultora XYZ S.A."></div>
+        <div class="campo"><label>CUIT / CUIL</label>
+          <input id="rCuit" required inputmode="numeric" placeholder="Ej: 30-12345678-9"></div>
+        <div class="campo"><label>Rubro</label>
+          <input id="rRubro" required placeholder="Ej: Comercio, Salud, Tecnología…"></div>
+      </div>
+    </section>
+
+    <section class="registro-paso" data-reg-step="2">
+      <h2>Representante</h2>
+      <div class="registro-grid">
+        <div class="campo"><label>Nombre</label>
+          <input id="rNombre" required autocomplete="given-name" placeholder="Nombre del contacto"></div>
+        <div class="campo"><label>Apellido</label>
+          <input id="rApellido" required autocomplete="family-name" placeholder="Apellido del contacto"></div>
+        <div class="campo"><label>DNI del representante</label>
+          <input id="rDni" required inputmode="numeric" pattern="[0-9]{8}" maxlength="8" placeholder="Ej: 12345678">
+          <small>Se usará para validar la identidad del representante.</small></div>
+        <div class="campo"><label>Teléfono</label>
+          <input id="rTelefono" type="tel" required autocomplete="tel" inputmode="tel" placeholder="Ej: +54 9 11 5555-5555"></div>
+      </div>
+    </section>
+
+    <section class="registro-paso" data-reg-step="3">
+      <h2>Acceso</h2>
+      <div class="registro-grid">
+        <div class="campo"><label>Email <span class="muted">(será tu usuario de acceso)</span></label>
+          <input id="rEmail" type="email" required autocomplete="username email" placeholder="contacto@empresa.com"></div>
+        <div class="campo"><label>Contraseña</label>
+          <input id="rPassword" type="password" autocomplete="new-password" required minlength="6" placeholder="Mínimo 6 caracteres"></div>
+        <div class="campo"><label>Repetir contraseña</label>
+          <input id="rPassword2" type="password" autocomplete="new-password" required minlength="6"></div>
+      </div>
+    </section>
+
+    <section class="registro-paso" data-reg-step="4">
+      <h2>Verificación y legales</h2>
+      <div class="verificacion-box">
+        <h2>Verificación de identidad</h2>
+        <p>Tomate una selfie clara del representante legal. Si el proveedor externo todavía no está configurado, la cuenta quedará pendiente de revisión.</p>
+        <video id="verifVideo" class="verificacion-video oculto" playsinline muted></video>
+        <canvas id="verifCanvas" class="oculto"></canvas>
+        <img id="verifPreview" class="verificacion-preview oculto" alt="Selfie capturada">
+        <div class="firma-controles">
+          <button type="button" class="btn btn-sec btn-firma-limpiar" id="btnIniciarCamara">Abrir cámara</button>
+          <button type="button" class="btn btn-sec btn-firma-limpiar oculto" id="btnTomarSelfie">Tomar foto</button>
+          <button type="button" class="btn btn-sec btn-firma-limpiar oculto" id="btnReintentarSelfie">Reintentar</button>
+        </div>
+        <div class="firma-estado" id="estadoVerificacion">Verificación pendiente.</div>
+      </div>
+      <div class="check" style="margin-top:16px">
+        <input type="checkbox" id="rAceptoTerminos" required>
+        <label for="rAceptoTerminos">
+          He leído y acepto los
+          <a href="terminos-condiciones.html" target="_blank" rel="noopener">Términos y Condiciones</a>
+          y la
+          <a href="politica-privacidad.html" target="_blank" rel="noopener">Política de Privacidad</a>
+        </label>
+      </div>
+    </section>
+
     <div class="err" id="registroErr"></div>
+    <div class="registro-nav">
+      <button type="button" class="btn btn-sec" id="btnRegistroAtras">Atrás</button>
+      <button type="button" class="btn btn-prim" id="btnRegistroSiguiente">Continuar</button>
+      <button type="submit" class="btn btn-prim oculto" id="btnRegistro">Crear cuenta</button>
+    </div>
     <p class="alt">¿Ya tenés cuenta?
       <a href="#" id="irLogin">Iniciá sesión</a></p>
   </form>
@@ -143,6 +241,37 @@
       <h1>Perfiles de postulantes</h1>
       <p>Buscá, filtrá y exportá los candidatos que se ajustan a lo que necesitás.</p>
     </div>
+
+    <section class="card cuenta-panel" aria-label="Estado y datos de empresa">
+      <div class="cuenta-head">
+        <div>
+          <h2>Estado de la cuenta</h2>
+          <p id="cuentaResumen">Cargando datos de la empresa…</p>
+        </div>
+        <div class="estado-linea">
+          <span class="estado-badge estado-pendiente" id="badgeEstadoEmpresa">Pendiente</span>
+          <span class="estado-badge estado-verificacion-pendiente" id="badgeEstadoVerificacion">Verificación pendiente</span>
+        </div>
+      </div>
+
+      <form id="empresaForm" novalidate>
+        <div class="cuenta-grid">
+          <div class="campo span-2"><label>Razón social</label><input id="miEmpresa" required></div>
+          <div class="campo"><label>CUIT / CUIL</label><input id="miCuit" inputmode="numeric" required maxlength="13"></div>
+          <div class="campo"><label>Rubro</label><input id="miRubro" required></div>
+          <div class="campo"><label>Nombre contacto</label><input id="miNombre" required></div>
+          <div class="campo"><label>Apellido contacto</label><input id="miApellido" required></div>
+          <div class="campo"><label>Teléfono</label><input id="miTelefono" required></div>
+          <div class="campo"><label>Email de acceso</label><input id="miEmail" disabled></div>
+          <div class="campo"><label>Contraseña actual</label><input id="miPasswordActual" type="password" autocomplete="current-password"></div>
+          <div class="campo"><label>Nueva contraseña</label><input id="miNuevaPassword" type="password" autocomplete="new-password" minlength="6"></div>
+        </div>
+        <div class="cuenta-actions">
+          <button type="submit" class="btn btn-prim" id="btnGuardarEmpresa">Guardar cambios</button>
+          <span class="cuenta-msg" id="empresaMsg"></span>
+        </div>
+      </form>
+    </section>
 
     <div class="card filtros">
       <div class="campo"><label>Búsqueda general</label>
@@ -176,6 +305,10 @@
 </div>
 
 <footer class="site-footer">
+  <div class="footer-links">
+    <a href="politica-privacidad.html">Política de Privacidad</a>
+    <a href="terminos-condiciones.html">Términos y Condiciones</a>
+  </div>
   <p><a href="https://wa.link/n9zz8z" target="_blank" rel="noopener">Desarrollado por <strong>Fundación para el Desarrollo Profesional</strong> — Contribución de <strong>Escencial Consultora</strong></a></p>
   <img class="footer-logo" src="assets/logo2-trim.png" alt="ONE">
 </footer>
@@ -185,6 +318,7 @@
   let token = sessionStorage.getItem('token') || '';
   let empresa = sessionStorage.getItem('empresa') || '';
   let registros = [];
+  let miEmpresaActual = null;
 
   const loginWrap = document.getElementById('loginWrap');
   const panelWrap = document.getElementById('panelWrap');
@@ -224,13 +358,131 @@
   /* ---------- Alternar Login / Registro ---------- */
   const loginForm = document.getElementById('loginForm');
   const registroForm = document.getElementById('registroForm');
+  const registroPasos = Array.from(document.querySelectorAll('.registro-paso'));
+  const registroIndicadores = Array.from(document.querySelectorAll('.registro-step'));
+  const btnRegistroAtras = document.getElementById('btnRegistroAtras');
+  const btnRegistroSiguiente = document.getElementById('btnRegistroSiguiente');
+  const btnRegistro = document.getElementById('btnRegistro');
+  let pasoRegistro = 1;
+
+  function setRegistroError(mensaje) {
+    const err = document.getElementById('registroErr');
+    err.textContent = mensaje || '';
+    err.style.display = mensaje ? 'block' : 'none';
+  }
+
+  function mostrarPasoRegistro(paso) {
+    pasoRegistro = Math.min(Math.max(paso, 1), registroPasos.length);
+    registroPasos.forEach(seccion => {
+      seccion.classList.toggle('activo', Number(seccion.dataset.regStep) === pasoRegistro);
+    });
+    registroIndicadores.forEach((indicador, index) => {
+      indicador.classList.toggle('activo', index + 1 === pasoRegistro);
+      indicador.classList.toggle('completo', index + 1 < pasoRegistro);
+    });
+    btnRegistroAtras.disabled = pasoRegistro === 1;
+    btnRegistroSiguiente.classList.toggle('oculto', pasoRegistro === registroPasos.length);
+    btnRegistro.classList.toggle('oculto', pasoRegistro !== registroPasos.length);
+    setRegistroError('');
+  }
+
+  function camposRegistroPaso(paso) {
+    const seccion = registroPasos.find(el => Number(el.dataset.regStep) === paso);
+    return seccion ? Array.from(seccion.querySelectorAll('input, select, textarea')) : [];
+  }
+
+  function validarPasoRegistro(paso) {
+    const campos = camposRegistroPaso(paso);
+    for (const campo of campos) {
+      if (!campo.checkValidity()) {
+        campo.focus();
+        setRegistroError(campo.validationMessage || 'Completá los campos requeridos para continuar.');
+        return false;
+      }
+    }
+    if (paso === 3) {
+      const pass = document.getElementById('rPassword').value;
+      const pass2 = document.getElementById('rPassword2').value;
+      if (pass !== pass2) {
+        document.getElementById('rPassword2').focus();
+        setRegistroError('Las contraseñas no coinciden.');
+        return false;
+      }
+    }
+    return true;
+  }
+
+  btnRegistroAtras.addEventListener('click', () => mostrarPasoRegistro(pasoRegistro - 1));
+  btnRegistroSiguiente.addEventListener('click', () => {
+    if (validarPasoRegistro(pasoRegistro)) mostrarPasoRegistro(pasoRegistro + 1);
+  });
+  mostrarPasoRegistro(1);
+
+  let selfieBase64 = '';
+  let streamVerificacion = null;
+
+  function setEstadoVerificacion(mensaje, clase) {
+    const el = document.getElementById('estadoVerificacion');
+    el.textContent = mensaje;
+    el.className = 'firma-estado ' + (clase || '');
+  }
+
+  function detenerCamara() {
+    if (streamVerificacion) {
+      streamVerificacion.getTracks().forEach(track => track.stop());
+      streamVerificacion = null;
+    }
+  }
+
+  document.getElementById('btnIniciarCamara').addEventListener('click', async () => {
+    const video = document.getElementById('verifVideo');
+    const btnTomar = document.getElementById('btnTomarSelfie');
+    const btnReintentar = document.getElementById('btnReintentarSelfie');
+    const preview = document.getElementById('verifPreview');
+    try {
+      detenerCamara();
+      streamVerificacion = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+      video.srcObject = streamVerificacion;
+      await video.play();
+      video.classList.remove('oculto');
+      preview.classList.add('oculto');
+      btnTomar.classList.remove('oculto');
+      btnReintentar.classList.add('oculto');
+      setEstadoVerificacion('Cámara lista. Toma una foto clara del rostro.', 'firma-vacia');
+    } catch (ex) {
+      setEstadoVerificacion('No se pudo abrir la cámara. Podés crear la cuenta y quedará pendiente de revisión.', 'firma-vacia');
+    }
+  });
+
+  document.getElementById('btnTomarSelfie').addEventListener('click', () => {
+    const video = document.getElementById('verifVideo');
+    const canvas = document.getElementById('verifCanvas');
+    const preview = document.getElementById('verifPreview');
+    if (!video.videoWidth) return;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    selfieBase64 = canvas.toDataURL('image/jpeg', 0.82).split(',')[1] || '';
+    preview.src = 'data:image/jpeg;base64,' + selfieBase64;
+    preview.classList.remove('oculto');
+    video.classList.add('oculto');
+    document.getElementById('btnTomarSelfie').classList.add('oculto');
+    document.getElementById('btnReintentarSelfie').classList.remove('oculto');
+    detenerCamara();
+    setEstadoVerificacion('Selfie capturada. Se enviará para verificación al crear la cuenta.', 'firma-ok');
+  });
+
+  document.getElementById('btnReintentarSelfie').addEventListener('click', () => {
+    selfieBase64 = '';
+    document.getElementById('btnIniciarCamara').click();
+  });
   document.getElementById('irRegistro').onclick = (e) => {
     e.preventDefault();
-    loginForm.classList.add('oculto'); registroForm.classList.remove('oculto');
+    loginForm.classList.add('oculto'); registroForm.classList.remove('oculto'); mostrarPasoRegistro(1);
   };
   document.getElementById('irLogin').onclick = (e) => {
     e.preventDefault();
-    registroForm.classList.add('oculto'); loginForm.classList.remove('oculto');
+    registroForm.classList.add('oculto'); loginForm.classList.remove('oculto'); detenerCamara();
   };
 
   /* ---------- REGISTRO ---------- */
@@ -240,8 +492,20 @@
     const err = document.getElementById('registroErr');
     err.style.display = 'none';
 
+    for (let paso = 1; paso <= registroPasos.length; paso++) {
+      mostrarPasoRegistro(paso);
+      if (!validarPasoRegistro(paso)) return;
+    }
+
     const pass = document.getElementById('rPassword').value;
     const pass2 = document.getElementById('rPassword2').value;
+    const dni = document.getElementById('rDni').value.replace(/[^0-9]/g, '');
+    if (dni.length !== 8) {
+      err.textContent = 'El DNI del representante debe tener 8 dígitos.'; err.style.display = 'block'; return;
+    }
+    if (!document.getElementById('rAceptoTerminos').checked) {
+      err.textContent = 'Debés aceptar los Términos y Condiciones y la Política de Privacidad.'; err.style.display = 'block'; return;
+    }
     if (pass !== pass2) {
       err.textContent = 'Las contraseñas no coinciden.'; err.style.display = 'block'; return;
     }
@@ -252,16 +516,22 @@
         action: 'registrar',
         empresa: document.getElementById('rEmpresa').value,
         cuit: document.getElementById('rCuit').value,
+        dni: dni,
         rubro: document.getElementById('rRubro').value,
         nombre: document.getElementById('rNombre').value,
         apellido: document.getElementById('rApellido').value,
         email: document.getElementById('rEmail').value,
         telefono: document.getElementById('rTelefono').value,
-        password: pass
+        password: pass,
+        selfieBase64: selfieBase64,
+        aceptoTerminos: document.getElementById('rAceptoTerminos').checked
       });
       if (r.ok) {
         // La cuenta queda pendiente de aprobación: volvemos al login con aviso.
         registroForm.reset();
+        selfieBase64 = '';
+        detenerCamara();
+        document.getElementById('verifPreview').classList.add('oculto');
         registroForm.classList.add('oculto');
         loginForm.classList.remove('oculto');
         const info = document.getElementById('loginInfo');
@@ -276,7 +546,7 @@
   });
 
   document.getElementById('btnSalir').onclick = () => {
-    sessionStorage.clear(); token = ''; empresa = '';
+    sessionStorage.clear(); token = ''; empresa = ''; miEmpresaActual = null;
     panelWrap.classList.add('oculto'); loginWrap.classList.remove('oculto');
   };
 
@@ -284,8 +554,106 @@
     loginWrap.classList.add('oculto');
     panelWrap.classList.remove('oculto');
     document.getElementById('empresaNombre').textContent = empresa;
+    cargarMiEmpresa();
     cargar();
   }
+
+  async function cargarMiEmpresa() {
+    const msg = document.getElementById('empresaMsg');
+    msg.textContent = '';
+    try {
+      const r = await apiCall({ action: 'miEmpresa', token: token });
+      if (!r.ok) {
+        if (/sesión/i.test(r.error || '')) { document.getElementById('btnSalir').click(); }
+        throw new Error(r.error);
+      }
+      miEmpresaActual = r.empresa;
+      pintarMiEmpresa(miEmpresaActual);
+    } catch (ex) {
+      document.getElementById('cuentaResumen').textContent = 'No se pudieron cargar los datos de la empresa.';
+      msg.textContent = ex.message;
+    }
+  }
+
+  function pintarMiEmpresa(e) {
+    document.getElementById('miEmpresa').value = e.empresa || '';
+    document.getElementById('miCuit').value = e.cuit || '';
+    document.getElementById('miRubro').value = e.rubro || '';
+    document.getElementById('miNombre').value = e.nombre || '';
+    document.getElementById('miApellido').value = e.apellido || '';
+    document.getElementById('miTelefono').value = e.telefono || '';
+    document.getElementById('miEmail').value = e.email || e.usuario || '';
+    document.getElementById('miPasswordActual').value = '';
+    document.getElementById('miNuevaPassword').value = '';
+    document.getElementById('cuentaResumen').textContent = `${e.email || e.usuario || ''} · registrada ${fecha(e.fecha)}`;
+    pintarBadgeEstado('badgeEstadoEmpresa', e.estado, 'cuenta');
+    pintarBadgeEstado('badgeEstadoVerificacion', e.estadoVerificacion || 'pendiente', 'verificacion');
+    empresa = e.empresa || empresa;
+    sessionStorage.setItem('empresa', empresa);
+    document.getElementById('empresaNombre').textContent = empresa;
+  }
+
+  function pintarBadgeEstado(id, estado, tipo) {
+    const el = document.getElementById(id);
+    const normalizado = (estado || 'pendiente').toLowerCase();
+    const labelsCuenta = { pendiente: 'Cuenta pendiente', aprobado: 'Cuenta aprobada', rechazado: 'Cuenta rechazada' };
+    const labelsVerif = { pendiente: 'Verificación pendiente', aprobado: 'Verificación aprobada', rechazado: 'Verificación rechazada', no_verificado: 'Verificación pendiente' };
+    el.textContent = (tipo === 'verificacion' ? labelsVerif : labelsCuenta)[normalizado] || normalizado;
+    el.className = `estado-badge ${tipo === 'verificacion' ? 'estado-verificacion-' : 'estado-'}${esc(normalizado)}`;
+  }
+
+  document.getElementById('empresaForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btnGuardarEmpresa');
+    const msg = document.getElementById('empresaMsg');
+    const nuevaPassword = document.getElementById('miNuevaPassword').value;
+    const passwordActual = document.getElementById('miPasswordActual').value;
+    msg.style.color = 'var(--muted)';
+    msg.textContent = '';
+
+    if (!e.currentTarget.checkValidity()) {
+      msg.style.color = 'var(--error)';
+      msg.textContent = 'Revisá los campos requeridos.';
+      return;
+    }
+    if (nuevaPassword && !passwordActual) {
+      msg.style.color = 'var(--error)';
+      msg.textContent = 'Ingresá tu contraseña actual para cambiarla.';
+      document.getElementById('miPasswordActual').focus();
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+    try {
+      const r = await apiCall({
+        action: 'actualizarMiEmpresa',
+        token: token,
+        empresa: document.getElementById('miEmpresa').value,
+        cuit: document.getElementById('miCuit').value,
+        rubro: document.getElementById('miRubro').value,
+        nombre: document.getElementById('miNombre').value,
+        apellido: document.getElementById('miApellido').value,
+        telefono: document.getElementById('miTelefono').value,
+        passwordActual: passwordActual,
+        nuevaPassword: nuevaPassword
+      });
+      if (!r.ok) {
+        if (/sesión/i.test(r.error || '')) { document.getElementById('btnSalir').click(); }
+        throw new Error(r.error);
+      }
+      miEmpresaActual = r.empresa;
+      pintarMiEmpresa(miEmpresaActual);
+      msg.style.color = 'var(--ok)';
+      msg.textContent = r.mensaje || 'Datos actualizados.';
+    } catch (ex) {
+      msg.style.color = 'var(--error)';
+      msg.textContent = ex.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Guardar cambios';
+    }
+  });
 
   /* ---------- CARGAR / BUSCAR ---------- */
   async function cargar() {
@@ -384,6 +752,20 @@
         <div class="item-list"><strong>${esc(x.cargo)} ${x.empresa ? '· ' + esc(x.empresa) : ''}</strong>
           ${esc(x.funciones) || ''}</div>`).join('') + `</div>`;
     }
+
+    // Firmas
+    html += `<div class="seccion"><h3>Firmas</h3>`;
+    if (r.FirmaConsentimientoUrl) {
+      html += `<div class="dato"><span class="k">Consentimiento</span><span><img src="${esc(r.FirmaConsentimientoUrl)}" class="firma-preview" alt="Firma consentimiento"> <small style="color:var(--ok)">✓ Firmado</small></span></div>`;
+    } else {
+      html += `<div class="dato"><span class="k">Consentimiento</span><span style="color:var(--muted)">Pendiente</span></div>`;
+    }
+    if (r.FirmaConformidadUrl) {
+      html += `<div class="dato"><span class="k">Conformidad</span><span><img src="${esc(r.FirmaConformidadUrl)}" class="firma-preview" alt="Firma conformidad"> <small style="color:var(--ok)">✓ Firmado</small></span></div>`;
+    } else {
+      html += `<div class="dato"><span class="k">Conformidad</span><span style="color:var(--muted)">Pendiente</span></div>`;
+    }
+    html += `</div>`;
 
     document.getElementById('modal').innerHTML = html;
     document.getElementById('overlay').classList.remove('oculto');

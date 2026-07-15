@@ -46,10 +46,19 @@ var COLUMNAS_POSTULANTES = [
   // Etapa 5
   'PrimerEmpleo', 'Experiencias',
   // Archivo del CV
-  'CVNombre', 'CVUrl'
+  'CVNombre', 'CVUrl',
+  // Firmas
+  'FirmaConsentimientoUrl', 'FechaFirmaConsentimiento',
+  'FirmaConformidadUrl', 'FechaFirmaConformidad'
 ];
 
-var COLUMNAS_USUARIOS = ['Usuario', 'Password', 'Empresa', 'Token', 'TokenExpira', 'Email', 'FechaRegistro', 'Rol', 'Estado', 'Cuit', 'Rubro', 'Nombre', 'Apellido', 'Telefono'];
+var COLUMNAS_USUARIOS = [
+  'Usuario', 'Password', 'Empresa', 'Token', 'TokenExpira',
+  'Email', 'FechaRegistro', 'Rol', 'Estado', 'Cuit', 'Rubro',
+  'Nombre', 'Apellido', 'Telefono',
+  'Dni', 'EstadoVerificación', 'FechaVerificación', 'ConfianzaVerificación',
+  'AceptoTerminos', 'FechaAceptoTerminos'
+];
 
 // Duración del token de sesión (horas)
 var TOKEN_HORAS = 12;
@@ -75,11 +84,16 @@ function manejar(e) {
       case 'ping':      return json({ ok: true, mensaje: 'API activa' });
       case 'postular':  return json(guardarPostulante(datos));
       case 'registrar': return json(registrarEmpresa(datos));
+      case 'verificarIdentidad': return json(verificarIdentidadDNI(datos));
       case 'login':     return json(login(datos));
+      case 'miEmpresa': return json(miEmpresa(datos));
+      case 'actualizarMiEmpresa': return json(actualizarMiEmpresa(datos));
       case 'listar':    return json(listarPostulantes(datos));
       case 'exportar':  return json(exportarPostulantes(datos));
       case 'listarEmpresas': return json(listarEmpresas(datos));
       case 'aprobarEmpresa': return json(aprobarEmpresa(datos));
+      // Firmas
+      case 'firmarPostulacion': return json(firmarPostulacion(datos));
       default:
         return json({ ok: false, error: 'Acción no reconocida: ' + accion });
     }
@@ -207,6 +221,10 @@ function guardarPostulante(d) {
   var cv = guardarArchivoCV(d.cvBase64, d.cvNombre, d.cvTipo);
   if (cv.error) return { ok: false, error: cv.error };
 
+  // Firmas (opcionales)
+  var firmaConsent = guardarArchivoFirma(d.firmaConsentimientoBase64, 'consent_' + id + '.png');
+  var firmaConf    = guardarArchivoFirma(d.firmaConformidadBase64, 'conf_' + id + '.png');
+
   var fila = [
     id,
     ahora,
@@ -228,7 +246,12 @@ function guardarPostulante(d) {
     d.primerEmpleo ? 'Sí' : 'No',
     experiencias,
     cv.nombre,
-    cv.url
+    cv.url,
+    // Firmas
+    firmaConsent.url,
+    d.firmaConsentimientoBase64 ? ahora : '',
+    firmaConf.url,
+    d.firmaConformidadBase64 ? ahora : ''
   ];
 
   hoja.appendRow(fila);
@@ -294,12 +317,77 @@ function limpiar(v) {
  * Registro de una nueva empresa/consultora. Crea el usuario y devuelve
  * un token para entrar directamente al panel.
  */
+function verificarIdentidadDNI(d) {
+  var dni = limpiar(d.dni).replace(/[^0-9]/g, '');
+  if (dni.length !== 8) {
+    return { ok: false, error: 'El DNI debe tener 8 dígitos.' };
+  }
+
+  if (!d.selfieBase64) {
+    return {
+      ok: true,
+      verificado: false,
+      estado: 'pendiente',
+      error: 'Falta la selfie para verificación automática.'
+    };
+  }
+
+  var props = PropertiesService.getScriptProperties();
+  var apiKey = props.getProperty('DIDIT_API_KEY');
+  var verifyUrl = props.getProperty('DIDIT_VERIFY_URL');
+  var workflowId = props.getProperty('DIDIT_WORKFLOW_ID') || '';
+
+  if (!apiKey || !verifyUrl) {
+    return {
+      ok: true,
+      verificado: false,
+      estado: 'pendiente',
+      error: 'Proveedor de verificación no configurado.'
+    };
+  }
+
+  try {
+    var response = UrlFetchApp.fetch(verifyUrl, {
+      method: 'post',
+      muteHttpExceptions: true,
+      contentType: 'application/json',
+      headers: { Authorization: 'Bearer ' + apiKey },
+      payload: JSON.stringify({
+        documentType: 'DNI',
+        documentNumber: dni,
+        selfieBase64: String(d.selfieBase64),
+        workflowId: workflowId
+      })
+    });
+
+    var code = response.getResponseCode();
+    var body = response.getContentText() || '{}';
+    var result = JSON.parse(body);
+    if (code < 200 || code >= 300) {
+      return { ok: false, error: result.error || result.message || ('Error de verificación (' + code + ').') };
+    }
+
+    var status = String(result.status || result.decision || '').toLowerCase();
+    var aprobado = ['approved', 'aprobado', 'verified', 'success'].indexOf(status) !== -1;
+    return {
+      ok: true,
+      verificado: aprobado,
+      estado: aprobado ? 'aprobado' : (status === 'rejected' || status === 'rechazado' ? 'rechazado' : 'pendiente'),
+      confianza: result.confidence || result.score || '',
+      nombreVerificado: result.fullName || (result.data ? result.data.fullName : '')
+    };
+  } catch (err) {
+    return { ok: false, error: 'Error en verificación: ' + String(err && err.message ? err.message : err) };
+  }
+}
+
 function registrarEmpresa(d) {
   var empresa  = limpiar(d.empresa);
   var password = String(d.password || '');
   var email    = limpiar(d.email).toLowerCase();
   var usuario  = email; // el email es el usuario de acceso, para que sea fácil de recordar
   var cuit     = limpiar(d.cuit).replace(/[^0-9]/g, '');
+  var dni      = limpiar(d.dni).replace(/[^0-9]/g, '');
   var rubro    = limpiar(d.rubro);
   var nombre   = limpiar(d.nombre);
   var apellido = limpiar(d.apellido);
@@ -317,9 +405,18 @@ function registrarEmpresa(d) {
   if (cuit.length !== 11) {
     return { ok: false, error: 'El CUIT/CUIL debe tener 11 dígitos.' };
   }
+  if (dni.length !== 8) {
+    return { ok: false, error: 'El DNI del representante debe tener 8 dígitos.' };
+  }
+  if (!d.aceptoTerminos) {
+    return { ok: false, error: 'Debés aceptar los Términos y Condiciones.' };
+  }
   if (password.length < 6) {
     return { ok: false, error: 'La contraseña debe tener al menos 6 caracteres.' };
   }
+
+  var verificacion = verificarIdentidadDNI({ dni: dni, selfieBase64: d.selfieBase64 });
+  if (!verificacion.ok) return verificacion;
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var hoja = obtenerHoja(ss, HOJA_USUARIOS, COLUMNAS_USUARIOS);
@@ -333,7 +430,16 @@ function registrarEmpresa(d) {
 
   // La empresa queda PENDIENTE de aprobación por el administrador (sin token de acceso).
   // Orden: Usuario, Password, Empresa, Token, TokenExpira, Email, FechaRegistro, Rol, Estado, Cuit, Rubro, Nombre, Apellido, Telefono
-  hoja.appendRow([usuario, password, empresa, '', '', email, new Date(), 'empresa', 'pendiente', cuit, rubro, nombre, apellido, telefono]);
+  hoja.appendRow([
+    usuario, password, empresa, '', '', email, new Date(), 'empresa', 'pendiente',
+    cuit, rubro, nombre, apellido, telefono,
+    dni,
+    verificacion.estado || (verificacion.verificado ? 'aprobado' : 'pendiente'),
+    new Date(),
+    verificacion.confianza || '',
+    'Si',
+    new Date()
+  ]);
 
   return {
     ok: true, pendiente: true,
@@ -396,6 +502,95 @@ function validarToken(token) {
     }
   }
   return null;
+}
+
+function empresaDesdeFila(fila) {
+  return {
+    usuario: fila[0],
+    empresa: fila[2],
+    email: fila[5],
+    fecha: (fila[6] instanceof Date) ? fila[6].toISOString() : fila[6],
+    estado: String(fila[8] || 'aprobado').toLowerCase(),
+    cuit: fila[9] || '',
+    rubro: fila[10] || '',
+    nombre: fila[11] || '',
+    apellido: fila[12] || '',
+    telefono: fila[13] || '',
+    dni: fila[14] || '',
+    estadoVerificacion: String(fila[15] || 'pendiente').toLowerCase(),
+    fechaVerificacion: (fila[16] instanceof Date) ? fila[16].toISOString() : fila[16],
+    confianzaVerificacion: fila[17] || '',
+    aceptoTerminos: fila[18] || '',
+    fechaAceptoTerminos: (fila[19] instanceof Date) ? fila[19].toISOString() : fila[19]
+  };
+}
+
+function miEmpresa(d) {
+  var sesion = validarToken(d.token);
+  if (!sesion) return { ok: false, error: 'SesiÃ³n invÃ¡lida o expirada.' };
+  if (sesion.rol === 'admin') return { ok: false, error: 'Esta acciÃ³n corresponde a cuentas de empresa.' };
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_USUARIOS, COLUMNAS_USUARIOS);
+  var valores = hoja.getDataRange().getValues();
+  var usuario = String(sesion.usuario || '').trim().toLowerCase();
+
+  for (var i = 1; i < valores.length; i++) {
+    if (String(valores[i][0]).trim().toLowerCase() === usuario) {
+      return { ok: true, empresa: empresaDesdeFila(valores[i]) };
+    }
+  }
+  return { ok: false, error: 'Empresa no encontrada.' };
+}
+
+function actualizarMiEmpresa(d) {
+  var sesion = validarToken(d.token);
+  if (!sesion) return { ok: false, error: 'SesiÃ³n invÃ¡lida o expirada.' };
+  if (sesion.rol === 'admin') return { ok: false, error: 'Esta acciÃ³n corresponde a cuentas de empresa.' };
+
+  var empresa  = limpiar(d.empresa);
+  var cuit     = limpiar(d.cuit).replace(/[^0-9]/g, '');
+  var rubro    = limpiar(d.rubro);
+  var nombre   = limpiar(d.nombre);
+  var apellido = limpiar(d.apellido);
+  var telefono = limpiar(d.telefono);
+  var passwordActual = String(d.passwordActual || '');
+  var nuevaPassword = String(d.nuevaPassword || '');
+
+  if (!empresa || !rubro || !nombre || !apellido || !telefono) {
+    return { ok: false, error: 'CompletÃ¡ razÃ³n social, rubro y datos de contacto.' };
+  }
+  if (cuit.length !== 11) {
+    return { ok: false, error: 'El CUIT/CUIL debe tener 11 dÃ­gitos.' };
+  }
+  if (nuevaPassword && nuevaPassword.length < 6) {
+    return { ok: false, error: 'La nueva contraseÃ±a debe tener al menos 6 caracteres.' };
+  }
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_USUARIOS, COLUMNAS_USUARIOS);
+  var valores = hoja.getDataRange().getValues();
+  var usuario = String(sesion.usuario || '').trim().toLowerCase();
+
+  for (var i = 1; i < valores.length; i++) {
+    if (String(valores[i][0]).trim().toLowerCase() === usuario) {
+      if (nuevaPassword) {
+        if (!passwordActual) return { ok: false, error: 'IngresÃ¡ tu contraseÃ±a actual para cambiarla.' };
+        if (String(valores[i][1]) !== passwordActual) return { ok: false, error: 'La contraseÃ±a actual no es correcta.' };
+        hoja.getRange(i + 1, 2).setValue(nuevaPassword);
+      }
+      hoja.getRange(i + 1, 3).setValue(empresa);
+      hoja.getRange(i + 1, 10).setValue(cuit);
+      hoja.getRange(i + 1, 11).setValue(rubro);
+      hoja.getRange(i + 1, 12).setValue(nombre);
+      hoja.getRange(i + 1, 13).setValue(apellido);
+      hoja.getRange(i + 1, 14).setValue(telefono);
+
+      var filaActualizada = hoja.getRange(i + 1, 1, 1, COLUMNAS_USUARIOS.length).getValues()[0];
+      return { ok: true, mensaje: 'Datos actualizados correctamente.', empresa: empresaDesdeFila(filaActualizada) };
+    }
+  }
+  return { ok: false, error: 'Empresa no encontrada.' };
 }
 
 /* -------------------------------------------------------------------
@@ -490,18 +685,7 @@ function listarEmpresas(d) {
     var fila = valores[i];
     var rol = String(fila[7] || 'empresa').toLowerCase();
     if (rol === 'admin') continue; // no listar administradores
-    empresas.push({
-      usuario: fila[0],
-      empresa: fila[2],
-      email: fila[5],
-      fecha: (fila[6] instanceof Date) ? fila[6].toISOString() : fila[6],
-      estado: String(fila[8] || 'aprobado').toLowerCase(),
-      cuit: fila[9] || '',
-      rubro: fila[10] || '',
-      nombre: fila[11] || '',
-      apellido: fila[12] || '',
-      telefono: fila[13] || ''
-    });
+    empresas.push(empresaDesdeFila(fila));
   }
   // Pendientes primero.
   empresas.sort(function (a, b) {
@@ -543,4 +727,72 @@ function aprobarEmpresa(d) {
     }
   }
   return { ok: false, error: 'Empresa no encontrada.' };
+}
+
+/* -------------------------------------------------------------------
+ *  FIRMAS
+ * ----------------------------------------------------------------- */
+
+/**
+ * Guarda una imagen de firma en Drive dentro de la carpeta de CVs.
+ * @param {string} base64 - Imagen en base64 (sin prefijo data:)
+ * @param {string} nombre - Nombre del archivo
+ * @returns {{ url: string, nombre: string } | { error: string }}
+ */
+function guardarArchivoFirma(base64, nombre) {
+  if (!base64) return { nombre: '', url: '' };
+  try {
+    var bytes = Utilities.base64Decode(base64);
+    var blob = Utilities.newBlob(bytes, 'image/png', limpiar(nombre) || 'firma.png');
+
+    var carpeta = obtenerCarpetaCV();
+    var archivo = carpeta.createFile(blob);
+    try {
+      archivo.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch (e) { /* algunos dominios restringen el uso compartido público */ }
+
+    return { nombre: archivo.getName(), url: archivo.getUrl() };
+  } catch (err) {
+    return { error: 'No se pudo guardar la firma: ' + String(err && err.message ? err.message : err) };
+  }
+}
+
+/**
+ * Actualiza las firmas de un postulante existente (consentimiento y/o conformidad).
+ * Se busca al postulante por email.
+ */
+function firmarPostulacion(d) {
+  var email = limpiar(d.email).toLowerCase();
+  if (!email) return { ok: false, error: 'Falta el email del postulante.' };
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_POSTULANTES, COLUMNAS_POSTULANTES);
+  var valores = hoja.getDataRange().getValues();
+
+  // Buscar la columna Email (índice 4)
+  for (var i = 1; i < valores.length; i++) {
+    if (String(valores[i][ 4 ]).trim().toLowerCase() === email) {
+      var ahora = new Date();
+      var filaNum = i + 1;
+
+      if (d.tipo === 'consentimiento' && d.firmaBase64) {
+        var firma = guardarArchivoFirma(d.firmaBase64, 'consent_' + valores[i][0] + '.png');
+        if (firma.error) return { ok: false, error: firma.error };
+        // Columna 22: FirmaConsentimientoUrl, 23: FechaFirmaConsentimiento
+        hoja.getRange(filaNum, 23).setValue(firma.url);
+        hoja.getRange(filaNum, 24).setValue(ahora);
+      }
+
+      if (d.tipo === 'conformidad' && d.firmaBase64) {
+        var firma2 = guardarArchivoFirma(d.firmaBase64, 'conf_' + valores[i][0] + '.png');
+        if (firma2.error) return { ok: false, error: firma2.error };
+        // Columna 24: FirmaConformidadUrl, 25: FechaFirmaConformidad
+        hoja.getRange(filaNum, 24).setValue(firma2.url);
+        hoja.getRange(filaNum, 25).setValue(ahora);
+      }
+
+      return { ok: true, mensaje: 'Firma registrada correctamente.' };
+    }
+  }
+  return { ok: false, error: 'Postulante no encontrado con ese email.' };
 }

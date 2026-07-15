@@ -16,6 +16,10 @@
   .pasos .p.hecho { background: var(--grad); }
   .pasos .p.activo { background: var(--grad); }
   .paso-label { color: var(--muted); font-size: .85rem; margin-bottom: 18px; font-weight: 700; }
+  .pasos-explicacion { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: -10px 0 24px; }
+  .paso-info { border: 1px solid var(--borde); border-radius: 10px; background: rgba(255,255,255,.72); padding: 10px 12px; }
+  .paso-info strong { display: block; color: var(--dark); font-size: .84rem; margin-bottom: 2px; }
+  .paso-info span { display: block; color: var(--muted); font-size: .78rem; line-height: 1.35; }
 
   .tarjeta { padding: 26px; }
   .etapa { display: none; }
@@ -71,6 +75,7 @@
     .fila .campo { min-width: 140px; }
     .navegacion { gap: 10px; }
     .navegacion .btn { flex: 1; padding: 12px 14px; }
+    .pasos-explicacion { grid-template-columns: 1fr; }
     .final { padding: 36px 16px; }
   }
   @media (max-width: 400px) {
@@ -89,14 +94,23 @@
   <div class="intro">
     <span class="pill"><span class="dot"></span>Carga de CV</span>
     <h1>Postúlate</h1>
-    <p>Completá tus datos en 5 pasos. Tu perfil quedará disponible para empresas y consultoras.</p>
+    <p>Completá tus datos en 6 pasos. Tu perfil quedará disponible para empresas y consultoras.</p>
+  </div>
+
+  <div class="pasos-explicacion" aria-label="Qué se completa en cada paso">
+    <div class="paso-info"><strong>1. Datos personales</strong><span>Nombre, contacto, puesto deseado y CV.</span></div>
+    <div class="paso-info"><strong>2. Información y ubicación</strong><span>Fecha de nacimiento, identificación, provincia y perfil.</span></div>
+    <div class="paso-info"><strong>3. Formación</strong><span>Estudios, cursos y descripción profesional.</span></div>
+    <div class="paso-info"><strong>4. Disponibilidad e idiomas</strong><span>Movilidad, residencia e idiomas.</span></div>
+    <div class="paso-info"><strong>5. Experiencia laboral</strong><span>Primer empleo o antecedentes laborales.</span></div>
+    <div class="paso-info"><strong>6. Firmas y consentimiento</strong><span>Autorización de datos y conformidad final.</span></div>
   </div>
 
   <div class="pasos" id="pasos">
     <div class="p activo"></div><div class="p"></div><div class="p"></div>
-    <div class="p"></div><div class="p"></div>
+    <div class="p"></div><div class="p"></div><div class="p"></div>
   </div>
-  <div class="paso-label" id="pasoLabel">Paso 1 de 5 · Datos personales</div>
+  <div class="paso-label" id="pasoLabel">Paso 1 de 6 · Datos personales</div>
 
   <div class="aviso" id="aviso"></div>
 
@@ -185,6 +199,58 @@
       </div>
     </section>
 
+    <!-- ETAPA 6 -->
+    <section class="etapa" data-etapa="6">
+      <h2>Firmas y consentimiento</h2>
+      <p class="sub">Por favor, firmá para confirmar tu postulación.</p>
+
+      <div class="firma-seccion" id="firma-consentimiento">
+        <h3 class="firma-titulo">Consentimiento de privacidad</h3>
+        <p class="firma-desc">Al firmar, aceptás que tus datos personales sean utilizados exclusivamente para procesos de reclutamiento y selección, conforme a la Ley N.º 25.326 de Protección de Datos Personales.</p>
+        <div class="firma-canvas-wrap">
+          <canvas id="canvas-consentimiento" class="firma-canvas"></canvas>
+          <div class="firma-placeholder" id="placeholder-consentimiento">
+            Firmá aquí con el dedo o el mouse
+          </div>
+        </div>
+        <div class="firma-controles">
+          <button type="button" class="btn btn-sec btn-firma-limpiar" id="limpiar-consentimiento">
+            Borrar firma
+          </button>
+          <span class="firma-estado" id="estado-consentimiento"></span>
+        </div>
+        <div class="check" style="margin-top:14px">
+          <input type="checkbox" id="check-consentimiento" required>
+          <label for="check-consentimiento">
+            He leído y acepto la
+            <a href="politica-privacidad.html" target="_blank" rel="noopener">Política de Privacidad</a>
+            y autorizo el uso de mis datos personales para procesos de reclutamiento conforme a la Ley N.º 25.326.
+          </label>
+        </div>
+      </div>
+
+      <div class="firma-seccion" id="firma-conformidad">
+        <h3 class="firma-titulo">Conformidad de datos</h3>
+        <p class="firma-desc">Al firmar, confirmás que toda la información proporcionada en esta postulación es correcta y veraz.</p>
+        <div class="firma-canvas-wrap">
+          <canvas id="canvas-conformidad" class="firma-canvas"></canvas>
+          <div class="firma-placeholder" id="placeholder-conformidad">
+            Firmá aquí con el dedo o el mouse
+          </div>
+        </div>
+        <div class="firma-controles">
+          <button type="button" class="btn btn-sec btn-firma-limpiar" id="limpiar-conformidad">
+            Borrar firma
+          </button>
+          <span class="firma-estado" id="estado-conformidad"></span>
+        </div>
+        <div class="check" style="margin-top:14px">
+          <input type="checkbox" id="check-conformidad" required>
+          <label for="check-conformidad">Confirmo que los datos proporcionados son correctos y veraces</label>
+        </div>
+      </div>
+    </section>
+
     <!-- NAVEGACIÓN -->
     <div class="navegacion">
       <button type="button" class="btn btn-sec oculto" id="btnAtras">← Atrás</button>
@@ -204,15 +270,21 @@
 </div>
 
 <footer class="site-footer">
+  <div class="footer-links">
+    <a href="politica-privacidad.html">Política de Privacidad</a>
+    <a href="terminos-condiciones.html">Términos y Condiciones</a>
+  </div>
   <p><a href="https://wa.link/n9zz8z" target="_blank" rel="noopener">Desarrollado por <strong>Fundación para el Desarrollo Profesional</strong> — Contribución de <strong>Escencial Consultora</strong></a></p>
   <img class="footer-logo" src="assets/logo2-trim.png" alt="ONE">
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@5.1.3/dist/signature_pad.umd.min.js"></script>
+<script src="firmas.js"></script>
 <script src="config.js"></script>
 <script>
-  const totalEtapas = 5;
+  const totalEtapas = 6;
   let etapaActual = 1;
-  const etiquetas = ['Datos personales','Información y ubicación','Formación','Disponibilidad e idiomas','Experiencia laboral'];
+  const etiquetas = ['Datos personales','Información y ubicación','Formación','Disponibilidad e idiomas','Experiencia laboral','Firmas y consentimiento'];
 
   const form = document.getElementById('form');
   const btnAtras = document.getElementById('btnAtras');
@@ -381,6 +453,9 @@
     e.preventDefault();
     if (!validarEtapa(etapaActual)) return;
 
+    // Validar firmas si estamos en la etapa 6
+    if (etapaActual === 6 && !validarFirmas()) return;
+
     aviso.style.display = 'none';
     btnEnviar.disabled = true;
     btnEnviar.textContent = 'Enviando…';
@@ -407,6 +482,16 @@
       }
     }
 
+    // Obtener firmas
+    let firmaConsentBase64 = '';
+    let firmaConfBase64 = '';
+    if (firmaConsent && !firmaConsent.isEmpty()) {
+      firmaConsentBase64 = firmaConsent.toBase64();
+    }
+    if (firmaConf && !firmaConf.isEmpty()) {
+      firmaConfBase64 = firmaConf.toBase64();
+    }
+
     const primerEmpleo = document.getElementById('primerEmpleo').checked;
     const payload = {
       action: 'postular',
@@ -429,7 +514,9 @@
       experiencias: JSON.stringify(primerEmpleo ? [] : recolectar('experiencias')),
       cvBase64: cvBase64,
       cvNombre: cvNombre,
-      cvTipo: cvTipo
+      cvTipo: cvTipo,
+      firmaConsentimientoBase64: firmaConsentBase64,
+      firmaConformidadBase64: firmaConfBase64
     };
 
     try {
@@ -451,6 +538,52 @@
   });
 
   mostrarEtapa(1);
+
+  /* ---------- Firmas ---------- */
+  let firmaConsent = null;
+  let firmaConf = null;
+
+  function initFirmas() {
+    firmaConsent = initFirma('consentimiento', { penColor: '#1a181d' });
+    firmaConf = initFirma('conformidad', { penColor: '#1a181d' });
+  }
+
+  // Inicializar firmas cuando se llega a la etapa 6
+  const observer = new MutationObserver(() => {
+    if (etapaActual === 6 && !firmaConsent) {
+      initFirmas();
+    }
+  });
+  observer.observe(document.getElementById('pasos'), { attributes: true, subtree: true });
+
+  /* ---------- Validacion de firmas ---------- */
+  function mostrarErrorFirma(id, mensaje) {
+    const el = document.getElementById('estado-' + id);
+    if (!el) return;
+    el.textContent = mensaje;
+    el.classList.add('firma-error');
+    el.classList.remove('firma-ok');
+  }
+
+  function validarFirmas() {
+    if (!firmaConsent || firmaConsent.isEmpty() || !firmaConsent.hasMinStrokes(3)) {
+      mostrarErrorFirma('consentimiento', 'Por favor, dibujá tu firma de consentimiento con al menos 3 trazos.');
+      return false;
+    }
+    if (!document.getElementById('check-consentimiento').checked) {
+      mostrarErrorFirma('consentimiento', 'Por favor, aceptá la Política de Privacidad.');
+      return false;
+    }
+    if (!firmaConf || firmaConf.isEmpty() || !firmaConf.hasMinStrokes(3)) {
+      mostrarErrorFirma('conformidad', 'Por favor, dibujá tu firma de conformidad con al menos 3 trazos.');
+      return false;
+    }
+    if (!document.getElementById('check-conformidad').checked) {
+      mostrarErrorFirma('conformidad', 'Por favor, confirmá que los datos son correctos.');
+      return false;
+    }
+    return true;
+  }
 </script>
 </body>
 </html>

@@ -134,6 +134,9 @@ textarea { resize: vertical; min-height: 92px; }
   gap: 14px;
 }
 .site-footer .footer-logo { height: 26px; width: auto; opacity: .95; }
+.footer-links { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.footer-links a { color: #fff; font-size: .85rem; font-weight: 700; text-decoration: none; }
+.footer-links a:hover { text-decoration: underline; }
 .site-footer p { margin: 0; color: var(--gris-cl); font-size: .85rem; white-space: nowrap; }
 .site-footer p a { color: inherit; text-decoration: none; }
 .site-footer p a:hover { text-decoration: underline; }
@@ -164,3 +167,135 @@ textarea { resize: vertical; min-height: 92px; }
 
 /* Evita que un campo desborde el ancho en pantallas muy chicas */
 input, select, textarea { max-width: 100%; }
+
+/* ===================================================================
+   MÓDULO DE FIRMAS
+   =================================================================== */
+
+.firma-seccion {
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  padding: 22px;
+  margin-bottom: 20px;
+  background: #faf9fd;
+}
+
+.firma-titulo {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: var(--dark);
+}
+
+.firma-desc {
+  color: var(--muted);
+  font-size: .88rem;
+  margin: 0 0 14px;
+}
+
+.firma-canvas-wrap {
+  position: relative;
+  border: 2px dashed var(--gris-cl);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  transition: border-color .2s;
+  touch-action: none;
+}
+
+.firma-canvas-wrap:focus-within,
+.firma-canvas-wrap:hover {
+  border-color: var(--pink);
+}
+
+.firma-canvas {
+  display: block;
+  width: 100%;
+  height: 160px;
+  cursor: crosshair;
+}
+
+.firma-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gris);
+  font-size: .9rem;
+  font-weight: 600;
+  pointer-events: none;
+  user-select: none;
+}
+
+.firma-controles {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.btn-firma-limpiar {
+  padding: 7px 14px !important;
+  font-size: .82rem !important;
+}
+
+.firma-estado {
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+.firma-ok {
+  color: var(--ok);
+}
+
+.firma-vacia {
+  color: var(--error);
+}
+
+.firma-error {
+  color: var(--error);
+}
+
+.verificacion-box {
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px 0;
+  background: #faf9fd;
+}
+
+.verificacion-box h2 {
+  font-size: 1rem;
+  margin: 0 0 6px;
+}
+
+.verificacion-box p {
+  color: var(--muted);
+  font-size: .86rem;
+  margin: 0 0 12px;
+}
+
+.verificacion-video,
+.verificacion-preview {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.firma-preview {
+  max-width: 200px;
+  max-height: 80px;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+/* ---------- Responsive firmas ---------- */
+@media (max-width: 640px) {
+  .firma-canvas { height: 180px; }
+  .firma-seccion { padding: 18px 14px; }
+}

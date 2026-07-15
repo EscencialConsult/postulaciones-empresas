@@ -8,7 +8,7 @@
  * Ejemplo:
  *   const API_URL = 'https://script.google.com/macros/s/AKfy.../exec';
  */
-const API_URL = 'https://script.google.com/macros/s/AKfycbzpd27vDYRIh_coJ82Wde5gek1kX4iTUz5hgEoFRocojiv6KtZGssS7zfeh9_DDEByECw/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxTe8gJrxVwBhCWRKT0xoslpolhLw9N8IdKUNuOEky-AgmNQ387V1Zy_9WZKauurfhGuA/exec';
 
 /**
  * Envía una acción al backend de Apps Script.

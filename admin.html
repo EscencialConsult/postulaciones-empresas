@@ -42,6 +42,10 @@
   .est-pendiente { background: rgba(228,199,106,.22); color: #92700a; }
   .est-aprobado { background: rgba(18,185,129,.16); color: #0f766e; }
   .est-rechazado { background: rgba(209,67,111,.16); color: #b0234f; }
+  .verif { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: .78rem; font-weight: 700; }
+  .verif-aprobado { background: rgba(18,185,129,.16); color: #0f766e; }
+  .verif-rechazado { background: rgba(209,67,111,.16); color: #b0234f; }
+  .verif-pendiente, .verif-no_verificado { background: rgba(228,199,106,.22); color: #92700a; }
 
   .btn-mini { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--borde); background: #fff; cursor: pointer; font-weight: 700; font-size: .82rem; color: var(--dark); }
   .btn-aprobar { border-color: transparent; background: linear-gradient(135deg,#6be1e3,#12b981); color: #04352a; }
@@ -154,13 +158,14 @@
         <div class="cargando" id="cargandoEmp">Cargando empresas…</div>
         <table id="tablaEmp" class="oculto">
           <thead><tr>
-            <th>Empresa</th><th>CUIT/CUIL</th><th>Rubro</th><th>Contacto</th><th>Estado</th><th>Acciones</th>
+            <th>Empresa</th><th>CUIT/CUIL</th><th>Rubro</th><th>Contacto</th><th>Estado</th><th>Verificación</th><th>Acciones</th>
           </tr></thead>
           <tbody id="tbodyEmp"></tbody>
         </table>
         <div class="vacio oculto" id="vacioEmp">No hay empresas registradas.</div>
       </div>
     </section>
+
   </div>
 </div>
 
@@ -287,7 +292,8 @@
       empresas = r.empresas;
       pintarEmpresas(r.empresas);
       const pend = r.empresas.filter(e => e.estado === 'pendiente').length;
-      document.getElementById('resumenEmp').textContent = `${r.total} empresa(s) · ${pend} pendiente(s)`;
+      const sinVerificacion = r.empresas.filter(e => (e.estadoVerificacion || 'pendiente') !== 'aprobado').length;
+      document.getElementById('resumenEmp').textContent = r.total + ' empresa(s) · ' + pend + ' pendiente(s) · ' + sinVerificacion + ' sin verificación aprobada';
       document.getElementById('badgePend').textContent = pend ? ` (${pend})` : '';
     } catch (ex) {
       document.getElementById('resumenEmp').textContent = 'Error: ' + ex.message;
@@ -311,6 +317,7 @@
         <td>${esc(e.rubro) || '—'}</td>
         <td>${esc(contacto) || '—'}</td>
         <td><span class="est est-${esc(e.estado)}">${esc(e.estado)}</span></td>
+        <td>${badgeVerificacion(e.estadoVerificacion)}</td>
         <td class="acciones-cel"></td>`;
       tr.onclick = () => abrirEmpresa(e);
       const cel = tr.querySelector('.acciones-cel');
@@ -328,6 +335,12 @@
       }
       tbody.appendChild(tr);
     });
+  }
+
+  function badgeVerificacion(estado) {
+    const v = estado || 'pendiente';
+    const texto = v === 'aprobado' ? 'Verificado' : (v === 'rechazado' ? 'No verificado' : 'Pendiente');
+    return `<span class="verif verif-${esc(v)}">${texto}</span>`;
   }
 
   async function cambiarEstado(usuario, estado) {
@@ -348,7 +361,11 @@
       <div class="seccion"><h3>Datos de la empresa</h3>
         ${dato('Razón social', e.empresa)}${dato('CUIT / CUIL', e.cuit)}
         ${dato('Rubro', e.rubro)}
-        ${dato('Estado', e.estado)}${dato('Registrada', fecha(e.fecha))}
+        ${dato('DNI representante', e.dni)}
+        ${dato('Estado', e.estado)}${dato('Verificación', e.estadoVerificacion)}
+        ${dato('Confianza verificacion', e.confianzaVerificacion)}
+        ${dato('Aceptó términos', e.aceptoTerminos)}
+        ${dato('Registrada', fecha(e.fecha))}
       </div>
       <div class="seccion"><h3>Contacto</h3>
         ${dato('Nombre y apellido', contacto)}
@@ -395,6 +412,21 @@
         <div class="item-list"><strong>${esc(x.cargo)} ${x.empresa ? '· ' + esc(x.empresa) : ''}</strong>
           ${esc(x.funciones) || ''}</div>`).join('') + `</div>`;
     }
+
+    // Firmas
+    html += `<div class="seccion"><h3>Firmas</h3>`;
+    if (r.FirmaConsentimientoUrl) {
+      html += `<div class="dato"><span class="k">Consentimiento</span><span><img src="${esc(r.FirmaConsentimientoUrl)}" class="firma-preview" alt="Firma consentimiento"> <small style="color:var(--ok)">✓ Firmado</small></span></div>`;
+    } else {
+      html += `<div class="dato"><span class="k">Consentimiento</span><span style="color:var(--muted)">Pendiente</span></div>`;
+    }
+    if (r.FirmaConformidadUrl) {
+      html += `<div class="dato"><span class="k">Conformidad</span><span><img src="${esc(r.FirmaConformidadUrl)}" class="firma-preview" alt="Firma conformidad"> <small style="color:var(--ok)">✓ Firmado</small></span></div>`;
+    } else {
+      html += `<div class="dato"><span class="k">Conformidad</span><span style="color:var(--muted)">Pendiente</span></div>`;
+    }
+    html += `</div>`;
+
     document.getElementById('modal').innerHTML = html;
     document.getElementById('overlay').classList.remove('oculto');
   }
