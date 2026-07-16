@@ -454,17 +454,15 @@
         <input data-c="centro" required><div class="error-msg">Requerido</div></div>
       <div class="check" style="margin:2px 0 14px">
         <input type="checkbox" data-c="completada" id="comp-${nivel}">
-        <label for="comp-${nivel}">Completada</label>
+        <label for="comp-${nivel}">Completada (si no la terminaste, dejala sin marcar)</label>
       </div>
-      <div class="fila">
-        <div class="campo"><label>Desde (mes/año) <span class="req">*</span></label>
-          <input data-c="desde" type="month" required><div class="error-msg">Requerido</div></div>
-        <div class="campo oculto" data-hasta><label>Hasta (mes/año) <span class="req">*</span></label>
-          <input data-c="hasta" type="month" required><div class="error-msg">Requerido</div></div>
-      </div>`;
+      <div class="campo oculto" data-hasta><label>Fecha de finalización (mes/año) <span class="req">*</span></label>
+        <input data-c="hasta" type="month" required><div class="error-msg">Requerido</div></div>`;
     const chk = div.querySelector('[data-c="completada"]');
     const hastaWrap = div.querySelector('[data-hasta]');
-    chk.addEventListener('change', () => hastaWrap.classList.toggle('oculto', !chk.checked));
+    const sync = () => hastaWrap.classList.toggle('oculto', !chk.checked);
+    chk.addEventListener('change', sync);
+    sync();
     return div;
   }
 
@@ -534,6 +532,19 @@
       if (document.querySelectorAll('#idiomas .bloque').length > 1) div.remove();
     };
     document.getElementById('idiomas').appendChild(div);
+
+    // Si el idioma es "Ninguno", no se pide el nivel.
+    const idiomaHidden = div.querySelector('[data-c="idioma"]');
+    const nivelSel = div.querySelector('[data-c="nivel"]');
+    const nivelCampo = nivelSel.closest('.campo');
+    const syncNivel = () => {
+      const ninguno = (idiomaHidden.value || '').trim().toLowerCase() === 'ninguno';
+      nivelCampo.classList.toggle('oculto', ninguno);
+      nivelSel.required = !ninguno;
+      if (ninguno) nivelSel.value = '';
+    };
+    idiomaHidden.addEventListener('change', syncNivel);
+
     div._selIdioma = crearSelectorBuscable({
       opciones: IDIOMAS,
       inputId: 'idiomaBuscar-' + n,
@@ -961,7 +972,6 @@
   }
   function llenarFormacionFija(div, obj) {
     const centro = div.querySelector('[data-c="centro"]'); if (centro) centro.value = obj.centro || '';
-    const desde = div.querySelector('[data-c="desde"]'); if (desde) desde.value = obj.desde || '';
     const comp = div.querySelector('[data-c="completada"]');
     const hastaWrap = div.querySelector('[data-hasta]');
     const hasta = div.querySelector('[data-c="hasta"]');

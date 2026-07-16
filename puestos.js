@@ -325,6 +325,11 @@ function crearSelectorBuscable(opts) {
   var OTROS = 'Otros (especificar)';
   var seleccion = ''; // texto mostrado válido (opción elegida u "Otros…")
 
+  // Avisa a quien quiera escuchar que el valor elegido cambió.
+  function emitir() {
+    try { hidden.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {}
+  }
+
   function escAttr(s) {
     return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
       .replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -363,6 +368,7 @@ function crearSelectorBuscable(opts) {
       if (otroInput) otroInput.value = '';
       cerrar();
     }
+    emitir();
   }
 
   // Fija (o limpia con '') el valor del selector de forma programática.
@@ -376,6 +382,7 @@ function crearSelectorBuscable(opts) {
       if (otroWrap) otroWrap.classList.add('oculto');
       if (otroInput) otroInput.value = '';
       cerrar();
+      emitir();
       return;
     }
     if (opciones.indexOf(vi) !== -1) {
@@ -391,6 +398,7 @@ function crearSelectorBuscable(opts) {
       seleccion = vi; input.value = vi; hidden.value = vi;
     }
     cerrar();
+    emitir();
   }
 
   if (opts.valorInicial) aplicarValor(opts.valorInicial);
@@ -415,7 +423,7 @@ function crearSelectorBuscable(opts) {
 
   if (otroInput) {
     otroInput.addEventListener('input', function () {
-      if (seleccion === OTROS) hidden.value = otroInput.value.trim();
+      if (seleccion === OTROS) { hidden.value = otroInput.value.trim(); emitir(); }
     });
   }
 
