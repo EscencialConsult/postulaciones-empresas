@@ -33,7 +33,10 @@
   .busq-card2 { text-decoration: none; color: inherit; overflow: hidden; padding: 0; display: flex; flex-direction: column;
                 transition: transform .16s ease, box-shadow .2s ease, border-color .2s ease; }
   .busq-card2:hover { transform: translateY(-5px); box-shadow: 0 22px 44px rgba(26,24,29,.14); border-color: var(--pink); }
-  .busq-card2-top { height: 122px; background: #e9d9f6 url('assets/busqueda-cover.svg') center/cover no-repeat; }
+  /* Usa la foto assets/busqueda-cover.jpg si existe; si no, cae en la ilustración. */
+  .busq-card2-top { height: 122px; background:
+      url('assets/busqueda-cover.jpg') center/cover no-repeat,
+      #e9d9f6 url('assets/busqueda-cover.svg') center/cover no-repeat; }
   .busq-card2-body { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
   .busq-badge2 { align-self: flex-start; background: var(--grad); color: var(--dark); font-size: .68rem; font-weight: 800;
                  text-transform: uppercase; letter-spacing: .05em; padding: 4px 11px; border-radius: 999px; }
@@ -52,7 +55,9 @@
                 display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 60; }
   .bd-modal { background: #fff; border-radius: 18px; max-width: 560px; width: 100%; max-height: 90vh;
               overflow-y: auto; box-shadow: 0 30px 60px rgba(26,24,29,.28); position: relative; }
-  .bd-cover { height: 150px; background: #e9d9f6 url('assets/busqueda-cover.svg') center/cover no-repeat; border-radius: 18px 18px 0 0; }
+  .bd-cover { height: 150px; background:
+      url('assets/busqueda-cover.jpg') center/cover no-repeat,
+      #e9d9f6 url('assets/busqueda-cover.svg') center/cover no-repeat; border-radius: 18px 18px 0 0; }
   .bd-close { position: absolute; top: 12px; right: 14px; z-index: 2; width: 34px; height: 34px; border-radius: 50%;
               border: none; background: rgba(255,255,255,.92); font-size: 1.4rem; cursor: pointer; line-height: 1; color: var(--dark); }
   .bd-body { padding: 20px 24px 26px; }
