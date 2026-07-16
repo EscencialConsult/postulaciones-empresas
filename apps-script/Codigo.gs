@@ -446,21 +446,12 @@ function verificarIdentidadDNI(d) {
   var dni = limpiar(d.dni).replace(/[^0-9]/g, '');
   if (dni.length !== 8) return { ok: false, error: 'El DNI debe tener 8 dígitos.' };
   if (!d.selfieBase64) return { ok: false, error: 'Falta la selfie del representante.' };
-  if (!d.dniFrenteBase64) return { ok: false, error: 'Falta la foto del frente del DNI.' };
-  if (!d.dniDorsoBase64) return { ok: false, error: 'Falta la foto del dorso del DNI.' };
   if (!d.firmaLegalBase64) return { ok: false, error: 'Falta la firma legal del representante.' };
-  if (limpiar(d.dniFrenteValidacion) !== 'rostro_documento_y_estructura') {
-    return { ok: false, error: 'No se pudo validar que el frente corresponda a un DNI argentino válido.' };
-  }
-  var dniDorsoValidacion = limpiar(d.dniDorsoValidacion);
-  if (dniDorsoValidacion !== 'mrz_validado' && dniDorsoValidacion !== 'mrz_visual_validado') {
-    return { ok: false, error: 'No se pudo leer y validar la zona MRZ del dorso del DNI argentino.' };
-  }
   return {
     ok: true,
     estado: 'pendiente',
     confianza: 'revision_manual',
-    observacion: 'Comparar manualmente la firma registrada con la firma visible en el DNI.'
+    observacion: 'Revisar manualmente la selfie y la firma legal registrada.'
   };
 }
 
@@ -514,20 +505,12 @@ function registrarEmpresa(d) {
   var verificacion = verificarIdentidadDNI({
     dni: dni,
     selfieBase64: d.selfieBase64,
-    dniFrenteBase64: d.dniFrenteBase64,
-    dniDorsoBase64: d.dniDorsoBase64,
-    firmaLegalBase64: d.firmaLegalBase64,
-    dniFrenteValidacion: d.dniFrenteValidacion,
-    dniDorsoValidacion: d.dniDorsoValidacion
+    firmaLegalBase64: d.firmaLegalBase64
   });
   if (!verificacion.ok) return verificacion;
 
   var selfieGuardada = guardarImagenVerificacion(d.selfieBase64, 'selfie', usuario);
   if (selfieGuardada.error) return { ok: false, error: selfieGuardada.error };
-  var frenteGuardado = guardarImagenVerificacion(d.dniFrenteBase64, 'dni_frente', usuario);
-  if (frenteGuardado.error) return { ok: false, error: frenteGuardado.error };
-  var dorsoGuardado = guardarImagenVerificacion(d.dniDorsoBase64, 'dni_dorso', usuario);
-  if (dorsoGuardado.error) return { ok: false, error: dorsoGuardado.error };
   var firmaLegal = guardarArchivoFirma(d.firmaLegalBase64, 'empresa_legal_' + usuario + '.png');
   if (firmaLegal.error) return { ok: false, error: firmaLegal.error };
 
@@ -540,14 +523,8 @@ function registrarEmpresa(d) {
   if (selfieLivenessEstado) {
     detalleVerificacion = [detalleVerificacion, 'Selfie validada con MediaPipe' + (selfieLivenessMetodo ? ' (' + selfieLivenessMetodo + ')' : '')].filter(Boolean).join(' - ');
   }
-  if (limpiar(d.dniFrenteValidacion)) {
-    detalleVerificacion = [detalleVerificacion, 'Frente DNI: ' + limpiar(d.dniFrenteValidacion)].filter(Boolean).join(' - ');
-  }
-  if (limpiar(d.dniDorsoValidacion)) {
-    detalleVerificacion = [detalleVerificacion, 'Dorso DNI: ' + limpiar(d.dniDorsoValidacion) + (limpiar(d.dniDorsoMetodo) ? ' (' + limpiar(d.dniDorsoMetodo) + ')' : '')].filter(Boolean).join(' - ');
-  }
 
-  // La firma del DNI y la firma registrada quedan para revisión manual del administrador.
+  // La selfie y la firma registrada quedan para revisión manual del administrador.
   hoja.appendRow([
     usuario, password, empresa, '', '', email, new Date(), 'empresa', estadoCuenta,
     cuit, rubro, nombre, apellido, telefono,
@@ -563,8 +540,8 @@ function registrarEmpresa(d) {
     '',
     selfieLivenessEstado || '',
     selfieLivenessFecha || '',
-    frenteGuardado.url,
-    dorsoGuardado.url,
+    '',
+    '',
     firmaLegal.url,
     new Date()
   ]);
@@ -573,7 +550,7 @@ function registrarEmpresa(d) {
     ok: true,
     pendiente: estadoCuenta !== 'aprobado',
     verificacion: estadoVerificacion,
-    mensaje: 'Tu cuenta fue creada y quedó pendiente de revisión. Administración comparará la firma del DNI con la firma registrada.'
+    mensaje: 'Tu cuenta fue creada y quedó pendiente de revisión. Administración revisará la selfie y la firma registrada.'
   };
 }
 

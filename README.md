@@ -49,17 +49,15 @@ Se crea un usuario de ejemplo en la pestaña `Usuarios`:
 > (Usuario / Password / Empresa). Las columnas Token y TokenExpira se llenan solas.
 
 ### 3.1) Verificación manual de empresas
-El registro de empresas solicita selfie del representante y fotos del frente y dorso del DNI.
-Las imágenes se guardan en Drive y la empresa queda pendiente para revisión desde
-`admin.html`. Administración puede comparar manualmente la firma visible en el DNI con
-la firma legal registrada y aprobar o rechazar la cuenta.
-Antes de enviarlas al backend, el navegador redimensiona y comprime las capturas para
-reducir el espacio ocupado en Drive: selfie hasta 900 px y DNI hasta 1200 px.
+El registro de empresas solicita una selfie del representante y la firma legal.
+La selfie y la firma se guardan en Drive y la empresa queda pendiente para revisión
+desde `admin.html`. Administración puede revisar manualmente la evidencia cargada y
+aprobar o rechazar la cuenta.
+Antes de enviarla al backend, el navegador redimensiona y comprime la selfie hasta
+900 px para reducir el espacio ocupado en Drive.
 La selfie se valida en el navegador con MediaPipe: se detecta un rostro centrado y
 se pide una señal simple de vida, como parpadear o mover apenas la cabeza. No requiere
 backend propio ni servicios pagos.
-El dorso del DNI valida la zona MRZ con OCR local o detección visual fuerte de las
-tres líneas inferiores. Si no se detecta la MRZ, la foto no queda aceptada.
 
 ### 4) Publicar como Aplicación Web
 1. Arriba a la derecha: **Implementar → Nueva implementación**.
@@ -111,6 +109,24 @@ a cualquier hosting estático gratuito:
 > hoja de cálculo (se genera sola en la primera llamada del backend, o ejecutando
 > `setup()`). Como cambió `Codigo.gs`, hay que **volver a implementar** el Apps Script
 > (ver «Importante sobre cambios» más abajo) para que las nuevas acciones funcionen.
+
+---
+
+## Roadmap: notificaciones de vacantes
+
+Plan guardado para implementar emails automáticos cuando una vacante coincida con
+el perfil de un postulante:
+
+1. Crear la hoja `NotificacionesVacantes` para registrar fecha, búsqueda, postulante,
+   puntaje, motivos, estado y error.
+2. Agregar una función de coincidencia entre postulante y vacante con puntaje por
+   puesto, ubicación, habilidades, formación, idioma y experiencia relacionada.
+3. Enviar emails automáticamente cuando una empresa publique una búsqueda activa.
+4. Evitar duplicados y limitar cantidad de emails por postulante por día.
+5. Agregar preferencia del postulante para recibir o no oportunidades por email.
+6. Mostrar en el panel cantidad de candidatos compatibles y emails enviados.
+7. Agregar acción manual para notificar candidatos compatibles si una búsqueda se
+   activa después de estar en borrador.
 
 ---
 

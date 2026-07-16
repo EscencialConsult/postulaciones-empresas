@@ -22,13 +22,31 @@
   .registro-nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 18px; }
   .registro-nav .btn { min-width: 140px; }
   .registro-nav .btn-prim { margin-left: auto; }
-  .capturas-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-  .captura-card { border: 1px solid var(--borde); border-radius: 12px; padding: 12px; background: #fff; }
-  .captura-card h3 { font-size: .9rem; margin: 0 0 4px; }
-  .captura-card p { color: var(--muted); font-size: .8rem; margin: 0 0 10px; }
+  .verificacion-layout { display: grid; grid-template-columns: minmax(230px, .85fr) minmax(0, 1.15fr); gap: 16px; align-items: stretch; }
+  .verificacion-box.registro-verificacion { padding: 18px; margin: 12px 0 14px; background: #fff; border-radius: 14px; }
+  .verificacion-intro h2 { margin: 0 0 4px; font-size: 1rem; }
+  .verificacion-intro p { margin: 0 0 14px; color: var(--muted); font-size: .88rem; }
+  .capturas-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .captura-card { border: 1px solid var(--borde); border-radius: 12px; padding: 14px; background: #fff; }
+  .captura-card h3 { font-size: .95rem; margin: 0 0 4px; }
+  .captura-card p { color: var(--muted); font-size: .82rem; margin: 0 0 12px; }
   .captura-card .firma-controles { flex-wrap: wrap; gap: 8px; }
+  .captura-card .firma-estado { display: inline-flex; align-items: center; min-height: 28px; margin-top: 10px; padding: 4px 10px; border-radius: 999px; background: #faf9fd; color: var(--muted); }
+  .captura-card[data-captura="selfie"] .verificacion-video,
+  .captura-card[data-captura="selfie"] .verificacion-preview { aspect-ratio: 4 / 5; max-height: 260px; object-fit: cover; }
   .captura-card[data-captura^="dni"] .verificacion-video,
   .captura-card[data-captura^="dni"] .verificacion-preview { aspect-ratio: 16 / 10; object-fit: contain; }
+  .legal-card { display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--borde); border-radius: 14px; padding: 18px; background: #faf9fd; }
+  .legal-check { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 1px solid var(--borde); border-radius: 12px; background: #fff; font-size: .9rem; line-height: 1.4; }
+  .legal-check input { width: 18px; height: 18px; margin-top: 2px; flex: 0 0 auto; accent-color: var(--pink); }
+  .legal-check label { margin: 0; font-weight: 600; color: var(--dark); }
+  .legal-check a { color: var(--acento); font-weight: 800; text-decoration: none; }
+  .legal-check a:hover { text-decoration: underline; }
+  .registro-firma { margin: 0; padding: 0; border: 0; background: transparent; }
+  .registro-firma .firma-desc { font-size: .86rem; line-height: 1.45; margin-bottom: 12px; }
+  .registro-firma .firma-canvas-wrap { border-width: 1px; border-style: solid; min-height: 180px; }
+  .registro-firma .firma-canvas { height: 180px; }
+  .registro-firma .firma-placeholder { color: #9b9ab0; }
   .firma-advertencia { color: #92700a; }
   .login h1 { font-size: 1.5rem; margin: 14px 0 4px; }
   .login > p { color: var(--muted); margin: 0 0 24px; font-size: .92rem; }
@@ -235,13 +253,16 @@
     .registro-card { max-width: 100%; }
     .registro-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .registro-grid { grid-template-columns: 1fr; }
+    .verificacion-layout { grid-template-columns: 1fr; }
     .capturas-grid { grid-template-columns: 1fr; }
     .verificacion-box { padding: 14px 12px; }
+    .verificacion-box.registro-verificacion { padding: 14px; }
+    .legal-card { padding: 14px; }
     .captura-card { padding: 12px; }
     .captura-card .firma-controles { flex-direction: column; align-items: stretch; }
     .captura-card .firma-controles .btn { width: 100%; min-height: 42px; }
     .captura-card[data-captura="selfie"] .verificacion-video,
-    .captura-card[data-captura="selfie"] .verificacion-preview { aspect-ratio: 3 / 4; }
+    .captura-card[data-captura="selfie"] .verificacion-preview { aspect-ratio: 3 / 4; max-height: none; }
     .captura-card[data-captura^="dni"] .verificacion-video,
     .captura-card[data-captura^="dni"] .verificacion-preview { aspect-ratio: 4 / 3; }
     .registro-nav { flex-direction: column-reverse; }
@@ -346,72 +367,52 @@
 
     <section class="registro-paso" data-reg-step="4">
       <h2>Verificación y legales</h2>
-      <div class="verificacion-box">
-        <h2>Verificación de identidad</h2>
-        <p>Tomá una selfie y fotos claras del frente y dorso del DNI del representante. Revisamos cada foto antes de aceptarla.</p>
-        <div class="capturas-grid">
-          <div class="captura-card" data-captura="selfie">
-            <h3>Selfie</h3>
-            <p>Rostro centrado y con buena luz.</p>
-            <video id="video-selfie" class="verificacion-video oculto" playsinline muted></video>
-            <canvas id="canvas-selfie" class="oculto"></canvas>
-            <img id="preview-selfie" class="verificacion-preview oculto" alt="Selfie capturada">
-            <div class="firma-controles">
-              <button type="button" class="btn btn-sec btn-firma-limpiar" data-captura-start="selfie">Abrir cámara</button>
-              <button type="button" class="btn btn-sec btn-firma-limpiar oculto" data-captura-shot="selfie">Tomar foto</button>
-              <button type="button" class="btn btn-sec btn-firma-limpiar oculto" data-captura-retry="selfie">Reintentar</button>
-            </div>
-            <div class="firma-estado" id="estado-selfie">Pendiente.</div>
-          </div>
-          <div class="captura-card" data-captura="dniFrente">
-            <h3>DNI frente</h3>
-            <p>Que se vean número, nombre y la foto del documento.</p>
-            <video id="video-dniFrente" class="verificacion-video oculto" playsinline muted></video>
-            <canvas id="canvas-dniFrente" class="oculto"></canvas>
-            <img id="preview-dniFrente" class="verificacion-preview oculto" alt="Frente del DNI capturado">
-            <div class="firma-controles">
-              <button type="button" class="btn btn-sec btn-firma-limpiar" data-captura-start="dniFrente">Abrir cámara</button>
-              <button type="button" class="btn btn-sec btn-firma-limpiar oculto" data-captura-shot="dniFrente">Tomar foto</button>
-              <button type="button" class="btn btn-sec btn-firma-limpiar oculto" data-captura-retry="dniFrente">Reintentar</button>
-            </div>
-            <div class="firma-estado" id="estado-dniFrente">Pendiente.</div>
-          </div>
-          <div class="captura-card" data-captura="dniDorso">
-            <h3>DNI dorso</h3>
-            <p>Que se vea completo el reverso del documento.</p>
-            <video id="video-dniDorso" class="verificacion-video oculto" playsinline muted></video>
-            <canvas id="canvas-dniDorso" class="oculto"></canvas>
-            <img id="preview-dniDorso" class="verificacion-preview oculto" alt="Dorso del DNI capturado">
-            <div class="firma-controles">
-              <button type="button" class="btn btn-sec btn-firma-limpiar" data-captura-start="dniDorso">Abrir cámara</button>
-              <button type="button" class="btn btn-sec btn-firma-limpiar oculto" data-captura-shot="dniDorso">Tomar foto</button>
-              <button type="button" class="btn btn-sec btn-firma-limpiar oculto" data-captura-retry="dniDorso">Reintentar</button>
-            </div>
-            <div class="firma-estado" id="estado-dniDorso">Pendiente.</div>
-          </div>
+      <div class="verificacion-box registro-verificacion">
+        <div class="verificacion-intro">
+          <h2>Confirmá la identidad del representante</h2>
+          <p>Completá la selfie y la firma para enviar la cuenta a revisión.</p>
         </div>
-      </div>
-      <div class="check" style="margin-top:16px">
-        <input type="checkbox" id="rAceptoTerminos" required>
-        <label for="rAceptoTerminos">
-          He leído y acepto los
-          <a href="terminos-condiciones.html" data-legal-doc="terminos">Términos y Condiciones</a>
-          y la
-          <a href="politica-privacidad.html" data-legal-doc="politica">Política de Privacidad</a>
-        </label>
-      </div>
-      <div class="firma-seccion" id="firma-empresa-legal">
-        <h3 class="firma-titulo">Firma del representante</h3>
-        <p class="firma-desc">Al firmar, el representante confirma la aceptación de los documentos legales y declara que los datos enviados son correctos y veraces.</p>
-        <div class="firma-canvas-wrap">
-          <canvas id="canvas-empresa-legal" class="firma-canvas"></canvas>
-          <div class="firma-placeholder" id="placeholder-empresa-legal">
-            Firmá aquí con el dedo o el mouse
+        <div class="verificacion-layout">
+          <div class="capturas-grid">
+            <div class="captura-card" data-captura="selfie">
+              <h3>Selfie</h3>
+              <p>Rostro centrado, buena luz y una sola persona en cámara.</p>
+              <video id="video-selfie" class="verificacion-video oculto" playsinline muted></video>
+              <canvas id="canvas-selfie" class="oculto"></canvas>
+              <img id="preview-selfie" class="verificacion-preview oculto" alt="Selfie capturada">
+              <div class="firma-controles">
+                <button type="button" class="btn btn-sec btn-firma-limpiar" data-captura-start="selfie">Abrir cámara</button>
+                <button type="button" class="btn btn-sec btn-firma-limpiar oculto" data-captura-shot="selfie">Tomar foto</button>
+                <button type="button" class="btn btn-sec btn-firma-limpiar oculto" data-captura-retry="selfie">Reintentar</button>
+              </div>
+              <div class="firma-estado" id="estado-selfie">Pendiente.</div>
+            </div>
           </div>
-        </div>
-        <div class="firma-controles">
-          <button type="button" class="btn btn-sec btn-firma-limpiar" id="limpiar-empresa-legal">Borrar firma</button>
-          <span class="firma-estado" id="estado-empresa-legal"></span>
+          <div class="legal-card">
+            <div class="legal-check">
+              <input type="checkbox" id="rAceptoTerminos" required>
+              <label for="rAceptoTerminos">
+                He leído y acepto los
+                <a href="terminos-condiciones.html" data-legal-doc="terminos">Términos y Condiciones</a>
+                y la
+                <a href="politica-privacidad.html" data-legal-doc="politica">Política de Privacidad</a>
+              </label>
+            </div>
+            <div class="firma-seccion registro-firma" id="firma-empresa-legal">
+              <h3 class="firma-titulo">Firma del representante</h3>
+              <p class="firma-desc">Al firmar, el representante confirma la aceptación de los documentos legales y declara que los datos enviados son correctos y veraces.</p>
+              <div class="firma-canvas-wrap">
+                <canvas id="canvas-empresa-legal" class="firma-canvas"></canvas>
+                <div class="firma-placeholder" id="placeholder-empresa-legal">
+                  Firmá aquí con el dedo o el mouse
+                </div>
+              </div>
+              <div class="firma-controles">
+                <button type="button" class="btn btn-sec btn-firma-limpiar" id="limpiar-empresa-legal">Borrar firma</button>
+                <span class="firma-estado" id="estado-empresa-legal"></span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -549,7 +550,7 @@
         <div class="cuenta-head">
           <div>
             <h2>Verificación de identidad</h2>
-            <p>Administración revisará la selfie y las fotos del DNI cargadas durante el registro.</p>
+            <p>Administración revisará la selfie y la firma cargadas durante el registro.</p>
           </div>
         </div>
         <div id="verifPanelStatus" style="margin-bottom:14px"></div>
@@ -859,7 +860,6 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@5.1.3/dist/signature_pad.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="firmas.js"></script>
 <script src="puestos.js"></script>
 <script src="config.js"></script>
@@ -1001,8 +1001,8 @@
   });
   mostrarPasoRegistro(1);
 
-  const capturasVerificacion = { selfie: '', dniFrente: '', dniDorso: '' };
-  const advertenciasCaptura = { selfie: '', dniFrente: '', dniDorso: '' };
+  const capturasVerificacion = { selfie: '' };
+  const advertenciasCaptura = { selfie: '' };
   const streamsCaptura = {};
   let capturaActiva = '';
   let mediaPipeVision = null;
@@ -1011,9 +1011,7 @@
   const validacionDocumento = { dniFrente: '', dniDorso: '', dniDorsoMetodo: '' };
   let tesseractMrzWorker = null;
   const compresionCapturas = {
-    selfie: { maxLado: 900, calidad: 0.7 },
-    dniFrente: { maxLado: 1200, calidad: 0.76 },
-    dniDorso: { maxLado: 1200, calidad: 0.76 }
+    selfie: { maxLado: 900, calidad: 0.7 }
   };
   const parametrosValidacionImagen = {
     anchoMin: 320,
@@ -2022,20 +2020,8 @@
     if (pass !== pass2) {
       err.textContent = 'Las contraseñas no coinciden.'; err.style.display = 'block'; return;
     }
-    if (!capturasVerificacion.selfie || !capturasVerificacion.dniFrente || !capturasVerificacion.dniDorso) {
-      err.textContent = 'Faltan fotos: selfie, frente y dorso del DNI.';
-      err.style.display = 'block';
-      mostrarPasoRegistro(4);
-      return;
-    }
-    if (validacionDocumento.dniFrente !== 'rostro_documento_y_estructura') {
-      err.textContent = 'Repetí el frente del DNI: completo y legible.';
-      err.style.display = 'block';
-      mostrarPasoRegistro(4);
-      return;
-    }
-    if (validacionDocumento.dniDorso !== 'mrz_validado' && validacionDocumento.dniDorso !== 'mrz_visual_validado') {
-      err.textContent = 'Repetí el dorso: que se vean las líneas de abajo.';
+    if (!capturasVerificacion.selfie) {
+      err.textContent = 'Falta la selfie del representante.';
       err.style.display = 'block';
       mostrarPasoRegistro(4);
       return;
@@ -2055,15 +2041,10 @@
         telefono: document.getElementById('rTelefono').value,
         password: pass,
         selfieBase64: capturasVerificacion.selfie,
-        dniFrenteBase64: capturasVerificacion.dniFrente,
-        dniDorsoBase64: capturasVerificacion.dniDorso,
         firmaLegalBase64: firmaEmpresaLegal.toBase64(),
         selfieLivenessEstado: selfieLiveness && selfieLiveness.estado ? selfieLiveness.estado : '',
         selfieLivenessFecha: selfieLiveness && selfieLiveness.fecha ? selfieLiveness.fecha : '',
         selfieLivenessMetodo: selfieLiveness && selfieLiveness.metodo ? selfieLiveness.metodo : '',
-        dniFrenteValidacion: validacionDocumento.dniFrente || '',
-        dniDorsoValidacion: validacionDocumento.dniDorso || '',
-        dniDorsoMetodo: validacionDocumento.dniDorsoMetodo || '',
         aceptoTerminos: document.getElementById('rAceptoTerminos').checked
       });
       if (r.ok) {
@@ -2184,9 +2165,9 @@
     } else {
       seccionVerif.style.display = '';
       if (estadoVerif === 'rechazado') {
-        statusEl.innerHTML = '<div class="info" style="border-color:rgba(209,67,111,.5);background:rgba(209,67,111,.1);color:#b0234f">La documentación no fue aprobada. Contactá a administración para enviar nuevas fotos.</div>';
+        statusEl.innerHTML = '<div class="info" style="border-color:rgba(209,67,111,.5);background:rgba(209,67,111,.1);color:#b0234f">La verificación no fue aprobada. Contactá a administración para revisar la selfie o la firma.</div>';
       } else {
-        statusEl.innerHTML = '<div class="info">Tu verificación está pendiente. Administración revisará la selfie y las fotos del DNI cargadas en el registro.</div>';
+        statusEl.innerHTML = '<div class="info">Tu verificación está pendiente. Administración revisará la selfie y la firma cargadas en el registro.</div>';
       }
     }
 
