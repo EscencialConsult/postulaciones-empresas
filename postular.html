@@ -111,9 +111,59 @@
 </div>
 
 <div class="contenedor">
+
+  <!-- Barra de sesión (logueado) -->
+  <div id="cuentaBar" class="oculto card" style="padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <span style="font-size:.9rem;color:var(--muted)">Sesión iniciada: <strong id="cuentaEmail" style="color:var(--dark)"></strong></span>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-sec" id="btnMiPerfil" type="button">Mi perfil / CV</button>
+      <button class="btn btn-sec" id="btnSalirPost" type="button">Salir</button>
+    </div>
+  </div>
+
+  <!-- GATE: iniciar sesión / crear cuenta -->
+  <div id="gateCuenta">
+    <div class="intro" style="margin-bottom:16px">
+      <span class="pill"><span class="dot"></span>Cuenta de postulante</span>
+      <h1>Ingresá a tu cuenta</h1>
+      <p>Con tu cuenta cargás tu CV una sola vez y te postulás a cualquier búsqueda en segundos.</p>
+    </div>
+    <form id="loginPostForm" class="card tarjeta" style="max-width:440px;margin:0 auto" novalidate>
+      <div class="campo"><label>Email</label>
+        <input id="lpEmail" type="email" autocomplete="username" required></div>
+      <div class="campo"><label>Contraseña</label>
+        <input id="lpPassword" type="password" autocomplete="current-password" required></div>
+      <button class="btn btn-prim btn-w" id="btnLoginPost" type="submit">Iniciar sesión</button>
+      <div class="error-msg" id="lpErr" style="display:none"></div>
+      <p style="text-align:center;margin:16px 0 0;font-size:.9rem;color:var(--muted)">¿No tenés cuenta?
+        <a href="#" id="irRegistroPost" style="color:var(--acento);font-weight:700;text-decoration:none">Creá tu cuenta</a></p>
+    </form>
+  </div>
+
+  <!-- POSTULARSE a una búsqueda (logueado, reusando el perfil) -->
+  <div id="aplicarWrap" class="oculto">
+    <div class="intro" style="margin-bottom:14px">
+      <span class="pill"><span class="dot"></span>Postularte</span>
+      <h1>Confirmá tu postulación</h1>
+      <p>Te postulás con el perfil que ya tenés cargado. Si querés, primero podés actualizarlo.</p>
+    </div>
+    <div class="card tarjeta">
+      <div id="aplicarBusqInfo"></div>
+      <div id="aplicarPreguntas"></div>
+      <div class="aviso" id="aplicarAviso"></div>
+      <div class="navegacion">
+        <button class="btn btn-sec" type="button" id="btnAplicarEditar">Editar mi perfil primero</button>
+        <span></span>
+        <button class="btn btn-prim" type="button" id="btnConfirmarAplicar">Confirmar postulación →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WIZARD (registro / edición del perfil) -->
+  <div id="wizardWrap" class="oculto">
   <div class="intro">
     <span class="pill"><span class="dot"></span>Carga de CV</span>
-    <h1>Postúlate</h1>
+    <h1 id="wizardTitulo">Postúlate</h1>
     <p>Completá tus datos en 6 pasos. Tu perfil quedará disponible para empresas y consultoras.</p>
   </div>
 
@@ -148,6 +198,10 @@
       </div>
       <div class="campo"><label>Email <span class="req">*</span></label>
         <input name="email" type="email" required><div class="error-msg">Email inválido</div></div>
+      <div class="campo oculto" id="regPasswordWrap">
+        <label>Contraseña de tu cuenta <span class="req">*</span></label>
+        <input id="regPassword" type="password" autocomplete="new-password" minlength="6" placeholder="Mínimo 6 caracteres">
+        <div class="error-msg">Mínimo 6 caracteres</div></div>
       <div class="campo"><label>Teléfono <span class="req">*</span></label>
         <input name="telefono" type="tel" required><div class="error-msg">Requerido</div></div>
       <div class="campo"><label>Puesto de trabajo deseado <span class="req">*</span></label>
@@ -313,10 +367,12 @@
   <!-- PANTALLA FINAL -->
   <div class="card tarjeta final oculto" id="pantallaFinal">
     <div class="icono">✓</div>
-    <h2>¡Postulación enviada!</h2>
-    <p class="sub">Gracias por registrarte. Tu perfil ya está disponible para las empresas.</p>
-    <button class="btn btn-prim" onclick="location.reload()">Cargar otra postulación</button>
+    <h2 id="finalTitulo">¡Listo!</h2>
+    <p class="sub" id="finalSub">Tu perfil quedó guardado.</p>
+    <button class="btn btn-prim" onclick="location.reload()">Volver</button>
   </div>
+  </div>
+  <!-- /wizardWrap -->
 </div>
 
 <div class="legal-modal-overlay oculto" id="legalOverlay" role="dialog" aria-modal="true" aria-labelledby="legalTitulo">
@@ -478,7 +534,7 @@
       if (document.querySelectorAll('#idiomas .bloque').length > 1) div.remove();
     };
     document.getElementById('idiomas').appendChild(div);
-    crearSelectorBuscable({
+    div._selIdioma = crearSelectorBuscable({
       opciones: IDIOMAS,
       inputId: 'idiomaBuscar-' + n,
       listaId: 'idiomaLista-' + n,
@@ -516,7 +572,14 @@
   var paramsURL = new URLSearchParams(location.search);
   var puestoPrecargado = paramsURL.get('puesto') || '';
   var busquedaOrigenId = paramsURL.get('busqueda') || '';
-  crearSelectorPuesto({
+
+  // Cuenta del postulante
+  var perfilToken = sessionStorage.getItem('perfilToken') || '';
+  var perfilActual = null;
+  var modoWizard = 'registro';        // 'registro' | 'editar'
+  var busquedaAplicar = null;         // búsqueda a la que se postula (si hay)
+  var aplicarPreguntasArr = [];       // [{ pregunta, inputId }] en la pantalla de postularse
+  var selPuestoPost = crearSelectorPuesto({
     inputId: 'puestoBuscar',
     listaId: 'puestoLista',
     hiddenId: 'puestoDeseado',
@@ -525,28 +588,14 @@
     valorInicial: puestoPrecargado
   });
 
-  // Si viene desde una búsqueda con preguntas de filtrado, se muestran para
-  // que el postulante las responda (se guardan junto a la postulación).
-  var preguntasBusqueda = []; // [{ pregunta, inputId }]
+  // Si viene desde una búsqueda, la traemos para mostrarla en la pantalla de
+  // postularse (con sus preguntas de filtrado).
   if (busquedaOrigenId && typeof apiCall === 'function') {
     apiCall({ action: 'busquedasPublicas' }).then(function (r) {
       if (!r || !r.ok || !Array.isArray(r.busquedas)) return;
-      var b = r.busquedas.filter(function (x) { return String(x.ID) === String(busquedaOrigenId); })[0];
-      if (!b) return;
-      var preguntas = [b.Pregunta1, b.Pregunta2].map(function (p) { return (p || '').trim(); }).filter(Boolean);
-      if (!preguntas.length) return;
-      var cont = document.getElementById('preguntasBusqueda');
-      var html = '<div class="campo" style="margin-bottom:6px"><label style="font-weight:800">Preguntas de la búsqueda' +
-        ' <span class="req">*</span></label>' +
-        '<div class="cv-nota">La empresa quiere conocer esto de vos.</div></div>';
-      preguntas.forEach(function (p, i) {
-        var id = 'pregBusq' + i;
-        preguntasBusqueda.push({ pregunta: p, inputId: id });
-        html += '<div class="campo"><label>' + escHtml(p) + ' <span class="req">*</span></label>' +
-          '<textarea id="' + id + '" required></textarea><div class="error-msg">Requerido</div></div>';
-      });
-      cont.innerHTML = html;
-      cont.classList.remove('oculto');
+      busquedaAplicar = r.busquedas.filter(function (x) { return String(x.ID) === String(busquedaOrigenId); })[0] || null;
+      // Si ya estamos en la pantalla de postularse, la re-dibujamos con los datos.
+      if (busquedaAplicar && !document.getElementById('aplicarWrap').classList.contains('oculto')) mostrarAplicar();
     }).catch(function () {});
   }
 
@@ -557,7 +606,7 @@
   }
 
   // Selector buscable de localidad de Tucumán (solo de la lista)
-  crearSelectorBuscable({
+  var selLocalidadPost = crearSelectorBuscable({
     opciones: LOCALIDADES_TUCUMAN,
     inputId: 'localidadBuscar',
     listaId: 'localidadLista',
@@ -678,8 +727,9 @@
     e.preventDefault();
     if (!validarEtapa(etapaActual)) return;
 
-    // Validar firmas si estamos en la etapa 6
-    if (etapaActual === 6 && !validarFirmas()) return;
+    // Validar firmas si estamos en la etapa 6 (solo al registrarse; al editar
+    // el perfil ya se firmó una vez, no se re-exige).
+    if (modoWizard === 'registro' && etapaActual === 6 && !validarFirmas()) return;
 
     aviso.style.display = 'none';
     btnEnviar.disabled = true;
@@ -717,58 +767,263 @@
       firmaConfBase64 = firmaConf.toBase64();
     }
 
+    // Contraseña obligatoria al registrarse
+    if (modoWizard === 'registro' && document.getElementById('regPassword').value.length < 6) {
+      aviso.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+      aviso.style.display = 'block';
+      btnEnviar.disabled = false; btnEnviar.textContent = textoBtnEnviar();
+      return;
+    }
+
     const primerEmpleo = document.getElementById('primerEmpleo').checked;
-    const payload = {
-      action: 'postular',
-      nombre: form.nombre.value,
-      apellido: form.apellido.value,
-      email: form.email.value,
-      telefono: form.telefono.value,
-      puestoDeseado: form.puestoDeseado.value,
-      fechaNacimiento: form.fechaNacimiento.value,
-      identificacion: form.identificacion.value,
-      provincia: form.provincia.value,
-      codigoPostalCiudad: form.codigoPostalCiudad.value,
-      perfilProfesional: form.perfilProfesional.value,
-      formacion: JSON.stringify(recolectar('formaciones')),
-      descripcionPerfil: form.descripcionPerfil.value,
-      dispViajar: form.dispViajar.value,
-      dispCambioResidencia: form.dispCambioResidencia.value,
-      idiomas: JSON.stringify(recolectar('idiomas')),
-      primerEmpleo: primerEmpleo,
+    const F = form.elements;
+    const perfil = {
+      nombre: F['nombre'].value, apellido: F['apellido'].value, email: F['email'].value,
+      telefono: F['telefono'].value, puestoDeseado: F['puestoDeseado'].value,
+      fechaNacimiento: F['fechaNacimiento'].value, identificacion: F['identificacion'].value,
+      provincia: F['provincia'].value, codigoPostalCiudad: F['codigoPostalCiudad'].value,
+      perfilProfesional: F['perfilProfesional'].value,
+      formacion: JSON.stringify(recolectar('formaciones')), descripcionPerfil: F['descripcionPerfil'].value,
+      dispViajar: F['dispViajar'].value, dispCambioResidencia: F['dispCambioResidencia'].value,
+      idiomas: JSON.stringify(recolectar('idiomas')), primerEmpleo: primerEmpleo,
       experiencias: JSON.stringify(primerEmpleo ? [] : recolectar('experiencias')),
-      cvBase64: cvBase64,
-      cvNombre: cvNombre,
-      cvTipo: cvTipo,
-      busquedaId: busquedaOrigenId,
-      busquedaPuesto: busquedaOrigenId ? puestoPrecargado : '',
-      respuestasBusqueda: JSON.stringify(preguntasBusqueda.map(function (q) {
-        var el = document.getElementById(q.inputId);
-        return { pregunta: q.pregunta, respuesta: el ? el.value.trim() : '' };
-      })),
-      firmaConsentimientoBase64: firmaConsentBase64,
-      firmaConformidadBase64: firmaConfBase64
+      cvBase64: cvBase64, cvNombre: cvNombre, cvTipo: cvTipo,
+      firmaConsentimientoBase64: firmaConsentBase64, firmaConformidadBase64: firmaConfBase64
     };
+    const payload = (modoWizard === 'registro')
+      ? Object.assign({ action: 'registrarPostulante', password: document.getElementById('regPassword').value }, perfil)
+      : Object.assign({ action: 'actualizarPerfil', token: perfilToken }, perfil);
 
     try {
       const r = await apiCall(payload);
-      if (r.ok) {
-        form.classList.add('oculto');
-        document.getElementById('pasos').classList.add('oculto');
-        document.getElementById('pasoLabel').classList.add('oculto');
-        document.getElementById('pantallaFinal').classList.remove('oculto');
+      if (!r.ok) throw new Error(r.error || 'No se pudo guardar.');
+      if (modoWizard === 'registro') {
+        guardarSesion(r.token, r.perfil);
+        if (busquedaOrigenId) mostrarAplicar();
+        else mostrarExito('¡Cuenta creada!', 'Tu perfil quedó guardado. Ya podés postularte a las búsquedas.');
       } else {
-        throw new Error(r.error || 'No se pudo enviar.');
+        perfilActual = r.perfil || perfilActual;
+        mostrarExito('Perfil actualizado', 'Tus cambios se guardaron correctamente.');
       }
     } catch (err) {
       aviso.textContent = 'Error: ' + err.message;
       aviso.style.display = 'block';
       btnEnviar.disabled = false;
-      btnEnviar.textContent = 'Enviar postulación';
+      btnEnviar.textContent = textoBtnEnviar();
     }
   });
 
+  function textoBtnEnviar() { return modoWizard === 'registro' ? 'Crear cuenta' : 'Guardar cambios'; }
+
   mostrarEtapa(1);
+
+  /* ================= CUENTA DEL POSTULANTE ================= */
+  const gateEl = document.getElementById('gateCuenta');
+  const aplicarEl = document.getElementById('aplicarWrap');
+  const wizardEl = document.getElementById('wizardWrap');
+  const cuentaBarEl = document.getElementById('cuentaBar');
+
+  function mostrarSeccion(cual) {
+    gateEl.classList.toggle('oculto', cual !== 'gate');
+    aplicarEl.classList.toggle('oculto', cual !== 'aplicar');
+    wizardEl.classList.toggle('oculto', cual !== 'wizard');
+    cuentaBarEl.classList.toggle('oculto', cual === 'gate' || !perfilToken);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function guardarSesion(token, perfil) {
+    perfilToken = token; perfilActual = perfil || perfilActual;
+    if (token) sessionStorage.setItem('perfilToken', token);
+    if (perfilActual) document.getElementById('cuentaEmail').textContent = perfilActual.email || '';
+    cuentaBarEl.classList.remove('oculto');
+  }
+
+  function mostrarGateCuenta() { mostrarSeccion('gate'); }
+
+  function prepararWizard(modo) {
+    modoWizard = modo;
+    document.getElementById('regPasswordWrap').classList.toggle('oculto', modo !== 'registro');
+    document.getElementById('regPassword').required = (modo === 'registro');
+    form.elements['email'].disabled = (modo === 'editar');
+    document.getElementById('cvArchivo').required = (modo === 'registro');
+    document.getElementById('wizardTitulo').textContent = (modo === 'registro') ? 'Creá tu cuenta' : 'Mi perfil / CV';
+    btnEnviar.textContent = textoBtnEnviar();
+    form.classList.remove('oculto');
+    document.getElementById('pasos').classList.remove('oculto');
+    document.getElementById('pasoLabel').classList.remove('oculto');
+    document.querySelector('#wizardWrap .intro').classList.remove('oculto');
+    document.querySelector('.pasos-explicacion').classList.remove('oculto');
+    document.getElementById('pantallaFinal').classList.add('oculto');
+    aviso.style.display = 'none';
+    etapaActual = 1; mostrarEtapa(1);
+  }
+
+  function mostrarRegistro() { prepararWizard('registro'); mostrarSeccion('wizard'); }
+
+  function mostrarEditarPerfil() {
+    prepararWizard('editar');
+    if (perfilActual) cargarPerfilEnWizard(perfilActual);
+    mostrarSeccion('wizard');
+  }
+
+  function mostrarAplicar() {
+    const b = busquedaAplicar;
+    const info = document.getElementById('aplicarBusqInfo');
+    if (b) {
+      info.innerHTML = '<div class="seccion"><h3>Te postulás a</h3>' +
+        '<p style="font-weight:800;font-size:1.15rem;margin:0">' + escHtml(b.Puesto || '') + '</p>' +
+        '<p style="color:var(--muted);margin:2px 0 0">' + [b.Empresa, b.Area, b.Modalidad, b.Localidad].filter(Boolean).map(escHtml).join(' · ') + '</p></div>';
+    } else {
+      info.innerHTML = '<p class="sub" style="color:var(--muted)">Cargando la búsqueda…</p>';
+    }
+    aplicarPreguntasArr = [];
+    const cont = document.getElementById('aplicarPreguntas');
+    const preguntas = b ? [b.Pregunta1, b.Pregunta2].map(function (p) { return (p || '').trim(); }).filter(Boolean) : [];
+    if (preguntas.length) {
+      let html = '<div class="seccion"><h3>Preguntas de la búsqueda</h3>';
+      preguntas.forEach(function (p, i) {
+        const id = 'aplPreg' + i;
+        aplicarPreguntasArr.push({ pregunta: p, inputId: id });
+        html += '<div class="campo"><label>' + escHtml(p) + ' <span class="req">*</span></label><textarea id="' + id + '"></textarea></div>';
+      });
+      html += '</div>';
+      cont.innerHTML = html;
+    } else cont.innerHTML = '';
+    document.getElementById('aplicarAviso').style.display = 'none';
+    mostrarSeccion('aplicar');
+  }
+
+  function mostrarExito(titulo, sub) {
+    document.getElementById('finalTitulo').textContent = titulo;
+    document.getElementById('finalSub').textContent = sub;
+    form.classList.add('oculto');
+    document.getElementById('pasos').classList.add('oculto');
+    document.getElementById('pasoLabel').classList.add('oculto');
+    document.querySelector('#wizardWrap .intro').classList.add('oculto');
+    document.querySelector('.pasos-explicacion').classList.add('oculto');
+    document.getElementById('pantallaFinal').classList.remove('oculto');
+    mostrarSeccion('wizard');
+  }
+
+  document.getElementById('loginPostForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const err = document.getElementById('lpErr'); err.style.display = 'none';
+    const btn = document.getElementById('btnLoginPost'); btn.disabled = true; btn.textContent = 'Ingresando…';
+    try {
+      const r = await apiCall({ action: 'loginPostulante', email: document.getElementById('lpEmail').value, password: document.getElementById('lpPassword').value });
+      if (!r.ok) throw new Error(r.error);
+      guardarSesion(r.token, r.perfil);
+      if (busquedaOrigenId) mostrarAplicar(); else mostrarEditarPerfil();
+    } catch (ex) { err.textContent = ex.message; err.style.display = 'block'; }
+    finally { btn.disabled = false; btn.textContent = 'Iniciar sesión'; }
+  });
+  document.getElementById('irRegistroPost').onclick = (e) => { e.preventDefault(); mostrarRegistro(); };
+  document.getElementById('btnSalirPost').onclick = () => {
+    sessionStorage.removeItem('perfilToken'); perfilToken = ''; perfilActual = null;
+    cuentaBarEl.classList.add('oculto'); mostrarGateCuenta();
+  };
+  document.getElementById('btnMiPerfil').onclick = () => mostrarEditarPerfil();
+  document.getElementById('btnAplicarEditar').onclick = () => mostrarEditarPerfil();
+
+  document.getElementById('btnConfirmarAplicar').onclick = async () => {
+    const av = document.getElementById('aplicarAviso'); av.style.display = 'none';
+    for (const q of aplicarPreguntasArr) {
+      const el = document.getElementById(q.inputId);
+      if (!el.value.trim()) { av.textContent = 'Respondé todas las preguntas.'; av.style.display = 'block'; el.focus(); return; }
+    }
+    const btn = document.getElementById('btnConfirmarAplicar'); btn.disabled = true; btn.textContent = 'Enviando…';
+    try {
+      const r = await apiCall({
+        action: 'postularConPerfil', token: perfilToken,
+        busquedaId: busquedaOrigenId,
+        busquedaPuesto: busquedaAplicar ? (busquedaAplicar.Puesto || '') : puestoPrecargado,
+        respuestasBusqueda: JSON.stringify(aplicarPreguntasArr.map(function (q) {
+          return { pregunta: q.pregunta, respuesta: document.getElementById(q.inputId).value.trim() };
+        }))
+      });
+      if (!r.ok) throw new Error(r.error);
+      mostrarExito('¡Postulación enviada!', 'La empresa ya puede ver tu perfil para esta búsqueda.');
+    } catch (ex) {
+      av.textContent = 'Error: ' + ex.message; av.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Confirmar postulación →';
+    }
+  };
+
+  /* Prefill del perfil en el wizard (modo editar) */
+  function parseJSONarr(v) { if (!v) return []; if (Array.isArray(v)) return v; try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch (e) { return []; } }
+  function llenarBloque(div, obj) {
+    div.querySelectorAll('[data-c]').forEach(el => {
+      const k = el.dataset.c;
+      if (!(k in obj)) return;
+      if (el.type === 'checkbox') el.checked = (String(obj[k]).toLowerCase() === 'sí' || obj[k] === true);
+      else el.value = obj[k] || '';
+    });
+  }
+  function llenarFormacionFija(div, obj) {
+    const centro = div.querySelector('[data-c="centro"]'); if (centro) centro.value = obj.centro || '';
+    const desde = div.querySelector('[data-c="desde"]'); if (desde) desde.value = obj.desde || '';
+    const comp = div.querySelector('[data-c="completada"]');
+    const hastaWrap = div.querySelector('[data-hasta]');
+    const hasta = div.querySelector('[data-c="hasta"]');
+    const completada = (String(obj.completada).toLowerCase() === 'sí') || (!!obj.hasta && String(obj.hasta).length > 0);
+    if (comp) comp.checked = completada;
+    if (hastaWrap) hastaWrap.classList.toggle('oculto', !completada);
+    if (hasta) hasta.value = obj.hasta || '';
+  }
+  function cargarPerfilEnWizard(p) {
+    const F = form.elements;
+    const setN = (n, v) => { if (F[n]) F[n].value = v || ''; };
+    setN('nombre', p.nombre); setN('apellido', p.apellido); setN('email', p.email);
+    setN('telefono', p.telefono); setN('fechaNacimiento', p.fechaNacimiento);
+    setN('identificacion', p.identificacion); setN('perfilProfesional', p.perfilProfesional);
+    setN('descripcionPerfil', p.descripcionPerfil);
+    setN('provincia', p.provincia || 'Tucumán');
+    setN('dispViajar', p.dispViajar);
+    setN('dispCambioResidencia', p.dispCambioResidencia);
+    if (selPuestoPost) selPuestoPost.set(p.puestoDeseado || '');
+    if (selLocalidadPost) selLocalidadPost.set(p.codigoPostalCiudad || '');
+
+    const primer = String(p.primerEmpleo).toLowerCase() === 'sí';
+    document.getElementById('primerEmpleo').checked = primer;
+    document.getElementById('experienciasWrap').classList.toggle('oculto', primer);
+
+    const forms = parseJSONarr(p.formacion);
+    const contF = document.getElementById('formaciones'); contF.innerHTML = '';
+    const prim = forms.filter(f => f.nivel === 'Primaria')[0];
+    const sec = forms.filter(f => f.nivel === 'Secundaria')[0];
+    const fijaP = bloqueFormacionFija('Primaria'); contF.appendChild(fijaP); if (prim) llenarFormacionFija(fijaP, prim);
+    const fijaS = bloqueFormacionFija('Secundaria'); contF.appendChild(fijaS); if (sec) llenarFormacionFija(fijaS, sec);
+    forms.filter(f => f.nivel !== 'Primaria' && f.nivel !== 'Secundaria').forEach(f => {
+      const b = bloqueFormacion(); contF.appendChild(b); llenarBloque(b, f);
+      const est = b.querySelector('[data-c="estado"]'); if (est) est.dispatchEvent(new Event('change'));
+    });
+
+    const idis = parseJSONarr(p.idiomas);
+    document.getElementById('idiomas').innerHTML = '';
+    if (!idis.length) agregarIdioma();
+    else idis.forEach(it => {
+      const b = agregarIdioma();
+      if (b._selIdioma) b._selIdioma.set(it.idioma || '');
+      const niv = b.querySelector('[data-c="nivel"]'); if (niv) niv.value = it.nivel || '';
+    });
+
+    const exps = parseJSONarr(p.experiencias);
+    const contE = document.getElementById('experiencias'); contE.innerHTML = '';
+    if (!exps.length || primer) contE.appendChild(bloqueExperiencia());
+    else exps.forEach(x => { const b = bloqueExperiencia(); contE.appendChild(b); llenarBloque(b, x); });
+  }
+
+  /* Arranque: decidir qué mostrar según la sesión */
+  (async function initCuenta() {
+    if (perfilToken) {
+      try {
+        const r = await apiCall({ action: 'miPerfil', token: perfilToken });
+        if (r.ok) { guardarSesion(perfilToken, r.perfil); if (busquedaOrigenId) mostrarAplicar(); else mostrarEditarPerfil(); return; }
+      } catch (e) {}
+      sessionStorage.removeItem('perfilToken'); perfilToken = '';
+    }
+    mostrarGateCuenta();
+  })();
 
   /* ---------- Firmas ---------- */
   let firmaConsent = null;
