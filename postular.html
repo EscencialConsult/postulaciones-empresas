@@ -169,6 +169,7 @@
         <div class="cv-nota" id="cvNota"></div>
         <div class="error-msg">Adjuntá tu CV</div>
       </div>
+      <div id="preguntasBusqueda" class="oculto" style="margin-top:4px"></div>
     </section>
 
     <!-- ETAPA 2 -->
@@ -524,6 +525,37 @@
     valorInicial: puestoPrecargado
   });
 
+  // Si viene desde una búsqueda con preguntas de filtrado, se muestran para
+  // que el postulante las responda (se guardan junto a la postulación).
+  var preguntasBusqueda = []; // [{ pregunta, inputId }]
+  if (busquedaOrigenId && typeof apiCall === 'function') {
+    apiCall({ action: 'busquedasPublicas' }).then(function (r) {
+      if (!r || !r.ok || !Array.isArray(r.busquedas)) return;
+      var b = r.busquedas.filter(function (x) { return String(x.ID) === String(busquedaOrigenId); })[0];
+      if (!b) return;
+      var preguntas = [b.Pregunta1, b.Pregunta2].map(function (p) { return (p || '').trim(); }).filter(Boolean);
+      if (!preguntas.length) return;
+      var cont = document.getElementById('preguntasBusqueda');
+      var html = '<div class="campo" style="margin-bottom:6px"><label style="font-weight:800">Preguntas de la búsqueda' +
+        ' <span class="req">*</span></label>' +
+        '<div class="cv-nota">La empresa quiere conocer esto de vos.</div></div>';
+      preguntas.forEach(function (p, i) {
+        var id = 'pregBusq' + i;
+        preguntasBusqueda.push({ pregunta: p, inputId: id });
+        html += '<div class="campo"><label>' + escHtml(p) + ' <span class="req">*</span></label>' +
+          '<textarea id="' + id + '" required></textarea><div class="error-msg">Requerido</div></div>';
+      });
+      cont.innerHTML = html;
+      cont.classList.remove('oculto');
+    }).catch(function () {});
+  }
+
+  function escHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
   // Selector buscable de localidad de Tucumán (solo de la lista)
   crearSelectorBuscable({
     opciones: LOCALIDADES_TUCUMAN,
@@ -710,6 +742,10 @@
       cvTipo: cvTipo,
       busquedaId: busquedaOrigenId,
       busquedaPuesto: busquedaOrigenId ? puestoPrecargado : '',
+      respuestasBusqueda: JSON.stringify(preguntasBusqueda.map(function (q) {
+        var el = document.getElementById(q.inputId);
+        return { pregunta: q.pregunta, respuesta: el ? el.value.trim() : '' };
+      })),
       firmaConsentimientoBase64: firmaConsentBase64,
       firmaConformidadBase64: firmaConfBase64
     };

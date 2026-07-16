@@ -2467,6 +2467,13 @@
           ${esc(x.funciones) || ''}</div>`).join('') + `</div>`;
     }
 
+    // Respuestas a las preguntas de filtrado de la búsqueda
+    const respuestas = parseArr(r.RespuestasBusqueda).filter(x => x && (x.pregunta || x.respuesta));
+    if (respuestas.length) {
+      html += `<div class="seccion"><h3>Respuestas a la búsqueda</h3>` + respuestas.map(x => `
+        <div class="item-list"><strong>${esc(x.pregunta)}</strong>${esc(x.respuesta) || '<span style="color:var(--muted)">Sin responder</span>'}</div>`).join('') + `</div>`;
+    }
+
     // Firmas
     html += `<div class="seccion"><h3>Firmas</h3>`;
     if (r.FirmaConsentimientoUrl) {

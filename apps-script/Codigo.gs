@@ -52,7 +52,9 @@ var COLUMNAS_POSTULANTES = [
   'FirmaConsentimientoUrl', 'FechaFirmaConsentimiento',
   'FirmaConformidadUrl', 'FechaFirmaConformidad',
   // Vínculo con una búsqueda publicada (si se postuló desde el inicio)
-  'BusquedaID', 'BusquedaPuesto'
+  'BusquedaID', 'BusquedaPuesto',
+  // Respuestas a las preguntas de filtrado de esa búsqueda (JSON [{pregunta, respuesta}])
+  'RespuestasBusqueda'
 ];
 
 var COLUMNAS_USUARIOS = [
@@ -350,7 +352,9 @@ function guardarPostulante(d) {
     d.firmaConformidadBase64 ? ahora : '',
     // Vínculo con la búsqueda de origen (si vino desde una publicación)
     limpiar(d.busquedaId),
-    limpiar(d.busquedaPuesto)
+    limpiar(d.busquedaPuesto),
+    // Respuestas a las preguntas de filtrado de la búsqueda
+    normalizarJSON(d.respuestasBusqueda)
   ];
 
   hoja.appendRow(fila);
@@ -1180,10 +1184,9 @@ function busquedasPublicas(d) {
     if (String(valores[i][12]).toLowerCase() === 'activa') {
       var o = filaAObjeto(COLUMNAS_BUSQUEDAS, valores[i]);
       // No exponer datos internos/sensibles al público.
+      // Pregunta1/Pregunta2 SÍ se exponen: el postulante debe poder responderlas.
       delete o.UsuarioEmpresa;
       delete o.Reclutador;
-      delete o.Pregunta1;
-      delete o.Pregunta2;
       delete o.FechaVencimiento;
       var oculto = String(o.OcultarSalario || '').toLowerCase();
       if (oculto === 'sí' || oculto === 'si') {
