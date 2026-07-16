@@ -112,14 +112,18 @@
         seccion.classList.remove('oculto');
         estado.style.display = 'none';
         grid.innerHTML = lista.map(b => {
-          const meta = [b.Localidad, b.Modalidad, b.Jornada].filter(Boolean).map(esc).join(' · ');
+          const meta = [b.Area, b.Modalidad, b.Localidad, b.TipoContrato].filter(Boolean).map(esc).join(' · ');
+          const salario = (b.SalarioMin || b.SalarioMax)
+            ? ('$' + esc(b.SalarioMin || '') + (b.SalarioMax ? ' - $' + esc(b.SalarioMax) : '')).replace('$ - ', '')
+            : '';
           const href = 'postular.html?busqueda=' + encodeURIComponent(b.ID || '') +
             '&puesto=' + encodeURIComponent(b.Puesto || '');
           return `<a class="card busq-inicio-card" href="${href}">
             <h3>${esc(b.Puesto)}</h3>
             <span class="busq-inicio-empresa">${esc(b.Empresa) || 'Empresa'}</span>
             ${meta ? `<div class="busq-inicio-meta">${meta}</div>` : ''}
-            <p class="busq-inicio-desc">${esc(b.Descripcion || '')}</p>
+            <p class="busq-inicio-desc">${esc(b.Descripcion || b.Responsabilidades || '')}</p>
+            ${salario ? `<span class="busq-inicio-empresa" style="color:var(--muted)">Salario: ${salario}</span>` : ''}
             <span class="ir">Postularme →</span>
           </a>`;
         }).join('');

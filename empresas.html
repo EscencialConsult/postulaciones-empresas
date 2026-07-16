@@ -134,6 +134,21 @@
   .busq-estado-activa { background: rgba(18,185,129,.14); color: #0f766e; }
   .busq-estado-pausada { background: rgba(228,199,106,.2); color: #92700a; }
   .busq-estado-cerrada { background: rgba(107,114,128,.16); color: #4b5563; }
+  .busq-estado-borrador { background: rgba(107,225,227,.18); color: #0f766e; }
+
+  /* Formulario de búsqueda por secciones */
+  .busq-form-sec { border-top: 1px solid var(--borde); margin-top: 20px; padding-top: 18px; }
+  .busq-form-sec:first-of-type { border-top: none; margin-top: 10px; padding-top: 0; }
+  .busq-form-sec h4 { font-size: .98rem; margin: 0 0 3px; }
+  .busq-form-sec .sec-desc { color: var(--muted); font-size: .82rem; margin: 0 0 14px; }
+  .check-inline { display: flex; align-items: center; gap: 8px; font-size: .9rem; }
+  .check-inline input { width: auto; }
+  .benef-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; background: rgba(178,60,166,.1); color: var(--acento);
+          border-radius: 999px; padding: 4px 6px 4px 12px; font-size: .82rem; font-weight: 700; }
+  .chip button { background: none; border: none; color: var(--acento); cursor: pointer; font-size: 1.05rem; line-height: 1; padding: 0 2px; }
+  .chip button:hover { color: var(--error); }
 
   /* ===== App shell (sidebar de alto completo + contenido + footer) ===== */
   .app { display: flex; min-height: 100vh; align-items: stretch; }
@@ -233,6 +248,7 @@
     .cuenta-grid .span-2 { grid-column: auto; }
     .busq-form-grid { grid-template-columns: 1fr; }
     .busq-form-grid .span-2 { grid-column: auto; }
+    .benef-grid { grid-template-columns: 1fr; }
     .dash-stats { grid-template-columns: 1fr; }
     .dash-recientes { grid-template-columns: 1fr; }
     .cuenta-actions .btn { width: 100%; }
@@ -575,42 +591,118 @@
 
       <div class="info oculto" id="busqBloqueoAviso"></div>
 
-      <form id="busqForm" class="card oculto" style="padding:20px; margin-bottom:16px" novalidate>
-        <h3 id="busqFormTitulo" style="margin:0 0 14px">Nueva búsqueda</h3>
+      <form id="busqForm" class="card oculto" style="padding:22px; margin-bottom:16px" novalidate>
+        <h3 id="busqFormTitulo" style="margin:0 0 6px">Nueva búsqueda</h3>
         <input type="hidden" id="busqId">
-        <div class="busq-form-grid">
-          <div class="campo span-2"><label>Puesto <span class="req">*</span></label>
-            <div class="puesto-selector">
-              <input type="text" id="busqPuestoBuscar" class="puesto-input" autocomplete="off"
-                     placeholder="Buscá o seleccioná un puesto…">
-              <div class="puesto-lista oculto" id="busqPuestoLista"></div>
-            </div>
-            <input type="hidden" id="busqPuesto">
-            <div class="campo oculto" id="busqPuestoOtroWrap" style="margin-top:8px">
-              <input type="text" id="busqPuestoOtro" autocomplete="off" placeholder="Escribí el nombre del puesto">
-            </div>
+
+        <!-- 1. Datos principales -->
+        <div class="busq-form-sec">
+          <h4>1. Datos principales del puesto</h4>
+          <p class="sec-desc">Identifican la vacante y se usan para los filtros del portal.</p>
+          <div class="busq-form-grid">
+            <div class="campo span-2"><label>Título de la búsqueda <span class="req">*</span></label>
+              <input id="busqTitulo" placeholder="Ej: Analista de Datos Junior"></div>
+            <div class="campo"><label>Área / Departamento <span class="req">*</span></label>
+              <select id="busqArea"><option value="">Seleccionar…</option>
+                <option>Administración</option><option>IT / Sistemas</option><option>Comercial / Ventas</option>
+                <option>RRHH</option><option>Marketing</option><option>Operaciones</option>
+                <option>Finanzas / Contabilidad</option><option>Atención al Cliente</option>
+                <option>Producción</option><option>Logística</option><option>Legales</option>
+                <option>Salud</option><option>Educación</option><option>Otro</option></select></div>
+            <div class="campo"><label>Modalidad de trabajo <span class="req">*</span></label>
+              <select id="busqModalidad"><option value="">Seleccionar…</option>
+                <option>Presencial</option><option>Híbrido</option><option>Remoto</option></select></div>
+            <div class="campo"><label>Tipo de contrato</label>
+              <select id="busqTipoContrato"><option value="">Seleccionar…</option>
+                <option>Relación de dependencia (Full-time)</option>
+                <option>Relación de dependencia (Part-time)</option>
+                <option>Pasantía</option><option>Temporal</option><option>Freelance / Consultoría</option></select></div>
+            <div class="campo"><label>Provincia</label>
+              <select id="busqProvincia"><option selected>Tucumán</option></select></div>
+            <div class="campo"><label>Localidad <span class="req">*</span></label>
+              <div class="puesto-selector">
+                <input type="text" id="busqLocalidadBuscar" class="puesto-input" autocomplete="off"
+                       placeholder="Buscá o seleccioná la localidad…">
+                <div class="puesto-lista oculto" id="busqLocalidadLista"></div>
+              </div>
+              <input type="hidden" id="busqLocalidad"></div>
+            <div class="campo span-2"><label>Zona o dirección laboral <span class="muted">(opcional, si es presencial/híbrido)</span></label>
+              <input id="busqZona" placeholder="Ej: Zona centro, Parque Industrial…"></div>
           </div>
-          <div class="campo"><label>Provincia</label>
-            <select id="busqProvincia"><option selected>Tucumán</option></select></div>
-          <div class="campo"><label>Localidad</label>
-            <div class="puesto-selector">
-              <input type="text" id="busqLocalidadBuscar" class="puesto-input" autocomplete="off"
-                     placeholder="Buscá o seleccioná la localidad…">
-              <div class="puesto-lista oculto" id="busqLocalidadLista"></div>
-            </div>
-            <input type="hidden" id="busqLocalidad"></div>
-          <div class="campo"><label>Modalidad</label>
-            <select id="busqModalidad"><option value="">Seleccionar…</option>
-              <option>Presencial</option><option>Híbrido</option><option>Remoto</option></select></div>
-          <div class="campo"><label>Jornada</label>
-            <select id="busqJornada"><option value="">Seleccionar…</option>
-              <option>Jornada completa</option><option>Media jornada</option>
-              <option>Por horas</option><option>Temporal / Changas</option><option>Pasantía</option></select></div>
-          <div class="campo"><label>Vacantes</label>
-            <input id="busqVacantes" type="number" min="1" value="1"></div>
-          <div class="campo span-2"><label>Descripción <span class="req">*</span></label>
-            <textarea id="busqDescripcion" placeholder="Detallá tareas, requisitos y condiciones del puesto…"></textarea></div>
         </div>
+
+        <!-- 2. Descripción y requisitos -->
+        <div class="busq-form-sec">
+          <h4>2. Descripción y requisitos</h4>
+          <div class="busq-form-grid">
+            <div class="campo span-2"><label>Misión o resumen del puesto</label>
+              <textarea id="busqMision" placeholder="En una o dos frases, el objetivo del cargo en la organización."></textarea></div>
+            <div class="campo span-2"><label>Responsabilidades principales <span class="req">*</span></label>
+              <textarea id="busqResponsabilidades" placeholder="Tareas cotidianas y objetivos del rol."></textarea></div>
+            <div class="campo span-2"><label>Requisitos excluyentes <span class="req">*</span></label>
+              <textarea id="busqReqExcluyentes" placeholder="Formación, años de experiencia y conocimientos sin los cuales no se avanza."></textarea></div>
+            <div class="campo span-2"><label>Requisitos deseables / valorados <span class="muted">(opcional)</span></label>
+              <textarea id="busqReqDeseables" placeholder="Competencias o certificaciones que suman pero no excluyen."></textarea></div>
+            <div class="campo span-2"><label>Habilidades clave <span class="muted">(3 a 5 · Enter o coma para agregar)</span></label>
+              <input id="busqHabInput" placeholder="Ej: Excel Avanzado, SQL, Python" autocomplete="off">
+              <div class="chips" id="busqHabChips"></div>
+              <input type="hidden" id="busqHabilidades"></div>
+            <div class="campo"><label>Idioma requerido</label>
+              <select id="busqIdioma"><option>Sin requisito de idioma</option>
+                <option>Inglés</option><option>Portugués</option><option>Francés</option>
+                <option>Italiano</option><option>Otro</option></select></div>
+            <div class="campo"><label>Nivel de idioma</label>
+              <select id="busqNivelIdioma"><option value="">—</option>
+                <option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Nativo</option></select></div>
+          </div>
+        </div>
+
+        <!-- 3. Condiciones y beneficios -->
+        <div class="busq-form-sec">
+          <h4>3. Condiciones de contratación y beneficios</h4>
+          <div class="busq-form-grid">
+            <div class="campo"><label>Salario bruto — mínimo</label>
+              <input id="busqSalarioMin" type="number" min="0" placeholder="$"></div>
+            <div class="campo"><label>Salario bruto — máximo</label>
+              <input id="busqSalarioMax" type="number" min="0" placeholder="$"></div>
+            <div class="campo span-2 check-inline">
+              <input type="checkbox" id="busqOcultarSalario">
+              <label for="busqOcultarSalario" style="margin:0">Ocultar el salario en la publicación (el candidato verá «A convenir»)</label></div>
+            <div class="campo span-2"><label>Horario y jornada laboral</label>
+              <input id="busqHorario" placeholder="Ej: Lunes a Viernes de 9 a 18 hs"></div>
+            <div class="campo span-2"><label>Beneficios adicionales</label>
+              <div class="benef-grid">
+                <label class="check-inline"><input type="checkbox" class="benef" value="Prepaga"> Prepaga</label>
+                <label class="check-inline"><input type="checkbox" class="benef" value="Bono por objetivos"> Bono por objetivos</label>
+                <label class="check-inline"><input type="checkbox" class="benef" value="Días adicionales de vacaciones"> Días adicionales de vacaciones</label>
+                <label class="check-inline"><input type="checkbox" class="benef" value="Capacitaciones cubiertas"> Capacitaciones cubiertas</label>
+                <label class="check-inline"><input type="checkbox" class="benef" value="Trabajo flexible"> Trabajo flexible</label>
+              </div>
+              <input id="busqBeneficiosOtros" placeholder="Otros beneficios…" style="margin-top:10px"></div>
+          </div>
+        </div>
+
+        <!-- 4. Configuración del proceso (uso interno) -->
+        <div class="busq-form-sec">
+          <h4>4. Configuración del proceso <span class="muted">(uso interno, no se publica)</span></h4>
+          <div class="busq-form-grid">
+            <div class="campo"><label>Estado de la publicación <span class="req">*</span></label>
+              <select id="busqEstado">
+                <option value="borrador">Borrador</option>
+                <option value="activa" selected>Activa / Publicada</option>
+                <option value="pausada">Pausada</option>
+                <option value="cerrada">Cerrada / Finalizada</option></select></div>
+            <div class="campo"><label>Fecha de cierre <span class="muted">(opcional)</span></label>
+              <input id="busqVencimiento" type="date"></div>
+            <div class="campo span-2"><label>Email del reclutador responsable <span class="muted">(opcional)</span></label>
+              <input id="busqReclutador" type="email" placeholder="reclutador@empresa.com"></div>
+            <div class="campo span-2"><label>Pregunta de filtrado 1 <span class="muted">(opcional)</span></label>
+              <input id="busqPregunta1" placeholder="Ej: ¿Tenés movilidad propia para trasladarte a la planta?"></div>
+            <div class="campo span-2"><label>Pregunta de filtrado 2 <span class="muted">(opcional)</span></label>
+              <input id="busqPregunta2" placeholder="Ej: ¿Cuál es tu disponibilidad de incorporación?"></div>
+          </div>
+        </div>
+
         <div class="err" id="busqErr"></div>
         <div class="cuenta-actions">
           <button type="submit" class="btn btn-prim" id="btnGuardarBusq">Publicar búsqueda</button>
@@ -1526,19 +1618,35 @@
    * ================================================================ */
   let busquedas = [];
   let puedePublicar = false;
-  let selBusqPuesto = null;
   let selBusqLocalidad = null;
+  let busqHabilidades = [];
+  let busquedasInit = false;
+
+  function renderHabChips() {
+    const cont = document.getElementById('busqHabChips');
+    cont.innerHTML = busqHabilidades.map((h, i) =>
+      `<span class="chip">${esc(h)}<button type="button" data-i="${i}" aria-label="Quitar">×</button></span>`).join('');
+    document.getElementById('busqHabilidades').value = busqHabilidades.join(', ');
+    cont.querySelectorAll('button').forEach(b =>
+      b.onclick = () => { busqHabilidades.splice(+b.dataset.i, 1); renderHabChips(); });
+  }
+  function agregarHabilidad(txt) {
+    const v = String(txt || '').replace(/,/g, '').trim();
+    if (v && busqHabilidades.indexOf(v) === -1) { busqHabilidades.push(v); renderHabChips(); }
+  }
 
   function initSelectoresBusqueda() {
-    if (selBusqPuesto) return;
-    selBusqPuesto = crearSelectorPuesto({
-      inputId: 'busqPuestoBuscar', listaId: 'busqPuestoLista', hiddenId: 'busqPuesto',
-      otroWrapId: 'busqPuestoOtroWrap', otroInputId: 'busqPuestoOtro'
-    });
+    if (busquedasInit) return;
+    busquedasInit = true;
     selBusqLocalidad = crearSelectorBuscable({
       opciones: LOCALIDADES_TUCUMAN,
       inputId: 'busqLocalidadBuscar', listaId: 'busqLocalidadLista', hiddenId: 'busqLocalidad'
     });
+    const hab = document.getElementById('busqHabInput');
+    hab.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); agregarHabilidad(hab.value); hab.value = ''; }
+    });
+    hab.addEventListener('blur', () => { if (hab.value.trim()) { agregarHabilidad(hab.value); hab.value = ''; } });
   }
 
   function mostrarModulo(nombre) {
@@ -1599,7 +1707,7 @@
     }
   }
 
-  const estadoLabelBusq = { activa: 'Activa', pausada: 'Pausada', cerrada: 'Cerrada' };
+  const estadoLabelBusq = { borrador: 'Borrador', activa: 'Activa', pausada: 'Pausada', cerrada: 'Cerrada' };
 
   async function cargarBusquedas() {
     const cargando = document.getElementById('busqCargando');
@@ -1642,7 +1750,7 @@
 
     lista.forEach(b => {
       const estado = (b.Estado || 'activa').toLowerCase();
-      const meta = [b.Localidad, b.Modalidad, b.Jornada, b.Vacantes ? ('Vacantes: ' + b.Vacantes) : '']
+      const meta = [b.Area, b.Modalidad, b.Localidad, b.TipoContrato]
         .filter(Boolean).map(esc).join(' · ');
       const card = document.createElement('div');
       card.className = 'busq-card';
@@ -1652,12 +1760,13 @@
           '<span class="busq-estado busq-estado-' + esc(estado) + '">' + esc(estadoLabelBusq[estado] || estado) + '</span>' +
         '</div>' +
         '<div class="busq-meta">' + (meta || '—') + '</div>' +
-        '<p class="busq-desc">' + esc(b.Descripcion || '') + '</p>' +
+        '<p class="busq-desc">' + esc(b.Descripcion || b.Responsabilidades || '') + '</p>' +
         '<div class="busq-acciones"></div>';
       const acc = card.querySelector('.busq-acciones');
       const nPost = postulantesDeBusqueda(b).length;
       acc.appendChild(botonBusq('Ver postulantes (' + nPost + ')', 'btn-prim', () => verPostulantesBusqueda(b)));
       acc.appendChild(botonBusq('Editar', 'btn-sec', () => abrirFormBusqueda(b)));
+      if (estado === 'borrador') acc.appendChild(botonBusq('Publicar', 'btn-sec', () => estadoBusqueda(b.ID, 'activa')));
       if (estado === 'activa') acc.appendChild(botonBusq('Pausar', 'btn-sec', () => estadoBusqueda(b.ID, 'pausada')));
       if (estado === 'pausada') acc.appendChild(botonBusq('Reactivar', 'btn-sec', () => estadoBusqueda(b.ID, 'activa')));
       if (estado !== 'cerrada') acc.appendChild(botonBusq('Cerrar', 'btn-sec', () => estadoBusqueda(b.ID, 'cerrada')));
@@ -1669,17 +1778,45 @@
   function abrirFormBusqueda(b) {
     initSelectoresBusqueda();
     const form = document.getElementById('busqForm');
+    const val = (id, v) => { document.getElementById(id).value = v; };
     document.getElementById('busqErr').style.display = 'none';
     document.getElementById('busqId').value = b ? b.ID : '';
     document.getElementById('busqFormTitulo').textContent = b ? 'Editar búsqueda' : 'Nueva búsqueda';
     document.getElementById('btnGuardarBusq').textContent = b ? 'Guardar cambios' : 'Publicar búsqueda';
-    selBusqPuesto.set(b ? (b.Puesto || '') : '');
+
+    // 1. Datos principales
+    val('busqTitulo', b ? (b.Puesto || '') : '');
+    val('busqArea', b ? (b.Area || '') : '');
+    val('busqModalidad', b ? (b.Modalidad || '') : '');
+    val('busqTipoContrato', b ? (b.TipoContrato || '') : '');
+    val('busqProvincia', b ? (b.Provincia || 'Tucumán') : 'Tucumán');
     selBusqLocalidad.set(b ? (b.Localidad || '') : '');
-    document.getElementById('busqProvincia').value = b ? (b.Provincia || 'Tucumán') : 'Tucumán';
-    document.getElementById('busqModalidad').value = b ? (b.Modalidad || '') : '';
-    document.getElementById('busqJornada').value = b ? (b.Jornada || '') : '';
-    document.getElementById('busqVacantes').value = b ? (b.Vacantes || '') : '1';
-    document.getElementById('busqDescripcion').value = b ? (b.Descripcion || '') : '';
+    val('busqZona', b ? (b.Zona || '') : '');
+    // 2. Descripción y requisitos
+    val('busqMision', b ? (b.Descripcion || '') : '');
+    val('busqResponsabilidades', b ? (b.Responsabilidades || '') : '');
+    val('busqReqExcluyentes', b ? (b.RequisitosExcluyentes || '') : '');
+    val('busqReqDeseables', b ? (b.RequisitosDeseables || '') : '');
+    busqHabilidades = (b ? (b.Habilidades || '') : '').split(',').map(s => s.trim()).filter(Boolean);
+    renderHabChips();
+    document.getElementById('busqHabInput').value = '';
+    val('busqIdioma', b ? (b.IdiomaRequerido || 'Sin requisito de idioma') : 'Sin requisito de idioma');
+    val('busqNivelIdioma', b ? (b.NivelIdioma || '') : '');
+    // 3. Condiciones y beneficios
+    val('busqSalarioMin', b ? (b.SalarioMin || '') : '');
+    val('busqSalarioMax', b ? (b.SalarioMax || '') : '');
+    document.getElementById('busqOcultarSalario').checked = b ? (String(b.OcultarSalario).toLowerCase() === 'sí') : false;
+    val('busqHorario', b ? (b.Horario || '') : '');
+    const benSet = (b ? (b.Beneficios || '') : '').split(',').map(s => s.trim());
+    document.querySelectorAll('#busqForm .benef').forEach(c => c.checked = benSet.indexOf(c.value) !== -1);
+    val('busqBeneficiosOtros', b ? (b.BeneficiosOtros || '') : '');
+    // 4. Configuración del proceso
+    val('busqEstado', b ? (b.Estado || 'activa') : 'activa');
+    val('busqVencimiento', b ? (b.FechaVencimiento || '') : '');
+    val('busqReclutador', b ? (b.Reclutador || '') : '');
+    val('busqPregunta1', b ? (b.Pregunta1 || '') : '');
+    val('busqPregunta2', b ? (b.Pregunta2 || '') : '');
+
     form.classList.remove('oculto');
     form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
@@ -1699,10 +1836,24 @@
     const err = document.getElementById('busqErr');
     err.style.display = 'none';
     const id = document.getElementById('busqId').value;
-    const puesto = document.getElementById('busqPuesto').value.trim();
-    const descripcion = document.getElementById('busqDescripcion').value.trim();
-    if (!puesto) { err.textContent = 'Indicá el puesto de la búsqueda.'; err.style.display = 'block'; return; }
-    if (!descripcion) { err.textContent = 'Agregá una descripción de la búsqueda.'; err.style.display = 'block'; return; }
+    const gv = (x) => document.getElementById(x).value.trim();
+
+    const titulo = gv('busqTitulo');
+    const area = gv('busqArea');
+    const modalidad = gv('busqModalidad');
+    const localidad = gv('busqLocalidad');
+    const responsabilidades = gv('busqResponsabilidades');
+    const reqExcluyentes = gv('busqReqExcluyentes');
+
+    const falla = (msg) => { err.textContent = msg; err.style.display = 'block'; };
+    if (!titulo) return falla('Indicá el título de la búsqueda.');
+    if (!area) return falla('Elegí el área / departamento.');
+    if (!modalidad) return falla('Elegí la modalidad de trabajo.');
+    if (!localidad) return falla('Elegí la localidad.');
+    if (!responsabilidades) return falla('Detallá las responsabilidades principales.');
+    if (!reqExcluyentes) return falla('Detallá los requisitos excluyentes.');
+
+    const beneficios = Array.from(document.querySelectorAll('#busqForm .benef:checked')).map(c => c.value).join(', ');
 
     const btn = document.getElementById('btnGuardarBusq');
     const orig = btn.textContent;
@@ -1713,13 +1864,31 @@
         action: id ? 'actualizarBusqueda' : 'crearBusqueda',
         token: token,
         id: id,
-        puesto: puesto,
-        descripcion: descripcion,
-        provincia: document.getElementById('busqProvincia').value,
-        localidad: document.getElementById('busqLocalidad').value,
-        modalidad: document.getElementById('busqModalidad').value,
-        jornada: document.getElementById('busqJornada').value,
-        vacantes: document.getElementById('busqVacantes').value
+        puesto: titulo,
+        area: area,
+        modalidad: modalidad,
+        tipoContrato: gv('busqTipoContrato'),
+        provincia: gv('busqProvincia'),
+        localidad: localidad,
+        zona: gv('busqZona'),
+        mision: gv('busqMision'),
+        responsabilidades: responsabilidades,
+        requisitosExcluyentes: reqExcluyentes,
+        requisitosDeseables: gv('busqReqDeseables'),
+        habilidades: busqHabilidades.join(', '),
+        idiomaRequerido: gv('busqIdioma'),
+        nivelIdioma: gv('busqNivelIdioma'),
+        salarioMin: gv('busqSalarioMin'),
+        salarioMax: gv('busqSalarioMax'),
+        ocultarSalario: document.getElementById('busqOcultarSalario').checked,
+        horario: gv('busqHorario'),
+        beneficios: beneficios,
+        beneficiosOtros: gv('busqBeneficiosOtros'),
+        estado: gv('busqEstado'),
+        fechaVencimiento: gv('busqVencimiento'),
+        reclutador: gv('busqReclutador'),
+        pregunta1: gv('busqPregunta1'),
+        pregunta2: gv('busqPregunta2')
       });
       if (!r.ok) {
         if (/sesión/i.test(r.error || '')) { document.getElementById('btnSalir').click(); }

@@ -72,9 +72,16 @@ var COLUMNAS_USUARIOS = [
 var COLUMNAS_BUSQUEDAS = [
   'ID', 'FechaCreacion', 'FechaActualizacion',
   'UsuarioEmpresa', 'Empresa',
-  'Puesto', 'Descripcion',
+  'Puesto', 'Descripcion',  // Puesto = Título ; Descripcion = Misión/resumen
   'Provincia', 'Localidad', 'Modalidad', 'Jornada', 'Vacantes',
-  'Estado'  // activa | pausada | cerrada
+  'Estado',  // borrador | activa | pausada | cerrada
+  // Ampliación del aviso (los índices 0..12 se mantienen para no romper nada)
+  'Area', 'TipoContrato', 'Zona',
+  'Responsabilidades', 'RequisitosExcluyentes', 'RequisitosDeseables',
+  'Habilidades', 'IdiomaRequerido', 'NivelIdioma',
+  'SalarioMin', 'SalarioMax', 'OcultarSalario',
+  'Horario', 'Beneficios', 'BeneficiosOtros',
+  'FechaVencimiento', 'Reclutador', 'Pregunta1', 'Pregunta2'
 ];
 
 // Duración del token de sesión (horas)
@@ -959,33 +966,69 @@ function empresaHabilitadaParaBuscar(token) {
   return { sesion: sesion, fila: fila };
 }
 
+/**
+ * Arma los valores de las columnas 6..32 (Puesto..Pregunta2) de una búsqueda
+ * a partir del payload. Se usa tanto al crear como al actualizar.
+ */
+function valoresBusqueda(d, titulo, estado) {
+  return [
+    titulo,                                    // Puesto (Título)
+    limpiar(d.mision),                         // Descripcion (Misión / resumen)
+    limpiar(d.provincia) || 'Tucumán',         // Provincia
+    limpiar(d.localidad),                      // Localidad
+    limpiar(d.modalidad),                      // Modalidad
+    '',                                        // Jornada (obsoleto, se conserva la columna)
+    limpiar(d.vacantes),                       // Vacantes
+    estado,                                    // Estado
+    limpiar(d.area),                           // Area
+    limpiar(d.tipoContrato),                   // TipoContrato
+    limpiar(d.zona),                           // Zona
+    limpiar(d.responsabilidades),              // Responsabilidades
+    limpiar(d.requisitosExcluyentes),          // RequisitosExcluyentes
+    limpiar(d.requisitosDeseables),            // RequisitosDeseables
+    limpiar(d.habilidades),                    // Habilidades
+    limpiar(d.idiomaRequerido),                // IdiomaRequerido
+    limpiar(d.nivelIdioma),                    // NivelIdioma
+    limpiar(d.salarioMin),                     // SalarioMin
+    limpiar(d.salarioMax),                     // SalarioMax
+    (d.ocultarSalario ? 'Sí' : 'No'),          // OcultarSalario
+    limpiar(d.horario),                        // Horario
+    limpiar(d.beneficios),                     // Beneficios
+    limpiar(d.beneficiosOtros),                // BeneficiosOtros
+    limpiar(d.fechaVencimiento),               // FechaVencimiento
+    limpiar(d.reclutador),                     // Reclutador
+    limpiar(d.pregunta1),                      // Pregunta1
+    limpiar(d.pregunta2)                       // Pregunta2
+  ];
+}
+
+function estadoBusquedaValido(v, porDefecto) {
+  var e = limpiar(v).toLowerCase();
+  return ['borrador', 'activa', 'pausada', 'cerrada'].indexOf(e) !== -1 ? e : (porDefecto || 'activa');
+}
+
 function crearBusqueda(d) {
   var hab = empresaHabilitadaParaBuscar(d.token);
   if (hab.error) return { ok: false, error: hab.error };
 
-  var puesto = limpiar(d.puesto);
-  var descripcion = limpiar(d.descripcion);
-  if (!puesto) return { ok: false, error: 'Indicá el puesto de la búsqueda.' };
-  if (!descripcion) return { ok: false, error: 'Agregá una descripción de la búsqueda.' };
+  var titulo = limpiar(d.puesto); // "Puesto" = Título de la búsqueda
+  var responsabilidades = limpiar(d.responsabilidades);
+  var reqExcluyentes = limpiar(d.requisitosExcluyentes);
+  if (!titulo) return { ok: false, error: 'Indicá el título de la búsqueda.' };
+  if (!responsabilidades) return { ok: false, error: 'Detallá las responsabilidades principales.' };
+  if (!reqExcluyentes) return { ok: false, error: 'Detallá los requisitos excluyentes.' };
+
+  var estado = estadoBusquedaValido(d.estado, 'activa');
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var hoja = obtenerHoja(ss, HOJA_BUSQUEDAS, COLUMNAS_BUSQUEDAS);
   var id = Utilities.getUuid();
   var ahora = new Date();
 
-  hoja.appendRow([
-    id, ahora, ahora,
-    hab.sesion.usuario, hab.fila[2],
-    puesto, descripcion,
-    limpiar(d.provincia) || 'Tucumán',
-    limpiar(d.localidad),
-    limpiar(d.modalidad),
-    limpiar(d.jornada),
-    limpiar(d.vacantes),
-    'activa'
-  ]);
+  var fila = [id, ahora, ahora, hab.sesion.usuario, hab.fila[2]].concat(valoresBusqueda(d, titulo, estado));
+  hoja.appendRow(fila);
 
-  return { ok: true, id: id, mensaje: 'Búsqueda publicada correctamente.' };
+  return { ok: true, id: id, mensaje: 'Búsqueda guardada correctamente.' };
 }
 
 function listarMisBusquedas(d) {
@@ -1014,10 +1057,12 @@ function actualizarBusqueda(d) {
 
   var id = limpiar(d.id);
   if (!id) return { ok: false, error: 'Falta el identificador de la búsqueda.' };
-  var puesto = limpiar(d.puesto);
-  var descripcion = limpiar(d.descripcion);
-  if (!puesto) return { ok: false, error: 'Indicá el puesto de la búsqueda.' };
-  if (!descripcion) return { ok: false, error: 'Agregá una descripción de la búsqueda.' };
+  var titulo = limpiar(d.puesto);
+  var responsabilidades = limpiar(d.responsabilidades);
+  var reqExcluyentes = limpiar(d.requisitosExcluyentes);
+  if (!titulo) return { ok: false, error: 'Indicá el título de la búsqueda.' };
+  if (!responsabilidades) return { ok: false, error: 'Detallá las responsabilidades principales.' };
+  if (!reqExcluyentes) return { ok: false, error: 'Detallá los requisitos excluyentes.' };
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var hoja = obtenerHoja(ss, HOJA_BUSQUEDAS, COLUMNAS_BUSQUEDAS);
@@ -1030,14 +1075,10 @@ function actualizarBusqueda(d) {
         return { ok: false, error: 'No podés modificar esta búsqueda.' };
       }
       var filaNum = i + 1;
+      var estado = estadoBusquedaValido(d.estado, String(valores[i][12] || 'activa').toLowerCase());
       hoja.getRange(filaNum, 3).setValue(new Date());               // FechaActualizacion
-      hoja.getRange(filaNum, 6).setValue(puesto);                    // Puesto
-      hoja.getRange(filaNum, 7).setValue(descripcion);               // Descripcion
-      hoja.getRange(filaNum, 8).setValue(limpiar(d.provincia) || 'Tucumán');
-      hoja.getRange(filaNum, 9).setValue(limpiar(d.localidad));
-      hoja.getRange(filaNum, 10).setValue(limpiar(d.modalidad));
-      hoja.getRange(filaNum, 11).setValue(limpiar(d.jornada));
-      hoja.getRange(filaNum, 12).setValue(limpiar(d.vacantes));
+      // Columnas 6..32 (Puesto..Pregunta2)
+      hoja.getRange(filaNum, 6, 1, 27).setValues([valoresBusqueda(d, titulo, estado)]);
       var actualizada = hoja.getRange(filaNum, 1, 1, COLUMNAS_BUSQUEDAS.length).getValues()[0];
       return { ok: true, mensaje: 'Búsqueda actualizada.', busqueda: filaAObjeto(COLUMNAS_BUSQUEDAS, actualizada) };
     }
@@ -1051,7 +1092,7 @@ function cambiarEstadoBusqueda(d) {
 
   var id = limpiar(d.id);
   var nuevo = limpiar(d.estado).toLowerCase();
-  if (['activa', 'pausada', 'cerrada'].indexOf(nuevo) === -1) {
+  if (['borrador', 'activa', 'pausada', 'cerrada'].indexOf(nuevo) === -1) {
     return { ok: false, error: 'Estado inválido.' };
   }
 
@@ -1110,7 +1151,17 @@ function busquedasPublicas(d) {
   for (var i = 1; i < valores.length; i++) {
     if (String(valores[i][12]).toLowerCase() === 'activa') {
       var o = filaAObjeto(COLUMNAS_BUSQUEDAS, valores[i]);
-      delete o.UsuarioEmpresa; // no exponer el email de acceso al público
+      // No exponer datos internos/sensibles al público.
+      delete o.UsuarioEmpresa;
+      delete o.Reclutador;
+      delete o.Pregunta1;
+      delete o.Pregunta2;
+      delete o.FechaVencimiento;
+      var oculto = String(o.OcultarSalario || '').toLowerCase();
+      if (oculto === 'sí' || oculto === 'si') {
+        delete o.SalarioMin;
+        delete o.SalarioMax;
+      }
       lista.push(o);
     }
   }
