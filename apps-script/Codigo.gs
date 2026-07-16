@@ -649,23 +649,19 @@ function actualizarMiEmpresa(d) {
   if (!sesion) return { ok: false, error: 'SesiÃ³n invÃ¡lida o expirada.' };
   if (sesion.rol === 'admin') return { ok: false, error: 'Esta acciÃ³n corresponde a cuentas de empresa.' };
 
-  var empresa  = limpiar(d.empresa);
-  var cuit     = limpiar(d.cuit).replace(/[^0-9]/g, '');
-  var rubro    = limpiar(d.rubro);
+  // Solo se puede editar el responsable (nombre, apellido, teléfono) y la
+  // contraseña. La razón social y el CUIT/CUIL NO se modifican por seguridad.
   var nombre   = limpiar(d.nombre);
   var apellido = limpiar(d.apellido);
   var telefono = limpiar(d.telefono);
   var passwordActual = String(d.passwordActual || '');
   var nuevaPassword = String(d.nuevaPassword || '');
 
-  if (!empresa || !rubro || !nombre || !apellido || !telefono) {
-    return { ok: false, error: 'CompletÃ¡ razÃ³n social, rubro y datos de contacto.' };
-  }
-  if (cuit.length !== 11) {
-    return { ok: false, error: 'El CUIT/CUIL debe tener 11 dÃ­gitos.' };
+  if (!nombre || !apellido || !telefono) {
+    return { ok: false, error: 'Completá nombre, apellido y teléfono del responsable.' };
   }
   if (nuevaPassword && nuevaPassword.length < 6) {
-    return { ok: false, error: 'La nueva contraseÃ±a debe tener al menos 6 caracteres.' };
+    return { ok: false, error: 'La nueva contraseña debe tener al menos 6 caracteres.' };
   }
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -676,16 +672,13 @@ function actualizarMiEmpresa(d) {
   for (var i = 1; i < valores.length; i++) {
     if (String(valores[i][0]).trim().toLowerCase() === usuario) {
       if (nuevaPassword) {
-        if (!passwordActual) return { ok: false, error: 'IngresÃ¡ tu contraseÃ±a actual para cambiarla.' };
-        if (String(valores[i][1]) !== passwordActual) return { ok: false, error: 'La contraseÃ±a actual no es correcta.' };
+        if (!passwordActual) return { ok: false, error: 'Ingresá tu contraseña actual para cambiarla.' };
+        if (String(valores[i][1]) !== passwordActual) return { ok: false, error: 'La contraseña actual no es correcta.' };
         hoja.getRange(i + 1, 2).setValue(nuevaPassword);
       }
-      hoja.getRange(i + 1, 3).setValue(empresa);
-      hoja.getRange(i + 1, 10).setValue(cuit);
-      hoja.getRange(i + 1, 11).setValue(rubro);
-      hoja.getRange(i + 1, 12).setValue(nombre);
-      hoja.getRange(i + 1, 13).setValue(apellido);
-      hoja.getRange(i + 1, 14).setValue(telefono);
+      hoja.getRange(i + 1, 12).setValue(nombre);    // Nombre del responsable
+      hoja.getRange(i + 1, 13).setValue(apellido);  // Apellido del responsable
+      hoja.getRange(i + 1, 14).setValue(telefono);  // Teléfono
 
       var filaActualizada = hoja.getRange(i + 1, 1, 1, COLUMNAS_USUARIOS.length).getValues()[0];
       return { ok: true, mensaje: 'Datos actualizados correctamente.', empresa: empresaDesdeFila(filaActualizada) };

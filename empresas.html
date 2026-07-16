@@ -151,7 +151,8 @@
               color: var(--muted); cursor: pointer; transition: background .12s, color .12s; }
   .nav-item:hover { background: #faf7fd; color: var(--dark); }
   .nav-item.activo { background: var(--grad); color: var(--dark); }
-  .nav-ico { font-size: 1.15rem; line-height: 1; width: 22px; text-align: center; }
+  .nav-ico { width: 22px; height: 20px; display: flex; align-items: center; justify-content: center; }
+  .nav-ico svg { width: 20px; height: 20px; display: block; }
   .side-foot { padding: 14px 12px; border-top: 1px solid var(--borde); display: flex; flex-direction: column; gap: 10px; }
   .side-user { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 2px; }
   .side-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--grad); color: #fff;
@@ -175,8 +176,8 @@
   .dash-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; }
   .dash-stat { display: flex; align-items: center; gap: 15px; border: 1px solid var(--borde); border-radius: 16px;
                background: #fff; padding: 20px; box-shadow: 0 6px 18px rgba(26,24,29,.04); }
-  .dash-ico { width: 48px; height: 48px; border-radius: 13px; display: flex; align-items: center; justify-content: center;
-              font-size: 1.4rem; flex-shrink: 0; }
+  .dash-ico { width: 48px; height: 48px; border-radius: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .dash-ico svg { width: 24px; height: 24px; display: block; }
   .dash-ico-a { background: rgba(178,60,166,.12); }
   .dash-ico-b { background: rgba(107,225,227,.18); }
   .dash-ico-c { background: rgba(18,185,129,.14); }
@@ -409,9 +410,14 @@
       </a>
       <nav class="side-nav">
         <span class="cap">Menú</span>
-        <button type="button" class="nav-item activo" data-modulo="dashboard"><span class="nav-ico">🏠</span> Inicio</button>
-        <button type="button" class="nav-item" data-modulo="postulantes"><span class="nav-ico">👥</span> Postulantes</button>
-        <button type="button" class="nav-item" data-modulo="busquedas"><span class="nav-ico">📢</span> Búsquedas</button>
+        <button type="button" class="nav-item activo" data-modulo="dashboard">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg></span> Inicio</button>
+        <button type="button" class="nav-item" data-modulo="postulantes">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.2a3.2 3.2 0 0 1 0 6"/><path d="M17.5 20a5.5 5.5 0 0 0-3-4.9"/></svg></span> Postulantes</button>
+        <button type="button" class="nav-item" data-modulo="busquedas">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7.5" width="18" height="12" rx="2"/><path d="M8 7.5V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1.5"/><path d="M3 12.5h18"/></svg></span> Búsquedas</button>
+        <button type="button" class="nav-item" data-modulo="miEmpresa">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></svg></span> Mi empresa</button>
       </nav>
       <div class="side-foot">
         <div class="side-user">
@@ -437,69 +443,13 @@
       </div>
 
       <div class="dash-stats">
-        <div class="dash-stat"><span class="dash-ico dash-ico-a">👥</span>
+        <div class="dash-stat"><span class="dash-ico dash-ico-a"><svg viewBox="0 0 24 24" fill="none" stroke="#b23ca6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.2a3.2 3.2 0 0 1 0 6"/><path d="M17.5 20a5.5 5.5 0 0 0-3-4.9"/></svg></span>
           <div><div class="num" id="statPostulantes">—</div><div class="lbl">Postulantes en la base</div></div></div>
-        <div class="dash-stat"><span class="dash-ico dash-ico-b">📢</span>
+        <div class="dash-stat"><span class="dash-ico dash-ico-b"><svg viewBox="0 0 24 24" fill="none" stroke="#0f8a8c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7.5" width="18" height="12" rx="2"/><path d="M8 7.5V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1.5"/><path d="M3 12.5h18"/></svg></span>
           <div><div class="num" id="statBusquedasActivas">—</div><div class="lbl">Mis búsquedas activas</div></div></div>
-        <div class="dash-stat"><span class="dash-ico dash-ico-c">✅</span>
+        <div class="dash-stat"><span class="dash-ico dash-ico-c"><svg viewBox="0 0 24 24" fill="none" stroke="#0f766e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9.5 14.5l1.8 1.8 3.2-3.6"/></svg></span>
           <div><div class="num" id="statPostulaciones">—</div><div class="lbl">Postulaciones a mis búsquedas</div></div></div>
       </div>
-
-    <section class="card cuenta-panel" aria-label="Estado y datos de empresa">
-      <div class="cuenta-head">
-        <div>
-          <h2>Estado de la cuenta</h2>
-          <p id="cuentaResumen">Cargando datos de la empresa…</p>
-        </div>
-        <div class="estado-linea">
-          <span class="estado-badge estado-pendiente" id="badgeEstadoEmpresa">Pendiente</span>
-          <span class="estado-badge estado-verificacion-pendiente" id="badgeEstadoVerificacion">Verificación pendiente</span>
-        </div>
-      </div>
-
-      <div class="cuenta-datos" id="cuentaDatos">
-        <div class="cuenta-dato span-2"><span>Razón social</span><strong id="verEmpresa">—</strong></div>
-        <div class="cuenta-dato"><span>CUIT / CUIL</span><strong id="verCuit">—</strong></div>
-        <div class="cuenta-dato"><span>Rubro</span><strong id="verRubro">—</strong></div>
-        <div class="cuenta-dato"><span>Contacto</span><strong id="verContacto">—</strong></div>
-        <div class="cuenta-dato"><span>Teléfono</span><strong id="verTelefono">—</strong></div>
-        <div class="cuenta-dato span-2"><span>Email de acceso</span><strong id="verEmail">—</strong></div>
-      </div>
-
-      <div class="cuenta-actions" id="cuentaVistaActions">
-        <button type="button" class="btn btn-sec" id="btnEditarEmpresa">Editar datos</button>
-      </div>
-
-      <form id="empresaForm" class="oculto" novalidate>
-        <div class="cuenta-grid">
-          <div class="campo span-2"><label>Razón social</label><input id="miEmpresa" required></div>
-          <div class="campo"><label>CUIT / CUIL</label><input id="miCuit" inputmode="numeric" required maxlength="13"></div>
-          <div class="campo"><label>Rubro</label><input id="miRubro" required></div>
-          <div class="campo"><label>Nombre contacto</label><input id="miNombre" required></div>
-          <div class="campo"><label>Apellido contacto</label><input id="miApellido" required></div>
-          <div class="campo"><label>Teléfono</label><input id="miTelefono" required></div>
-          <div class="campo"><label>Email de acceso</label><input id="miEmail" disabled></div>
-          <div class="campo"><label>Contraseña actual</label><input id="miPasswordActual" type="password" autocomplete="current-password"></div>
-          <div class="campo"><label>Nueva contraseña</label><input id="miNuevaPassword" type="password" autocomplete="new-password" minlength="6"></div>
-        </div>
-        <div class="cuenta-actions">
-          <button type="submit" class="btn btn-prim" id="btnGuardarEmpresa">Guardar cambios</button>
-          <button type="button" class="btn btn-sec" id="btnCancelarEmpresa">Cancelar</button>
-        </div>
-      </form>
-      <div class="cuenta-msg" id="empresaMsg" aria-live="polite"></div>
-    </section>
-
-    <section class="card cuenta-panel" id="seccionVerificacion" style="display:none">
-      <div class="cuenta-head">
-        <div>
-          <h2>Verificación de identidad</h2>
-          <p>Administración revisará la selfie y las fotos del DNI cargadas durante el registro.</p>
-        </div>
-      </div>
-      <div id="verifPanelStatus" style="margin-bottom:14px"></div>
-      <div class="firma-estado" id="estadoPanelVerificacion"></div>
-    </section>
 
       <div class="dash-recientes">
         <div class="dash-col">
@@ -513,6 +463,73 @@
       </div>
     </div>
     <!-- /moduloDashboard -->
+
+    <!-- MÓDULO: MI EMPRESA -->
+    <div id="moduloMiEmpresa" class="oculto">
+      <div class="panel-head">
+        <span class="pill"><span class="dot"></span>Mi empresa</span>
+        <h1>Mi empresa</h1>
+        <p>Datos de tu cuenta. La razón social y el CUIT/CUIL no se pueden modificar; solo podés editar los datos del responsable.</p>
+      </div>
+
+      <section class="card cuenta-panel" aria-label="Estado y datos de empresa">
+        <div class="cuenta-head">
+          <div>
+            <h2>Estado de la cuenta</h2>
+            <p id="cuentaResumen">Cargando datos de la empresa…</p>
+          </div>
+          <div class="estado-linea">
+            <span class="estado-badge estado-pendiente" id="badgeEstadoEmpresa">Pendiente</span>
+            <span class="estado-badge estado-verificacion-pendiente" id="badgeEstadoVerificacion">Verificación pendiente</span>
+          </div>
+        </div>
+
+        <div class="cuenta-datos" id="cuentaDatos">
+          <div class="cuenta-dato span-2"><span>Razón social</span><strong id="verEmpresa">—</strong></div>
+          <div class="cuenta-dato"><span>CUIT / CUIL</span><strong id="verCuit">—</strong></div>
+          <div class="cuenta-dato"><span>Rubro</span><strong id="verRubro">—</strong></div>
+          <div class="cuenta-dato"><span>Contacto</span><strong id="verContacto">—</strong></div>
+          <div class="cuenta-dato"><span>Teléfono</span><strong id="verTelefono">—</strong></div>
+          <div class="cuenta-dato span-2"><span>Email de acceso</span><strong id="verEmail">—</strong></div>
+        </div>
+
+        <div class="cuenta-actions" id="cuentaVistaActions">
+          <button type="button" class="btn btn-sec" id="btnEditarEmpresa">Editar datos del responsable</button>
+        </div>
+
+        <form id="empresaForm" class="oculto" novalidate>
+          <div class="cuenta-datos" style="margin-bottom:16px">
+            <div class="cuenta-dato span-2"><span>Razón social <small>(no editable)</small></span><strong id="lockEmpresa">—</strong></div>
+            <div class="cuenta-dato"><span>CUIT / CUIL <small>(no editable)</small></span><strong id="lockCuit">—</strong></div>
+          </div>
+          <div class="cuenta-grid">
+            <div class="campo"><label>Nombre del responsable</label><input id="miNombre" required></div>
+            <div class="campo"><label>Apellido del responsable</label><input id="miApellido" required></div>
+            <div class="campo"><label>Teléfono</label><input id="miTelefono" required></div>
+            <div class="campo span-2"><label>Email de acceso</label><input id="miEmail" disabled></div>
+            <div class="campo"><label>Contraseña actual</label><input id="miPasswordActual" type="password" autocomplete="current-password"></div>
+            <div class="campo"><label>Nueva contraseña</label><input id="miNuevaPassword" type="password" autocomplete="new-password" minlength="6"></div>
+          </div>
+          <div class="cuenta-actions">
+            <button type="submit" class="btn btn-prim" id="btnGuardarEmpresa">Guardar cambios</button>
+            <button type="button" class="btn btn-sec" id="btnCancelarEmpresa">Cancelar</button>
+          </div>
+        </form>
+        <div class="cuenta-msg" id="empresaMsg" aria-live="polite"></div>
+      </section>
+
+      <section class="card cuenta-panel" id="seccionVerificacion" style="display:none">
+        <div class="cuenta-head">
+          <div>
+            <h2>Verificación de identidad</h2>
+            <p>Administración revisará la selfie y las fotos del DNI cargadas durante el registro.</p>
+          </div>
+        </div>
+        <div id="verifPanelStatus" style="margin-bottom:14px"></div>
+        <div class="firma-estado" id="estadoPanelVerificacion"></div>
+      </section>
+    </div>
+    <!-- /moduloMiEmpresa -->
 
     <!-- MÓDULO: POSTULANTES (base integral compartida) -->
     <div id="moduloPostulantes" class="oculto">
@@ -1218,14 +1235,14 @@
     document.getElementById('empresaForm').classList.toggle('oculto', !mostrar);
     if (mostrar) {
       document.getElementById('empresaMsg').textContent = '';
-      document.getElementById('miEmpresa').focus();
+      document.getElementById('miNombre').focus();
     }
   }
 
   function pintarMiEmpresa(e) {
-    document.getElementById('miEmpresa').value = e.empresa || '';
-    document.getElementById('miCuit').value = e.cuit || '';
-    document.getElementById('miRubro').value = e.rubro || '';
+    // Razón social y CUIT solo se muestran (no editables).
+    setTexto('lockEmpresa', e.empresa);
+    setTexto('lockCuit', e.cuit);
     document.getElementById('miNombre').value = e.nombre || '';
     document.getElementById('miApellido').value = e.apellido || '';
     document.getElementById('miTelefono').value = e.telefono || '';
@@ -1316,9 +1333,6 @@
       const r = await apiCall({
         action: 'actualizarMiEmpresa',
         token: token,
-        empresa: document.getElementById('miEmpresa').value,
-        cuit: document.getElementById('miCuit').value,
-        rubro: document.getElementById('miRubro').value,
         nombre: document.getElementById('miNombre').value,
         apellido: document.getElementById('miApellido').value,
         telefono: document.getElementById('miTelefono').value,
@@ -1528,7 +1542,7 @@
   }
 
   function mostrarModulo(nombre) {
-    const modulos = ['dashboard', 'postulantes', 'busquedas'];
+    const modulos = ['dashboard', 'postulantes', 'busquedas', 'miEmpresa'];
     if (modulos.indexOf(nombre) === -1) nombre = 'dashboard';
     modulos.forEach(m => {
       const el = document.getElementById('modulo' + m.charAt(0).toUpperCase() + m.slice(1));
