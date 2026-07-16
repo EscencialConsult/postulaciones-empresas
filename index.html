@@ -22,12 +22,29 @@
   .cta-card .ir { margin-top: 8px; font-weight: 700; color: var(--acento); display: inline-flex; align-items: center; gap: 6px; }
   .cta-card:hover .ir { gap: 10px; }
 
+  /* Búsquedas activas publicadas por empresas */
+  .busquedas-inicio { max-width: 960px; margin: 0 auto; padding: 8px 20px 80px; }
+  .busquedas-inicio h2 { font-size: 1.7rem; font-weight: 800; margin: 0 0 6px; text-align: center; }
+  .busquedas-inicio .sub { color: var(--muted); text-align: center; margin: 0 0 30px; }
+  .busq-inicio-estado { text-align: center; color: var(--muted); padding: 20px; }
+  .busq-inicio-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+  .busq-inicio-card { text-align: left; text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 10px; padding: 24px; transition: transform .16s ease, box-shadow .2s ease, border-color .2s ease; }
+  .busq-inicio-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(26,24,29,.12); border-color: var(--pink); }
+  .busq-inicio-card h3 { margin: 0; font-size: 1.15rem; }
+  .busq-inicio-empresa { color: var(--acento); font-weight: 700; font-size: .9rem; }
+  .busq-inicio-meta { color: var(--muted); font-size: .85rem; display: flex; flex-wrap: wrap; gap: 4px 12px; }
+  .busq-inicio-desc { color: var(--dark); font-size: .92rem; line-height: 1.45; margin: 0; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  .busq-inicio-card .ir { margin-top: auto; font-weight: 700; color: var(--acento); display: inline-flex; align-items: center; gap: 6px; }
+  .busq-inicio-card:hover .ir { gap: 10px; }
+
   /* ---------- Responsive ---------- */
   @media (max-width: 640px) {
     .hero { padding: 24px 16px 56px; }
     .hero .lead { font-size: 1rem; margin-bottom: 32px; }
     .cards { gap: 16px; }
     .cta-card { padding: 24px; }
+    .busquedas-inicio { padding: 8px 16px 56px; }
+    .busquedas-inicio h2 { font-size: 1.4rem; }
   }
 </style>
 </head>
@@ -58,6 +75,13 @@
     </div>
   </main>
 
+  <section class="busquedas-inicio oculto" id="busquedasInicio">
+    <h2>Búsquedas activas</h2>
+    <p class="sub">Oportunidades laborales publicadas por empresas y consultoras.</p>
+    <div class="busq-inicio-estado" id="busqInicioEstado">Cargando búsquedas…</div>
+    <div class="busq-inicio-grid" id="busqInicioGrid"></div>
+  </section>
+
   <footer class="site-footer">
     <div class="footer-links">
       <a href="politica-privacidad.html">Política de Privacidad</a>
@@ -66,5 +90,43 @@
     <p><a href="https://wa.link/n9zz8z" target="_blank" rel="noopener">Desarrollado por <strong>Fundación para el Desarrollo Profesional</strong> — Contribución de <strong>Escencial Consultora</strong></a></p>
     <img class="footer-logo" src="assets/logo2-trim.png" alt="ONE">
   </footer>
+
+  <script src="config.js"></script>
+  <script>
+    // Publica en el inicio las búsquedas ACTIVAS creadas por las empresas.
+    (async () => {
+      const seccion = document.getElementById('busquedasInicio');
+      const estado = document.getElementById('busqInicioEstado');
+      const grid = document.getElementById('busqInicioGrid');
+
+      function esc(s) {
+        return (s == null ? '' : String(s)).replace(/[&<>"]/g, c =>
+          ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+      }
+
+      try {
+        const r = await apiCall({ action: 'busquedasPublicas' });
+        const lista = (r && r.ok && Array.isArray(r.busquedas)) ? r.busquedas : [];
+        if (!lista.length) { seccion.classList.add('oculto'); return; }
+
+        seccion.classList.remove('oculto');
+        estado.style.display = 'none';
+        grid.innerHTML = lista.map(b => {
+          const meta = [b.Localidad, b.Modalidad, b.Jornada].filter(Boolean).map(esc).join(' · ');
+          const href = 'postular.html?puesto=' + encodeURIComponent(b.Puesto || '');
+          return `<a class="card busq-inicio-card" href="${href}">
+            <h3>${esc(b.Puesto)}</h3>
+            <span class="busq-inicio-empresa">${esc(b.Empresa) || 'Empresa'}</span>
+            ${meta ? `<div class="busq-inicio-meta">${meta}</div>` : ''}
+            <p class="busq-inicio-desc">${esc(b.Descripcion || '')}</p>
+            <span class="ir">Postularme →</span>
+          </a>`;
+        }).join('');
+      } catch (e) {
+        // Si el backend no responde, no rompemos la página de inicio.
+        seccion.classList.add('oculto');
+      }
+    })();
+  </script>
 </body>
 </html>

@@ -86,8 +86,20 @@ a cualquier hosting estático gratuito:
   postulación se agrega como una fila en la pestaña `Postulantes`.
   Los pasos son: datos personales, información y ubicación, formación,
   disponibilidad e idiomas, experiencia laboral, y firmas/consentimiento.
-- **Empresas:** entran a `empresas.html`, inician sesión, buscan/filtran perfiles,
-  ven el detalle completo haciendo clic en una fila y exportan a CSV.
+- **Empresas:** entran a `empresas.html`, inician sesión y trabajan en dos módulos:
+  - **Postulantes (base integral):** buscan/filtran perfiles, ven el detalle
+    completo haciendo clic en una fila y exportan a CSV.
+  - **Búsquedas:** crean avisos de empleo (puesto, localidad, modalidad, jornada,
+    vacantes y descripción). Las búsquedas **activas** se publican automáticamente
+    en la página de inicio con un botón **Postularme** que abre el formulario con
+    el puesto precargado. La empresa puede pausar, reactivar, cerrar o eliminar
+    cada búsqueda. Solo las cuentas **aprobadas y con verificación aprobada**
+    pueden publicar.
+
+> **Al agregar el módulo de Búsquedas** se creó una nueva pestaña `Busquedas` en la
+> hoja de cálculo (se genera sola en la primera llamada del backend, o ejecutando
+> `setup()`). Como cambió `Codigo.gs`, hay que **volver a implementar** el Apps Script
+> (ver «Importante sobre cambios» más abajo) para que las nuevas acciones funcionen.
 
 ---
 

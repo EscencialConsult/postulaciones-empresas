@@ -97,6 +97,42 @@
   .item-list { background: #faf9fd; border: 1px solid var(--borde); border-radius: 10px; padding: 12px; margin-bottom: 8px; font-size: .9rem; }
   .item-list strong { display: block; margin-bottom: 2px; }
 
+  .req { color: var(--error); }
+
+  /* Navegación de módulos (Postulantes / Búsquedas) */
+  .modtabs { display: flex; gap: 6px; margin: 6px 0 22px; border-bottom: 1px solid var(--borde); }
+  .modtab { background: none; border: none; padding: 12px 18px; font-size: .96rem; font-weight: 700; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .modtab:hover { color: var(--dark); }
+  .modtab.activo { color: var(--acento); border-bottom-color: var(--acento); }
+
+  /* Selector buscable (puesto / localidad) */
+  .puesto-selector { position: relative; }
+  .puesto-lista { position: absolute; z-index: 40; left: 0; right: 0; top: calc(100% + 4px); max-height: 264px; overflow-y: auto; background: #fff; border: 1px solid var(--borde); border-radius: 12px; box-shadow: 0 14px 32px rgba(26,24,29,.16); }
+  .puesto-opcion { padding: 10px 14px; cursor: pointer; font-size: .9rem; border-bottom: 1px solid var(--gris-cl); line-height: 1.3; }
+  .puesto-opcion:last-child { border-bottom: none; }
+  .puesto-opcion:hover { background: #faf7fd; }
+  .puesto-otros { color: var(--acento); font-weight: 700; position: sticky; bottom: 0; background: #fff; border-top: 1px solid var(--borde); }
+
+  /* Módulo Búsquedas */
+  .busq-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+  .busq-head h2 { margin: 0 0 2px; font-size: 1.15rem; }
+  .busq-head p { margin: 0; color: var(--muted); font-size: .9rem; }
+  .busq-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
+  .busq-form-grid .campo { margin-bottom: 14px; }
+  .busq-form-grid .span-2 { grid-column: span 2; }
+  .busq-lista { display: grid; gap: 12px; }
+  .busq-card { border: 1px solid var(--borde); border-radius: 12px; padding: 16px 18px; background: #fff; }
+  .busq-card-top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+  .busq-card h3 { margin: 0; font-size: 1.05rem; }
+  .busq-meta { color: var(--muted); font-size: .85rem; margin: 6px 0 10px; }
+  .busq-desc { font-size: .92rem; color: var(--dark); margin: 0 0 12px; white-space: pre-wrap; }
+  .busq-acciones { display: flex; gap: 8px; flex-wrap: wrap; }
+  .busq-acciones .btn { padding: 8px 12px; font-size: .84rem; }
+  .busq-estado { display: inline-flex; align-items: center; min-height: 26px; padding: 3px 10px; border-radius: 999px; font-size: .75rem; font-weight: 800; }
+  .busq-estado-activa { background: rgba(18,185,129,.14); color: #0f766e; }
+  .busq-estado-pausada { background: rgba(228,199,106,.2); color: #92700a; }
+  .busq-estado-cerrada { background: rgba(107,114,128,.16); color: #4b5563; }
+
   /* ---------- Responsive ---------- */
   @media (max-width: 640px) {
     .login-wrap { padding: 20px 14px; gap: 18px; }
@@ -118,6 +154,8 @@
     .cuenta-dato.span-2 { grid-column: auto; }
     .cuenta-grid { grid-template-columns: 1fr; }
     .cuenta-grid .span-2 { grid-column: auto; }
+    .busq-form-grid { grid-template-columns: 1fr; }
+    .busq-form-grid .span-2 { grid-column: auto; }
     .cuenta-actions .btn { width: 100%; }
     th, td { padding: 10px 12px; }
     .modal { padding: 22px 18px; }
@@ -296,9 +334,9 @@
 
   <div class="panel">
     <div class="panel-head">
-      <span class="pill"><span class="dot"></span>Base de talento</span>
-      <h1>Perfiles de postulantes</h1>
-      <p>Buscá, filtrá y exportá los candidatos que se ajustan a lo que necesitás.</p>
+      <span class="pill"><span class="dot"></span>Panel de empresa</span>
+      <h1>Tu espacio de trabajo</h1>
+      <p>Gestioná la base de postulantes y publicá tus búsquedas de personal.</p>
     </div>
 
     <section class="card cuenta-panel" aria-label="Estado y datos de empresa">
@@ -357,28 +395,96 @@
       <div class="firma-estado" id="estadoPanelVerificacion"></div>
     </section>
 
-    <div class="card filtros">
-      <div class="campo"><label>Búsqueda general</label>
-        <input id="q" placeholder="Nombre, email, skill, empresa…"></div>
-      <div class="campo"><label>Puesto deseado</label><input id="fPuesto" placeholder="Ej: Analista"></div>
-      <div class="campo"><label>Provincia</label><input id="fProvincia"></div>
-      <div class="acciones">
-        <button class="btn btn-prim" id="btnBuscar">Buscar</button>
-        <button class="btn btn-sec" id="btnExportar">⬇ Exportar CSV</button>
+    <div class="modtabs" role="tablist">
+      <button class="modtab activo" id="tabPostulantes" type="button">Postulantes</button>
+      <button class="modtab" id="tabBusquedas" type="button">Búsquedas</button>
+    </div>
+
+    <!-- MÓDULO: POSTULANTES (base integral) -->
+    <div id="moduloPostulantes">
+      <div class="card filtros">
+        <div class="campo"><label>Búsqueda general</label>
+          <input id="q" placeholder="Nombre, email, skill, empresa…"></div>
+        <div class="campo"><label>Puesto deseado</label><input id="fPuesto" placeholder="Ej: Analista"></div>
+        <div class="campo"><label>Provincia</label><input id="fProvincia"></div>
+        <div class="acciones">
+          <button class="btn btn-prim" id="btnBuscar">Buscar</button>
+          <button class="btn btn-sec" id="btnExportar">⬇ Exportar CSV</button>
+        </div>
+      </div>
+
+      <div class="resumen" id="resumen"></div>
+      <div class="card tabla-wrap">
+        <div class="cargando" id="cargando">Cargando perfiles…</div>
+        <table id="tabla" class="oculto">
+          <thead><tr>
+            <th>Nombre</th><th>Puesto deseado</th><th>Email</th><th>Teléfono</th>
+            <th>Provincia</th><th>Idiomas</th><th>Registro</th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div class="vacio oculto" id="vacio">No se encontraron postulantes con esos criterios.</div>
       </div>
     </div>
 
-    <div class="resumen" id="resumen"></div>
-    <div class="card tabla-wrap">
-      <div class="cargando" id="cargando">Cargando perfiles…</div>
-      <table id="tabla" class="oculto">
-        <thead><tr>
-          <th>Nombre</th><th>Puesto deseado</th><th>Email</th><th>Teléfono</th>
-          <th>Provincia</th><th>Idiomas</th><th>Registro</th>
-        </tr></thead>
-        <tbody id="tbody"></tbody>
-      </table>
-      <div class="vacio oculto" id="vacio">No se encontraron postulantes con esos criterios.</div>
+    <!-- MÓDULO: BÚSQUEDAS -->
+    <div id="moduloBusquedas" class="oculto">
+      <div class="busq-head">
+        <div>
+          <h2>Mis búsquedas</h2>
+          <p>Publicá avisos de empleo; las búsquedas activas aparecen en la página de inicio.</p>
+        </div>
+        <button class="btn btn-prim" id="btnNuevaBusq">+ Nueva búsqueda</button>
+      </div>
+
+      <div class="info oculto" id="busqBloqueoAviso"></div>
+
+      <form id="busqForm" class="card oculto" style="padding:20px; margin-bottom:16px" novalidate>
+        <h3 id="busqFormTitulo" style="margin:0 0 14px">Nueva búsqueda</h3>
+        <input type="hidden" id="busqId">
+        <div class="busq-form-grid">
+          <div class="campo span-2"><label>Puesto <span class="req">*</span></label>
+            <div class="puesto-selector">
+              <input type="text" id="busqPuestoBuscar" class="puesto-input" autocomplete="off"
+                     placeholder="Buscá o seleccioná un puesto…">
+              <div class="puesto-lista oculto" id="busqPuestoLista"></div>
+            </div>
+            <input type="hidden" id="busqPuesto">
+            <div class="campo oculto" id="busqPuestoOtroWrap" style="margin-top:8px">
+              <input type="text" id="busqPuestoOtro" autocomplete="off" placeholder="Escribí el nombre del puesto">
+            </div>
+          </div>
+          <div class="campo"><label>Provincia</label>
+            <select id="busqProvincia"><option selected>Tucumán</option></select></div>
+          <div class="campo"><label>Localidad</label>
+            <div class="puesto-selector">
+              <input type="text" id="busqLocalidadBuscar" class="puesto-input" autocomplete="off"
+                     placeholder="Buscá o seleccioná la localidad…">
+              <div class="puesto-lista oculto" id="busqLocalidadLista"></div>
+            </div>
+            <input type="hidden" id="busqLocalidad"></div>
+          <div class="campo"><label>Modalidad</label>
+            <select id="busqModalidad"><option value="">Seleccionar…</option>
+              <option>Presencial</option><option>Híbrido</option><option>Remoto</option></select></div>
+          <div class="campo"><label>Jornada</label>
+            <select id="busqJornada"><option value="">Seleccionar…</option>
+              <option>Jornada completa</option><option>Media jornada</option>
+              <option>Por horas</option><option>Temporal / Changas</option><option>Pasantía</option></select></div>
+          <div class="campo"><label>Vacantes</label>
+            <input id="busqVacantes" type="number" min="1" value="1"></div>
+          <div class="campo span-2"><label>Descripción <span class="req">*</span></label>
+            <textarea id="busqDescripcion" placeholder="Detallá tareas, requisitos y condiciones del puesto…"></textarea></div>
+        </div>
+        <div class="err" id="busqErr"></div>
+        <div class="cuenta-actions">
+          <button type="submit" class="btn btn-prim" id="btnGuardarBusq">Publicar búsqueda</button>
+          <button type="button" class="btn btn-sec" id="btnCancelarBusq">Cancelar</button>
+        </div>
+      </form>
+
+      <div class="cargando oculto" id="busqCargando">Cargando búsquedas…</div>
+      <div class="busq-lista" id="busqLista"></div>
+      <div class="vacio oculto" id="busqVacio">Todavía no publicaste ninguna búsqueda.</div>
     </div>
   </div>
 </div>
@@ -409,6 +515,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@5.1.3/dist/signature_pad.umd.min.js"></script>
 <script src="firmas.js"></script>
+<script src="puestos.js"></script>
 <script src="config.js"></script>
 <script>
   let token = sessionStorage.getItem('token') || '';
@@ -760,6 +867,7 @@
     loginWrap.classList.add('oculto');
     panelWrap.classList.remove('oculto');
     document.getElementById('empresaNombre').textContent = empresa;
+    mostrarModulo('postulantes');
     cargarMiEmpresa();
     cargar();
   }
@@ -849,6 +957,9 @@
         statusEl.innerHTML = '<div class="info">Tu verificación está pendiente. Administración revisará la selfie y las fotos del DNI cargadas en el registro.</div>';
       }
     }
+
+    // Habilita o bloquea la publicación de búsquedas según cuenta + verificación.
+    actualizarPermisoBusquedas(estadoCuenta, estadoVerif);
   }
 
   function pintarBadgeEstado(id, estado, tipo) {
@@ -1082,6 +1193,206 @@
     if (!iso) return '—';
     const d = new Date(iso); if (isNaN(d)) return String(iso).slice(0,10);
     return d.toLocaleDateString('es');
+  }
+
+  /* ================================================================
+   *  MÓDULO BÚSQUEDAS
+   * ================================================================ */
+  let busquedas = [];
+  let puedePublicar = false;
+  let selBusqPuesto = null;
+  let selBusqLocalidad = null;
+
+  function initSelectoresBusqueda() {
+    if (selBusqPuesto) return;
+    selBusqPuesto = crearSelectorPuesto({
+      inputId: 'busqPuestoBuscar', listaId: 'busqPuestoLista', hiddenId: 'busqPuesto',
+      otroWrapId: 'busqPuestoOtroWrap', otroInputId: 'busqPuestoOtro'
+    });
+    selBusqLocalidad = crearSelectorBuscable({
+      opciones: LOCALIDADES_TUCUMAN,
+      inputId: 'busqLocalidadBuscar', listaId: 'busqLocalidadLista', hiddenId: 'busqLocalidad'
+    });
+  }
+
+  function mostrarModulo(nombre) {
+    const esBusq = nombre === 'busquedas';
+    document.getElementById('moduloPostulantes').classList.toggle('oculto', esBusq);
+    document.getElementById('moduloBusquedas').classList.toggle('oculto', !esBusq);
+    document.getElementById('tabPostulantes').classList.toggle('activo', !esBusq);
+    document.getElementById('tabBusquedas').classList.toggle('activo', esBusq);
+    if (esBusq) { initSelectoresBusqueda(); cargarBusquedas(); }
+  }
+  document.getElementById('tabPostulantes').onclick = () => mostrarModulo('postulantes');
+  document.getElementById('tabBusquedas').onclick = () => mostrarModulo('busquedas');
+
+  function actualizarPermisoBusquedas(estadoCuenta, estadoVerif) {
+    puedePublicar = (estadoCuenta === 'aprobado' && estadoVerif === 'aprobado');
+    const btn = document.getElementById('btnNuevaBusq');
+    const aviso = document.getElementById('busqBloqueoAviso');
+    btn.disabled = !puedePublicar;
+    if (puedePublicar) {
+      aviso.classList.add('oculto');
+      aviso.textContent = '';
+    } else {
+      aviso.classList.remove('oculto');
+      aviso.textContent = 'Para publicar búsquedas, tu cuenta y tu verificación de identidad deben estar aprobadas por administración.';
+    }
+  }
+
+  const estadoLabelBusq = { activa: 'Activa', pausada: 'Pausada', cerrada: 'Cerrada' };
+
+  async function cargarBusquedas() {
+    const cargando = document.getElementById('busqCargando');
+    const vacio = document.getElementById('busqVacio');
+    const lista = document.getElementById('busqLista');
+    cargando.classList.remove('oculto');
+    vacio.classList.add('oculto');
+    lista.innerHTML = '';
+    try {
+      const r = await apiCall({ action: 'listarMisBusquedas', token: token });
+      if (!r.ok) {
+        if (/sesión/i.test(r.error || '')) { document.getElementById('btnSalir').click(); }
+        throw new Error(r.error);
+      }
+      busquedas = r.busquedas || [];
+      pintarBusquedas(busquedas);
+    } catch (ex) {
+      lista.innerHTML = '<div class="vacio">Error: ' + esc(ex.message) + '</div>';
+    } finally {
+      cargando.classList.add('oculto');
+    }
+  }
+
+  function botonBusq(txt, cls, fn) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn ' + cls;
+    b.textContent = txt;
+    b.onclick = fn;
+    return b;
+  }
+
+  function pintarBusquedas(lista) {
+    const cont = document.getElementById('busqLista');
+    const vacio = document.getElementById('busqVacio');
+    cont.innerHTML = '';
+    if (!lista.length) { vacio.classList.remove('oculto'); return; }
+    vacio.classList.add('oculto');
+
+    lista.forEach(b => {
+      const estado = (b.Estado || 'activa').toLowerCase();
+      const meta = [b.Localidad, b.Modalidad, b.Jornada, b.Vacantes ? ('Vacantes: ' + b.Vacantes) : '']
+        .filter(Boolean).map(esc).join(' · ');
+      const card = document.createElement('div');
+      card.className = 'busq-card';
+      card.innerHTML =
+        '<div class="busq-card-top">' +
+          '<h3>' + esc(b.Puesto) + '</h3>' +
+          '<span class="busq-estado busq-estado-' + esc(estado) + '">' + esc(estadoLabelBusq[estado] || estado) + '</span>' +
+        '</div>' +
+        '<div class="busq-meta">' + (meta || '—') + '</div>' +
+        '<p class="busq-desc">' + esc(b.Descripcion || '') + '</p>' +
+        '<div class="busq-acciones"></div>';
+      const acc = card.querySelector('.busq-acciones');
+      acc.appendChild(botonBusq('Editar', 'btn-sec', () => abrirFormBusqueda(b)));
+      if (estado === 'activa') acc.appendChild(botonBusq('Pausar', 'btn-sec', () => estadoBusqueda(b.ID, 'pausada')));
+      if (estado === 'pausada') acc.appendChild(botonBusq('Reactivar', 'btn-sec', () => estadoBusqueda(b.ID, 'activa')));
+      if (estado !== 'cerrada') acc.appendChild(botonBusq('Cerrar', 'btn-sec', () => estadoBusqueda(b.ID, 'cerrada')));
+      acc.appendChild(botonBusq('Eliminar', 'btn-sec', () => eliminarBusquedaUI(b)));
+      cont.appendChild(card);
+    });
+  }
+
+  function abrirFormBusqueda(b) {
+    initSelectoresBusqueda();
+    const form = document.getElementById('busqForm');
+    document.getElementById('busqErr').style.display = 'none';
+    document.getElementById('busqId').value = b ? b.ID : '';
+    document.getElementById('busqFormTitulo').textContent = b ? 'Editar búsqueda' : 'Nueva búsqueda';
+    document.getElementById('btnGuardarBusq').textContent = b ? 'Guardar cambios' : 'Publicar búsqueda';
+    selBusqPuesto.set(b ? (b.Puesto || '') : '');
+    selBusqLocalidad.set(b ? (b.Localidad || '') : '');
+    document.getElementById('busqProvincia').value = b ? (b.Provincia || 'Tucumán') : 'Tucumán';
+    document.getElementById('busqModalidad').value = b ? (b.Modalidad || '') : '';
+    document.getElementById('busqJornada').value = b ? (b.Jornada || '') : '';
+    document.getElementById('busqVacantes').value = b ? (b.Vacantes || '') : '1';
+    document.getElementById('busqDescripcion').value = b ? (b.Descripcion || '') : '';
+    form.classList.remove('oculto');
+    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function cerrarFormBusqueda() {
+    document.getElementById('busqForm').classList.add('oculto');
+  }
+
+  document.getElementById('btnNuevaBusq').onclick = () => {
+    if (!puedePublicar) return;
+    abrirFormBusqueda(null);
+  };
+  document.getElementById('btnCancelarBusq').onclick = cerrarFormBusqueda;
+
+  document.getElementById('busqForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const err = document.getElementById('busqErr');
+    err.style.display = 'none';
+    const id = document.getElementById('busqId').value;
+    const puesto = document.getElementById('busqPuesto').value.trim();
+    const descripcion = document.getElementById('busqDescripcion').value.trim();
+    if (!puesto) { err.textContent = 'Indicá el puesto de la búsqueda.'; err.style.display = 'block'; return; }
+    if (!descripcion) { err.textContent = 'Agregá una descripción de la búsqueda.'; err.style.display = 'block'; return; }
+
+    const btn = document.getElementById('btnGuardarBusq');
+    const orig = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+    try {
+      const r = await apiCall({
+        action: id ? 'actualizarBusqueda' : 'crearBusqueda',
+        token: token,
+        id: id,
+        puesto: puesto,
+        descripcion: descripcion,
+        provincia: document.getElementById('busqProvincia').value,
+        localidad: document.getElementById('busqLocalidad').value,
+        modalidad: document.getElementById('busqModalidad').value,
+        jornada: document.getElementById('busqJornada').value,
+        vacantes: document.getElementById('busqVacantes').value
+      });
+      if (!r.ok) {
+        if (/sesión/i.test(r.error || '')) { document.getElementById('btnSalir').click(); }
+        throw new Error(r.error);
+      }
+      cerrarFormBusqueda();
+      await cargarBusquedas();
+    } catch (ex) {
+      err.textContent = ex.message;
+      err.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = orig;
+    }
+  });
+
+  async function estadoBusqueda(id, nuevo) {
+    try {
+      const r = await apiCall({ action: 'cambiarEstadoBusqueda', token: token, id: id, estado: nuevo });
+      if (!r.ok) throw new Error(r.error);
+      await cargarBusquedas();
+    } catch (ex) {
+      alert('No se pudo actualizar la búsqueda: ' + ex.message);
+    }
+  }
+
+  async function eliminarBusquedaUI(b) {
+    if (!confirm('¿Eliminar la búsqueda "' + (b.Puesto || '') + '"? Esta acción no se puede deshacer.')) return;
+    try {
+      const r = await apiCall({ action: 'eliminarBusqueda', token: token, id: b.ID });
+      if (!r.ok) throw new Error(r.error);
+      await cargarBusquedas();
+    } catch (ex) {
+      alert('No se pudo eliminar la búsqueda: ' + ex.message);
+    }
   }
 
   // Restaurar sesión

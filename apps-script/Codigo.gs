@@ -26,6 +26,7 @@
 
 var HOJA_POSTULANTES = 'Postulantes';
 var HOJA_USUARIOS    = 'Usuarios';
+var HOJA_BUSQUEDAS   = 'Busquedas';
 
 // Carpeta de Google Drive donde se guardan los archivos de CV.
 var CARPETA_CV = 'CVs Postulantes';
@@ -64,6 +65,16 @@ var COLUMNAS_USUARIOS = [
   'FirmaLegalUrl', 'FechaFirmaLegal'
 ];
 
+// Columnas de la hoja Busquedas (avisos de empleo publicados por empresas).
+// El ORDEN define las columnas del Sheet.
+var COLUMNAS_BUSQUEDAS = [
+  'ID', 'FechaCreacion', 'FechaActualizacion',
+  'UsuarioEmpresa', 'Empresa',
+  'Puesto', 'Descripcion',
+  'Provincia', 'Localidad', 'Modalidad', 'Jornada', 'Vacantes',
+  'Estado'  // activa | pausada | cerrada
+];
+
 // Duración del token de sesión (horas)
 var TOKEN_HORAS = 12;
 
@@ -97,6 +108,13 @@ function manejar(e) {
       case 'listarEmpresas': return json(listarEmpresas(datos));
       case 'aprobarEmpresa': return json(aprobarEmpresa(datos));
       case 'cambiarEstadoVerificacion': return json(cambiarEstadoVerificacion(datos));
+      // Búsquedas (avisos de empleo)
+      case 'crearBusqueda':         return json(crearBusqueda(datos));
+      case 'listarMisBusquedas':    return json(listarMisBusquedas(datos));
+      case 'actualizarBusqueda':    return json(actualizarBusqueda(datos));
+      case 'cambiarEstadoBusqueda': return json(cambiarEstadoBusqueda(datos));
+      case 'eliminarBusqueda':      return json(eliminarBusqueda(datos));
+      case 'busquedasPublicas':     return json(busquedasPublicas(datos));
       // Firmas
       case 'firmarPostulacion': return json(firmarPostulacion(datos));
       default:
@@ -143,6 +161,7 @@ function setup() {
 
   var post = obtenerHoja(ss, HOJA_POSTULANTES, COLUMNAS_POSTULANTES);
   var usu  = obtenerHoja(ss, HOJA_USUARIOS, COLUMNAS_USUARIOS);
+  obtenerHoja(ss, HOJA_BUSQUEDAS, COLUMNAS_BUSQUEDAS);
 
   // Crea un usuario de ejemplo (empresa) si la hoja está vacía.
   if (usu.getLastRow() < 2) {
@@ -823,5 +842,205 @@ function cambiarEstadoVerificacion(d) {
     }
   }
   return { ok: false, error: 'Empresa no encontrada.' };
+}
+
+/* -------------------------------------------------------------------
+ *  BÚSQUEDAS (avisos de empleo publicados por las empresas)
+ * ----------------------------------------------------------------- */
+
+/**
+ * Devuelve la fila (array) de la empresa de la sesión, o null.
+ */
+function filaEmpresaDeSesion(sesion) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_USUARIOS, COLUMNAS_USUARIOS);
+  var valores = hoja.getDataRange().getValues();
+  var usuario = String(sesion.usuario || '').trim().toLowerCase();
+  for (var i = 1; i < valores.length; i++) {
+    if (String(valores[i][0]).trim().toLowerCase() === usuario) return valores[i];
+  }
+  return null;
+}
+
+/**
+ * Valida la sesión de una empresa aprobada + verificada. Devuelve
+ * { sesion, fila } o { error } listo para responder.
+ */
+function empresaHabilitadaParaBuscar(token) {
+  var sesion = validarToken(token);
+  if (!sesion) return { error: 'Sesión inválida o expirada. Volvé a iniciar sesión.' };
+  if (sesion.rol === 'admin') return { error: 'Esta acción corresponde a cuentas de empresa.' };
+
+  var fila = filaEmpresaDeSesion(sesion);
+  if (!fila) return { error: 'Empresa no encontrada.' };
+
+  var estadoCuenta = String(fila[8] || '').toLowerCase();
+  var estadoVerif = String(fila[15] || 'pendiente').toLowerCase();
+  if (estadoCuenta !== 'aprobado') {
+    return { error: 'Tu cuenta debe estar aprobada para publicar búsquedas.' };
+  }
+  if (estadoVerif !== 'aprobado') {
+    return { error: 'Tu verificación de identidad debe estar aprobada para publicar búsquedas.' };
+  }
+  return { sesion: sesion, fila: fila };
+}
+
+function crearBusqueda(d) {
+  var hab = empresaHabilitadaParaBuscar(d.token);
+  if (hab.error) return { ok: false, error: hab.error };
+
+  var puesto = limpiar(d.puesto);
+  var descripcion = limpiar(d.descripcion);
+  if (!puesto) return { ok: false, error: 'Indicá el puesto de la búsqueda.' };
+  if (!descripcion) return { ok: false, error: 'Agregá una descripción de la búsqueda.' };
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_BUSQUEDAS, COLUMNAS_BUSQUEDAS);
+  var id = Utilities.getUuid();
+  var ahora = new Date();
+
+  hoja.appendRow([
+    id, ahora, ahora,
+    hab.sesion.usuario, hab.fila[2],
+    puesto, descripcion,
+    limpiar(d.provincia) || 'Tucumán',
+    limpiar(d.localidad),
+    limpiar(d.modalidad),
+    limpiar(d.jornada),
+    limpiar(d.vacantes),
+    'activa'
+  ]);
+
+  return { ok: true, id: id, mensaje: 'Búsqueda publicada correctamente.' };
+}
+
+function listarMisBusquedas(d) {
+  var sesion = validarToken(d.token);
+  if (!sesion) return { ok: false, error: 'Sesión inválida o expirada.' };
+  if (sesion.rol === 'admin') return { ok: false, error: 'Esta acción corresponde a cuentas de empresa.' };
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_BUSQUEDAS, COLUMNAS_BUSQUEDAS);
+  var valores = hoja.getDataRange().getValues();
+  var usuario = String(sesion.usuario || '').trim().toLowerCase();
+
+  var lista = [];
+  for (var i = 1; i < valores.length; i++) {
+    if (String(valores[i][3]).trim().toLowerCase() === usuario) {
+      lista.push(filaAObjeto(COLUMNAS_BUSQUEDAS, valores[i]));
+    }
+  }
+  lista.reverse(); // más recientes primero
+  return { ok: true, total: lista.length, busquedas: lista };
+}
+
+function actualizarBusqueda(d) {
+  var sesion = validarToken(d.token);
+  if (!sesion) return { ok: false, error: 'Sesión inválida o expirada.' };
+
+  var id = limpiar(d.id);
+  if (!id) return { ok: false, error: 'Falta el identificador de la búsqueda.' };
+  var puesto = limpiar(d.puesto);
+  var descripcion = limpiar(d.descripcion);
+  if (!puesto) return { ok: false, error: 'Indicá el puesto de la búsqueda.' };
+  if (!descripcion) return { ok: false, error: 'Agregá una descripción de la búsqueda.' };
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_BUSQUEDAS, COLUMNAS_BUSQUEDAS);
+  var valores = hoja.getDataRange().getValues();
+  var usuario = String(sesion.usuario || '').trim().toLowerCase();
+
+  for (var i = 1; i < valores.length; i++) {
+    if (String(valores[i][0]) === id) {
+      if (String(valores[i][3]).trim().toLowerCase() !== usuario) {
+        return { ok: false, error: 'No podés modificar esta búsqueda.' };
+      }
+      var filaNum = i + 1;
+      hoja.getRange(filaNum, 3).setValue(new Date());               // FechaActualizacion
+      hoja.getRange(filaNum, 6).setValue(puesto);                    // Puesto
+      hoja.getRange(filaNum, 7).setValue(descripcion);               // Descripcion
+      hoja.getRange(filaNum, 8).setValue(limpiar(d.provincia) || 'Tucumán');
+      hoja.getRange(filaNum, 9).setValue(limpiar(d.localidad));
+      hoja.getRange(filaNum, 10).setValue(limpiar(d.modalidad));
+      hoja.getRange(filaNum, 11).setValue(limpiar(d.jornada));
+      hoja.getRange(filaNum, 12).setValue(limpiar(d.vacantes));
+      var actualizada = hoja.getRange(filaNum, 1, 1, COLUMNAS_BUSQUEDAS.length).getValues()[0];
+      return { ok: true, mensaje: 'Búsqueda actualizada.', busqueda: filaAObjeto(COLUMNAS_BUSQUEDAS, actualizada) };
+    }
+  }
+  return { ok: false, error: 'Búsqueda no encontrada.' };
+}
+
+function cambiarEstadoBusqueda(d) {
+  var sesion = validarToken(d.token);
+  if (!sesion) return { ok: false, error: 'Sesión inválida o expirada.' };
+
+  var id = limpiar(d.id);
+  var nuevo = limpiar(d.estado).toLowerCase();
+  if (['activa', 'pausada', 'cerrada'].indexOf(nuevo) === -1) {
+    return { ok: false, error: 'Estado inválido.' };
+  }
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_BUSQUEDAS, COLUMNAS_BUSQUEDAS);
+  var valores = hoja.getDataRange().getValues();
+  var usuario = String(sesion.usuario || '').trim().toLowerCase();
+
+  for (var i = 1; i < valores.length; i++) {
+    if (String(valores[i][0]) === id) {
+      if (String(valores[i][3]).trim().toLowerCase() !== usuario) {
+        return { ok: false, error: 'No podés modificar esta búsqueda.' };
+      }
+      hoja.getRange(i + 1, 13).setValue(nuevo);        // Estado
+      hoja.getRange(i + 1, 3).setValue(new Date());    // FechaActualizacion
+      return { ok: true, estado: nuevo };
+    }
+  }
+  return { ok: false, error: 'Búsqueda no encontrada.' };
+}
+
+function eliminarBusqueda(d) {
+  var sesion = validarToken(d.token);
+  if (!sesion) return { ok: false, error: 'Sesión inválida o expirada.' };
+
+  var id = limpiar(d.id);
+  if (!id) return { ok: false, error: 'Falta el identificador de la búsqueda.' };
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_BUSQUEDAS, COLUMNAS_BUSQUEDAS);
+  var valores = hoja.getDataRange().getValues();
+  var usuario = String(sesion.usuario || '').trim().toLowerCase();
+
+  for (var i = 1; i < valores.length; i++) {
+    if (String(valores[i][0]) === id) {
+      if (String(valores[i][3]).trim().toLowerCase() !== usuario) {
+        return { ok: false, error: 'No podés eliminar esta búsqueda.' };
+      }
+      hoja.deleteRow(i + 1);
+      return { ok: true, mensaje: 'Búsqueda eliminada.' };
+    }
+  }
+  return { ok: false, error: 'Búsqueda no encontrada.' };
+}
+
+/**
+ * Devuelve las búsquedas ACTIVAS para publicarlas en la página de inicio.
+ * Es PÚBLICA (no requiere token) y no expone el usuario/email de la empresa.
+ */
+function busquedasPublicas(d) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_BUSQUEDAS, COLUMNAS_BUSQUEDAS);
+  var valores = hoja.getDataRange().getValues();
+
+  var lista = [];
+  for (var i = 1; i < valores.length; i++) {
+    if (String(valores[i][12]).toLowerCase() === 'activa') {
+      var o = filaAObjeto(COLUMNAS_BUSQUEDAS, valores[i]);
+      delete o.UsuarioEmpresa; // no exponer el email de acceso al público
+      lista.push(o);
+    }
+  }
+  lista.reverse(); // más recientes primero
+  return { ok: true, total: lista.length, busquedas: lista };
 }
 

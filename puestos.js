@@ -357,6 +357,36 @@ function crearSelectorBuscable(opts) {
     }
   }
 
+  // Fija (o limpia con '') el valor del selector de forma programática.
+  // Útil para precargar desde la URL o al editar una búsqueda existente.
+  function aplicarValor(valor) {
+    var vi = String(valor == null ? '' : valor).trim();
+    if (!vi) {
+      seleccion = '';
+      input.value = '';
+      hidden.value = '';
+      if (otroWrap) otroWrap.classList.add('oculto');
+      if (otroInput) otroInput.value = '';
+      cerrar();
+      return;
+    }
+    if (opciones.indexOf(vi) !== -1) {
+      seleccion = vi; input.value = vi; hidden.value = vi;
+      if (otroWrap) otroWrap.classList.add('oculto');
+      if (otroInput) otroInput.value = '';
+    } else if (conOtros) {
+      seleccion = OTROS; input.value = OTROS;
+      if (otroWrap) otroWrap.classList.remove('oculto');
+      if (otroInput) otroInput.value = vi;
+      hidden.value = vi;
+    } else {
+      seleccion = vi; input.value = vi; hidden.value = vi;
+    }
+    cerrar();
+  }
+
+  if (opts.valorInicial) aplicarValor(opts.valorInicial);
+
   input.addEventListener('focus', function () { abrir(''); });
   input.addEventListener('input', function () { abrir(input.value); });
   input.addEventListener('blur', function () {
@@ -380,17 +410,25 @@ function crearSelectorBuscable(opts) {
       if (seleccion === OTROS) hidden.value = otroInput.value.trim();
     });
   }
+
+  // API para manejar el selector desde afuera (precargar / editar / limpiar).
+  return {
+    set: aplicarValor,
+    reset: function () { aplicarValor(''); },
+    get: function () { return hidden.value; }
+  };
 }
 
 /** Selector de puestos: buscador con opción "Otros" para carga manual. */
 function crearSelectorPuesto(opts) {
-  crearSelectorBuscable({
+  return crearSelectorBuscable({
     opciones: PUESTOS,
     inputId: opts.inputId,
     listaId: opts.listaId,
     hiddenId: opts.hiddenId,
     conOtros: true,
     otroWrapId: opts.otroWrapId,
-    otroInputId: opts.otroInputId
+    otroInputId: opts.otroInputId,
+    valorInicial: opts.valorInicial
   });
 }

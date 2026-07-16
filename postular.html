@@ -509,13 +509,16 @@
     return div;
   }
 
-  // Selector buscable de puesto deseado (evita variantes mal escritas)
+  // Selector buscable de puesto deseado (evita variantes mal escritas).
+  // Si se llega desde una búsqueda publicada (?puesto=…) queda precargado.
+  var puestoPrecargado = new URLSearchParams(location.search).get('puesto') || '';
   crearSelectorPuesto({
     inputId: 'puestoBuscar',
     listaId: 'puestoLista',
     hiddenId: 'puestoDeseado',
     otroWrapId: 'puestoOtroWrap',
-    otroInputId: 'puestoOtro'
+    otroInputId: 'puestoOtro',
+    valorInicial: puestoPrecargado
   });
 
   // Selector buscable de localidad de Tucumán (solo de la lista)
