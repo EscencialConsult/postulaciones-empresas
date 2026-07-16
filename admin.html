@@ -407,6 +407,8 @@
         ${dato('Estado', e.estado)}${dato('Verificación', e.estadoVerificacion)}
         ${dato('Confianza verificación', e.confianzaVerificacion)}
         ${dato('Aceptó términos', e.aceptoTerminos)}
+        ${dato('Selfie MediaPipe', e.selfieLivenessEstado ? [e.selfieLivenessEstado, e.selfieLivenessMetodo].filter(Boolean).join(' - ') : '')}
+        ${dato('Fecha selfie', fecha(e.selfieLivenessFecha))}
         ${dato('Fecha firma legal', fecha(e.fechaFirmaLegal))}
         ${dato('Registrada', fecha(e.fecha))}
       </div>

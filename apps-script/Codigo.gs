@@ -445,6 +445,13 @@ function verificarIdentidadDNI(d) {
   if (!d.dniFrenteBase64) return { ok: false, error: 'Falta la foto del frente del DNI.' };
   if (!d.dniDorsoBase64) return { ok: false, error: 'Falta la foto del dorso del DNI.' };
   if (!d.firmaLegalBase64) return { ok: false, error: 'Falta la firma legal del representante.' };
+  if (limpiar(d.dniFrenteValidacion) !== 'rostro_documento_y_estructura') {
+    return { ok: false, error: 'No se pudo validar que el frente corresponda a un DNI argentino válido.' };
+  }
+  var dniDorsoValidacion = limpiar(d.dniDorsoValidacion);
+  if (dniDorsoValidacion !== 'mrz_validado' && dniDorsoValidacion !== 'mrz_visual_validado') {
+    return { ok: false, error: 'No se pudo leer y validar la zona MRZ del dorso del DNI argentino.' };
+  }
   return {
     ok: true,
     estado: 'pendiente',
@@ -505,7 +512,9 @@ function registrarEmpresa(d) {
     selfieBase64: d.selfieBase64,
     dniFrenteBase64: d.dniFrenteBase64,
     dniDorsoBase64: d.dniDorsoBase64,
-    firmaLegalBase64: d.firmaLegalBase64
+    firmaLegalBase64: d.firmaLegalBase64,
+    dniFrenteValidacion: d.dniFrenteValidacion,
+    dniDorsoValidacion: d.dniDorsoValidacion
   });
   if (!verificacion.ok) return verificacion;
 
@@ -521,6 +530,18 @@ function registrarEmpresa(d) {
   var estadoVerificacion = verificacion.estado || 'pendiente';
   var estadoCuenta = estadoVerificacion === 'aprobado' ? 'aprobado' : 'pendiente';
   var detalleVerificacion = [verificacion.confianza, verificacion.observacion].filter(Boolean).join(' - ');
+  var selfieLivenessEstado = limpiar(d.selfieLivenessEstado);
+  var selfieLivenessMetodo = limpiar(d.selfieLivenessMetodo);
+  var selfieLivenessFecha = limpiar(d.selfieLivenessFecha);
+  if (selfieLivenessEstado) {
+    detalleVerificacion = [detalleVerificacion, 'Selfie validada con MediaPipe' + (selfieLivenessMetodo ? ' (' + selfieLivenessMetodo + ')' : '')].filter(Boolean).join(' - ');
+  }
+  if (limpiar(d.dniFrenteValidacion)) {
+    detalleVerificacion = [detalleVerificacion, 'Frente DNI: ' + limpiar(d.dniFrenteValidacion)].filter(Boolean).join(' - ');
+  }
+  if (limpiar(d.dniDorsoValidacion)) {
+    detalleVerificacion = [detalleVerificacion, 'Dorso DNI: ' + limpiar(d.dniDorsoValidacion) + (limpiar(d.dniDorsoMetodo) ? ' (' + limpiar(d.dniDorsoMetodo) + ')' : '')].filter(Boolean).join(' - ');
+  }
 
   // La firma del DNI y la firma registrada quedan para revisión manual del administrador.
   hoja.appendRow([
@@ -534,7 +555,10 @@ function registrarEmpresa(d) {
     new Date(),
     selfieGuardada.url,
     [nombre, apellido].filter(Boolean).join(' '),
-    '', '', '', '',
+    selfieLivenessMetodo,
+    '',
+    selfieLivenessEstado || '',
+    selfieLivenessFecha || '',
     frenteGuardado.url,
     dorsoGuardado.url,
     firmaLegal.url,
@@ -626,6 +650,10 @@ function empresaDesdeFila(fila) {
     fechaAceptoTerminos: (fila[19] instanceof Date) ? fila[19].toISOString() : fila[19],
     selfieUrl: fila[20] || '',
     nombreVerificado: fila[21] || '',
+    selfieLivenessMetodo: fila[22] || '',
+    selfieLivenessUrl: fila[23] || '',
+    selfieLivenessEstado: fila[24] || '',
+    selfieLivenessFecha: (fila[25] instanceof Date) ? fila[25].toISOString() : fila[25],
     dniFrenteUrl: fila[26] || '',
     dniDorsoUrl: fila[27] || '',
     firmaLegalUrl: fila[28] || '',

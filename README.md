@@ -55,6 +55,11 @@ Las imágenes se guardan en Drive y la empresa queda pendiente para revisión de
 la firma legal registrada y aprobar o rechazar la cuenta.
 Antes de enviarlas al backend, el navegador redimensiona y comprime las capturas para
 reducir el espacio ocupado en Drive: selfie hasta 900 px y DNI hasta 1200 px.
+La selfie se valida en el navegador con MediaPipe: se detecta un rostro centrado y
+se pide una señal simple de vida, como parpadear o mover apenas la cabeza. No requiere
+backend propio ni servicios pagos.
+El dorso del DNI valida la zona MRZ con OCR local o detección visual fuerte de las
+tres líneas inferiores. Si no se detecta la MRZ, la foto no queda aceptada.
 
 ### 4) Publicar como Aplicación Web
 1. Arriba a la derecha: **Implementar → Nueva implementación**.

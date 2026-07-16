@@ -29,6 +29,7 @@
   .captura-card .firma-controles { flex-wrap: wrap; gap: 8px; }
   .captura-card[data-captura^="dni"] .verificacion-video,
   .captura-card[data-captura^="dni"] .verificacion-preview { aspect-ratio: 16 / 10; object-fit: contain; }
+  .firma-advertencia { color: #92700a; }
   .login h1 { font-size: 1.5rem; margin: 14px 0 4px; }
   .login > p { color: var(--muted); margin: 0 0 24px; font-size: .92rem; }
   .err { color: var(--error); font-size: .85rem; margin-top: 10px; display: none; }
@@ -97,7 +98,7 @@
   .cargando, .vacio { text-align: center; padding: 48px; color: var(--muted); }
 
   /* Modal detalle */
-  .overlay { position: fixed; inset: 0; background: rgba(26,24,29,.55); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+  .overlay { position: fixed; inset: 0; background: rgba(26,24,29,.55); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
   .modal { background: #fff; border-radius: var(--radio); max-width: 700px; width: 100%; max-height: 88vh; overflow-y: auto; padding: 30px; box-shadow: 0 30px 60px rgba(26,24,29,.25); }
   .modal h2 { margin: 0 0 2px; font-size: 1.5rem; }
   .modal .puesto { color: var(--acento); font-weight: 700; margin: 0 0 20px; }
@@ -282,9 +283,9 @@
     <h1>Iniciá sesión</h1>
     <p>Ingresá con las credenciales de tu empresa o consultora.</p>
     <div class="info oculto" id="loginInfo"></div>
-    <div class="campo"><label>Email</label><input id="usuario" autocomplete="username" required placeholder="El email con el que te registraste"></div>
-    <div class="campo"><label>Contraseña</label><input id="password" type="password" autocomplete="current-password" required></div>
-    <button class="btn btn-prim btn-w" id="btnLogin">Iniciar sesión</button>
+    <div class="campo"><label for="usuario">Email</label><input id="usuario" autocomplete="username" required placeholder="El email con el que te registraste"></div>
+    <div class="campo"><label for="password">Contraseña</label><input id="password" type="password" autocomplete="current-password" required title="Contraseña"></div>
+    <button class="btn btn-prim btn-w" id="btnLogin" type="submit">Iniciar sesión</button>
     <div class="err" id="loginErr"></div>
     <a class="btn btn-sec btn-w" href="index.html" style="margin-top:12px">← Volver al inicio</a>
     <p class="alt">¿Todavía no tenés cuenta?
@@ -307,11 +308,11 @@
     <section class="registro-paso activo" data-reg-step="1">
       <h2>Datos de la empresa</h2>
       <div class="registro-grid">
-        <div class="campo"><label>Razón social</label>
+        <div class="campo"><label for="rEmpresa">Razón social</label>
           <input id="rEmpresa" required placeholder="Ej: Consultora XYZ S.A."></div>
-        <div class="campo"><label>CUIT / CUIL</label>
+        <div class="campo"><label for="rCuit">CUIT / CUIL</label>
           <input id="rCuit" required inputmode="numeric" placeholder="Ej: 30-12345678-9"></div>
-        <div class="campo"><label>Rubro</label>
+        <div class="campo"><label for="rRubro">Rubro</label>
           <input id="rRubro" required placeholder="Ej: Comercio, Salud, Tecnología…"></div>
       </div>
     </section>
@@ -319,14 +320,14 @@
     <section class="registro-paso" data-reg-step="2">
       <h2>Representante</h2>
       <div class="registro-grid">
-        <div class="campo"><label>Nombre</label>
+        <div class="campo"><label for="rNombre">Nombre</label>
           <input id="rNombre" required autocomplete="given-name" placeholder="Nombre del contacto"></div>
-        <div class="campo"><label>Apellido</label>
+        <div class="campo"><label for="rApellido">Apellido</label>
           <input id="rApellido" required autocomplete="family-name" placeholder="Apellido del contacto"></div>
-        <div class="campo"><label>DNI del representante</label>
+        <div class="campo"><label for="rDni">DNI del representante</label>
           <input id="rDni" required inputmode="numeric" pattern="[0-9]{8}" maxlength="8" placeholder="Ej: 12345678">
           <small>Se usará para validar la identidad del representante.</small></div>
-        <div class="campo"><label>Teléfono</label>
+        <div class="campo"><label for="rTelefono">Teléfono</label>
           <input id="rTelefono" type="tel" required autocomplete="tel" inputmode="tel" placeholder="Ej: +54 9 11 5555-5555"></div>
       </div>
     </section>
@@ -334,12 +335,12 @@
     <section class="registro-paso" data-reg-step="3">
       <h2>Acceso</h2>
       <div class="registro-grid">
-        <div class="campo"><label>Email <span class="muted">(será tu usuario de acceso)</span></label>
+        <div class="campo"><label for="rEmail">Email <span class="muted">(será tu usuario de acceso)</span></label>
           <input id="rEmail" type="email" required autocomplete="username email" placeholder="contacto@empresa.com"></div>
-        <div class="campo"><label>Contraseña</label>
+        <div class="campo"><label for="rPassword">Contraseña</label>
           <input id="rPassword" type="password" autocomplete="new-password" required minlength="6" placeholder="Mínimo 6 caracteres"></div>
-        <div class="campo"><label>Repetir contraseña</label>
-          <input id="rPassword2" type="password" autocomplete="new-password" required minlength="6"></div>
+        <div class="campo"><label for="rPassword2">Repetir contraseña</label>
+          <input id="rPassword2" type="password" autocomplete="new-password" required minlength="6" title="Repetir contraseña"></div>
       </div>
     </section>
 
@@ -347,11 +348,11 @@
       <h2>Verificación y legales</h2>
       <div class="verificacion-box">
         <h2>Verificación de identidad</h2>
-        <p>Tomá una selfie y fotos claras del frente y dorso del DNI del representante. Cada foto queda aceptada al capturarla; administración revisará la documentación y comparará la firma registrada con la del DNI.</p>
+        <p>Tomá una selfie y fotos claras del frente y dorso del DNI del representante. Revisamos cada foto antes de aceptarla.</p>
         <div class="capturas-grid">
           <div class="captura-card" data-captura="selfie">
             <h3>Selfie</h3>
-            <p>Rostro claro, buena luz, sin lentes oscuros.</p>
+            <p>Rostro centrado y con buena luz.</p>
             <video id="video-selfie" class="verificacion-video oculto" playsinline muted></video>
             <canvas id="canvas-selfie" class="oculto"></canvas>
             <img id="preview-selfie" class="verificacion-preview oculto" alt="Selfie capturada">
@@ -364,7 +365,7 @@
           </div>
           <div class="captura-card" data-captura="dniFrente">
             <h3>DNI frente</h3>
-            <p>Que se vean número, nombre y foto del documento.</p>
+            <p>Que se vean número, nombre y la foto del documento.</p>
             <video id="video-dniFrente" class="verificacion-video oculto" playsinline muted></video>
             <canvas id="canvas-dniFrente" class="oculto"></canvas>
             <img id="preview-dniFrente" class="verificacion-preview oculto" alt="Frente del DNI capturado">
@@ -377,7 +378,7 @@
           </div>
           <div class="captura-card" data-captura="dniDorso">
             <h3>DNI dorso</h3>
-            <p>Que se vean código y datos del reverso.</p>
+            <p>Que se vea completo el reverso del documento.</p>
             <video id="video-dniDorso" class="verificacion-video oculto" playsinline muted></video>
             <canvas id="canvas-dniDorso" class="oculto"></canvas>
             <img id="preview-dniDorso" class="verificacion-preview oculto" alt="Dorso del DNI capturado">
@@ -453,7 +454,7 @@
             <span>Cuenta de empresa</span>
           </div>
         </div>
-        <button class="btn btn-sec btn-w" id="btnSalir">Salir</button>
+      <button class="btn btn-sec btn-w" id="btnSalir" type="button">Salir</button>
       </div>
     </aside>
 
@@ -529,12 +530,12 @@
             <div class="cuenta-dato"><span>CUIT / CUIL <small>(no editable)</small></span><strong id="lockCuit">—</strong></div>
           </div>
           <div class="cuenta-grid">
-            <div class="campo"><label>Nombre del responsable</label><input id="miNombre" required></div>
-            <div class="campo"><label>Apellido del responsable</label><input id="miApellido" required></div>
-            <div class="campo"><label>Teléfono</label><input id="miTelefono" required></div>
-            <div class="campo span-2"><label>Email de acceso</label><input id="miEmail" disabled></div>
-            <div class="campo"><label>Contraseña actual</label><input id="miPasswordActual" type="password" autocomplete="current-password"></div>
-            <div class="campo"><label>Nueva contraseña</label><input id="miNuevaPassword" type="password" autocomplete="new-password" minlength="6"></div>
+            <div class="campo"><label for="miNombre">Nombre del responsable</label><input id="miNombre" required title="Nombre del responsable"></div>
+            <div class="campo"><label for="miApellido">Apellido del responsable</label><input id="miApellido" required title="Apellido del responsable"></div>
+            <div class="campo"><label for="miTelefono">Teléfono</label><input id="miTelefono" required title="Teléfono"></div>
+            <div class="campo span-2"><label for="miEmail">Email de acceso</label><input id="miEmail" disabled title="Email de acceso"></div>
+            <div class="campo"><label for="miPasswordActual">Contraseña actual</label><input id="miPasswordActual" type="password" autocomplete="current-password" title="Contraseña actual"></div>
+            <div class="campo"><label for="miNuevaPassword">Nueva contraseña</label><input id="miNuevaPassword" type="password" autocomplete="new-password" minlength="6" title="Nueva contraseña"></div>
           </div>
           <div class="cuenta-actions">
             <button type="submit" class="btn btn-prim" id="btnGuardarEmpresa">Guardar cambios</button>
@@ -575,35 +576,35 @@
           </div>
         </div>
         <div class="ats-filtros">
-          <div class="ats-f"><label>Puesto deseado</label>
-            <input id="fPuesto" list="dlPuestos" autocomplete="off" placeholder="Buscá o elegí un puesto…">
+          <div class="ats-f"><label for="fPuesto">Puesto deseado</label>
+            <input id="fPuesto" list="dlPuestos" autocomplete="off" placeholder="Buscá o elegí un puesto…" title="Puesto deseado">
             <datalist id="dlPuestos"></datalist></div>
-          <div class="ats-f"><label>Provincia</label>
-            <input id="fProvincia" list="dlProvincias" autocomplete="off" placeholder="Todas">
+          <div class="ats-f"><label for="fProvincia">Provincia</label>
+            <input id="fProvincia" list="dlProvincias" autocomplete="off" placeholder="Todas" title="Provincia">
             <datalist id="dlProvincias"></datalist></div>
-          <div class="ats-f"><label>Localidad</label>
-            <input id="fLocalidad" list="dlLocalidades" autocomplete="off" placeholder="Todas">
+          <div class="ats-f"><label for="fLocalidad">Localidad</label>
+            <input id="fLocalidad" list="dlLocalidades" autocomplete="off" placeholder="Todas" title="Localidad">
             <datalist id="dlLocalidades"></datalist></div>
-          <div class="ats-f"><label>Idioma</label><select id="fIdioma"><option value="">Todos</option></select></div>
-          <div class="ats-f"><label>Formación</label>
-            <select id="fFormacion"><option value="">Todas</option>
+          <div class="ats-f"><label for="fIdioma">Idioma</label><select id="fIdioma" title="Idioma"><option value="">Todos</option></select></div>
+          <div class="ats-f"><label for="fFormacion">Formación</label>
+            <select id="fFormacion" title="Formación"><option value="">Todas</option>
               <option>Primaria</option><option>Secundaria</option><option>Terciario / Técnico</option>
               <option>Universitario</option><option>Posgrado / Máster</option><option>Doctorado</option></select></div>
-          <div class="ats-f"><label>Disp. a viajar</label>
-            <select id="fViajar"><option value="">Todas</option><option>Sí</option><option>No</option><option>A convenir</option></select></div>
-          <div class="ats-f"><label>Cambio de residencia</label>
-            <select id="fResidencia"><option value="">Todas</option><option>Sí</option><option>No</option><option>A convenir</option></select></div>
-          <div class="ats-f"><label>Experiencia</label>
-            <select id="fExperiencia"><option value="">Todas</option>
+          <div class="ats-f"><label for="fViajar">Disp. a viajar</label>
+            <select id="fViajar" title="Disponibilidad para viajar"><option value="">Todas</option><option>Sí</option><option>No</option><option>A convenir</option></select></div>
+          <div class="ats-f"><label for="fResidencia">Cambio de residencia</label>
+            <select id="fResidencia" title="Cambio de residencia"><option value="">Todas</option><option>Sí</option><option>No</option><option>A convenir</option></select></div>
+          <div class="ats-f"><label for="fExperiencia">Experiencia</label>
+            <select id="fExperiencia" title="Experiencia"><option value="">Todas</option>
               <option value="primer">Busca primer empleo</option><option value="con">Con experiencia</option></select></div>
-          <div class="ats-f"><label>CV adjunto</label>
-            <select id="fCV"><option value="">Todos</option><option value="si">Con CV</option><option value="no">Sin CV</option></select></div>
-          <div class="ats-f"><label>Búsqueda de origen</label>
-            <select id="fBusqueda"><option value="">Todas</option></select></div>
-          <div class="ats-f"><label>Registrado desde</label><input id="fDesde" type="date"></div>
-          <div class="ats-f"><label>Registrado hasta</label><input id="fHasta" type="date"></div>
-          <div class="ats-f"><label>Ordenar por</label>
-            <select id="fOrden"><option value="reciente">Más recientes</option>
+          <div class="ats-f"><label for="fCV">CV adjunto</label>
+            <select id="fCV" title="CV adjunto"><option value="">Todos</option><option value="si">Con CV</option><option value="no">Sin CV</option></select></div>
+          <div class="ats-f"><label for="fBusqueda">Búsqueda de origen</label>
+            <select id="fBusqueda" title="Búsqueda de origen"><option value="">Todas</option></select></div>
+          <div class="ats-f"><label for="fDesde">Registrado desde</label><input id="fDesde" type="date" title="Registrado desde"></div>
+          <div class="ats-f"><label for="fHasta">Registrado hasta</label><input id="fHasta" type="date" title="Registrado hasta"></div>
+          <div class="ats-f"><label for="fOrden">Ordenar por</label>
+            <select id="fOrden" title="Ordenar por"><option value="reciente">Más recientes</option>
               <option value="antiguo">Más antiguos</option><option value="nombre">Nombre (A–Z)</option></select></div>
         </div>
       </div>
@@ -629,47 +630,47 @@
           <h2>Mis búsquedas</h2>
           <p>Publicá avisos de empleo; las búsquedas activas aparecen en la página de inicio.</p>
         </div>
-        <button class="btn btn-prim" id="btnNuevaBusq">+ Nueva búsqueda</button>
+        <button class="btn btn-prim" id="btnNuevaBusq" type="button">+ Nueva búsqueda</button>
       </div>
 
       <div class="info oculto" id="busqBloqueoAviso"></div>
 
       <form id="busqForm" class="card oculto" style="padding:22px; margin-bottom:16px" novalidate>
         <h3 id="busqFormTitulo" style="margin:0 0 6px">Nueva búsqueda</h3>
-        <input type="hidden" id="busqId">
+        <input type="hidden" id="busqId" title="Identificador de búsqueda">
 
         <!-- 1. Datos principales -->
         <div class="busq-form-sec">
           <h4>1. Datos principales del puesto</h4>
           <p class="sec-desc">Identifican la vacante y se usan para los filtros del portal.</p>
           <div class="busq-form-grid">
-            <div class="campo span-2"><label>Título de la búsqueda <span class="req">*</span></label>
+            <div class="campo span-2"><label for="busqTitulo">Título de la búsqueda <span class="req">*</span></label>
               <input id="busqTitulo" placeholder="Ej: Analista de Datos Junior"></div>
-            <div class="campo"><label>Área / Departamento <span class="req">*</span></label>
-              <select id="busqArea"><option value="">Seleccionar…</option>
+            <div class="campo"><label for="busqArea">Área / Departamento <span class="req">*</span></label>
+              <select id="busqArea" title="Área o departamento"><option value="">Seleccionar…</option>
                 <option>Administración</option><option>IT / Sistemas</option><option>Comercial / Ventas</option>
                 <option>RRHH</option><option>Marketing</option><option>Operaciones</option>
                 <option>Finanzas / Contabilidad</option><option>Atención al Cliente</option>
                 <option>Producción</option><option>Logística</option><option>Legales</option>
                 <option>Salud</option><option>Educación</option><option>Otro</option></select></div>
-            <div class="campo"><label>Modalidad de trabajo <span class="req">*</span></label>
-              <select id="busqModalidad"><option value="">Seleccionar…</option>
+            <div class="campo"><label for="busqModalidad">Modalidad de trabajo <span class="req">*</span></label>
+              <select id="busqModalidad" title="Modalidad de trabajo"><option value="">Seleccionar…</option>
                 <option>Presencial</option><option>Híbrido</option><option>Remoto</option></select></div>
-            <div class="campo"><label>Tipo de contrato</label>
-              <select id="busqTipoContrato"><option value="">Seleccionar…</option>
+            <div class="campo"><label for="busqTipoContrato">Tipo de contrato</label>
+              <select id="busqTipoContrato" title="Tipo de contrato"><option value="">Seleccionar…</option>
                 <option>Relación de dependencia (Full-time)</option>
                 <option>Relación de dependencia (Part-time)</option>
                 <option>Pasantía</option><option>Temporal</option><option>Freelance / Consultoría</option></select></div>
-            <div class="campo"><label>Provincia</label>
-              <select id="busqProvincia"><option selected>Tucumán</option></select></div>
-            <div class="campo"><label>Localidad <span class="req">*</span></label>
+            <div class="campo"><label for="busqProvincia">Provincia</label>
+              <select id="busqProvincia" title="Provincia"><option selected>Tucumán</option></select></div>
+            <div class="campo"><label for="busqLocalidadBuscar">Localidad <span class="req">*</span></label>
               <div class="puesto-selector">
                 <input type="text" id="busqLocalidadBuscar" class="puesto-input" autocomplete="off"
                        placeholder="Buscá o seleccioná la localidad…">
                 <div class="puesto-lista oculto" id="busqLocalidadLista"></div>
               </div>
-              <input type="hidden" id="busqLocalidad"></div>
-            <div class="campo span-2"><label>Zona o dirección laboral <span class="muted">(opcional, si es presencial/híbrido)</span></label>
+              <input type="hidden" id="busqLocalidad" title="Localidad seleccionada"></div>
+            <div class="campo span-2"><label for="busqZona">Zona o dirección laboral <span class="muted">(opcional, si es presencial/híbrido)</span></label>
               <input id="busqZona" placeholder="Ej: Zona centro, Parque Industrial…"></div>
           </div>
         </div>
@@ -678,24 +679,24 @@
         <div class="busq-form-sec">
           <h4>2. Descripción y requisitos</h4>
           <div class="busq-form-grid">
-            <div class="campo span-2"><label>Misión o resumen del puesto</label>
+            <div class="campo span-2"><label for="busqMision">Misión o resumen del puesto</label>
               <textarea id="busqMision" placeholder="En una o dos frases, el objetivo del cargo en la organización."></textarea></div>
-            <div class="campo span-2"><label>Responsabilidades principales <span class="req">*</span></label>
+            <div class="campo span-2"><label for="busqResponsabilidades">Responsabilidades principales <span class="req">*</span></label>
               <textarea id="busqResponsabilidades" placeholder="Tareas cotidianas y objetivos del rol."></textarea></div>
-            <div class="campo span-2"><label>Requisitos excluyentes <span class="req">*</span></label>
+            <div class="campo span-2"><label for="busqReqExcluyentes">Requisitos excluyentes <span class="req">*</span></label>
               <textarea id="busqReqExcluyentes" placeholder="Formación, años de experiencia y conocimientos sin los cuales no se avanza."></textarea></div>
-            <div class="campo span-2"><label>Requisitos deseables / valorados <span class="muted">(opcional)</span></label>
+            <div class="campo span-2"><label for="busqReqDeseables">Requisitos deseables / valorados <span class="muted">(opcional)</span></label>
               <textarea id="busqReqDeseables" placeholder="Competencias o certificaciones que suman pero no excluyen."></textarea></div>
-            <div class="campo span-2"><label>Habilidades clave <span class="muted">(3 a 5 · Enter o coma para agregar)</span></label>
+            <div class="campo span-2"><label for="busqHabInput">Habilidades clave <span class="muted">(3 a 5 · Enter o coma para agregar)</span></label>
               <input id="busqHabInput" placeholder="Ej: Excel Avanzado, SQL, Python" autocomplete="off">
               <div class="chips" id="busqHabChips"></div>
-              <input type="hidden" id="busqHabilidades"></div>
-            <div class="campo"><label>Idioma requerido</label>
-              <select id="busqIdioma"><option>Sin requisito de idioma</option>
+              <input type="hidden" id="busqHabilidades" title="Habilidades seleccionadas"></div>
+            <div class="campo"><label for="busqIdioma">Idioma requerido</label>
+              <select id="busqIdioma" title="Idioma requerido"><option>Sin requisito de idioma</option>
                 <option>Inglés</option><option>Portugués</option><option>Francés</option>
                 <option>Italiano</option><option>Otro</option></select></div>
-            <div class="campo"><label>Nivel de idioma</label>
-              <select id="busqNivelIdioma"><option value="">—</option>
+            <div class="campo"><label for="busqNivelIdioma">Nivel de idioma</label>
+              <select id="busqNivelIdioma" title="Nivel de idioma"><option value="">—</option>
                 <option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Nativo</option></select></div>
           </div>
         </div>
@@ -704,16 +705,16 @@
         <div class="busq-form-sec">
           <h4>3. Condiciones de contratación y beneficios</h4>
           <div class="busq-form-grid">
-            <div class="campo"><label>Salario bruto — mínimo</label>
+            <div class="campo"><label for="busqSalarioMin">Salario bruto — mínimo</label>
               <input id="busqSalarioMin" type="number" min="0" placeholder="$"></div>
-            <div class="campo"><label>Salario bruto — máximo</label>
+            <div class="campo"><label for="busqSalarioMax">Salario bruto — máximo</label>
               <input id="busqSalarioMax" type="number" min="0" placeholder="$"></div>
             <div class="campo span-2 check-inline">
               <input type="checkbox" id="busqOcultarSalario">
               <label for="busqOcultarSalario" style="margin:0">Ocultar el salario en la publicación (el candidato verá «A convenir»)</label></div>
-            <div class="campo span-2"><label>Horario y jornada laboral</label>
+            <div class="campo span-2"><label for="busqHorario">Horario y jornada laboral</label>
               <input id="busqHorario" placeholder="Ej: Lunes a Viernes de 9 a 18 hs"></div>
-            <div class="campo span-2"><label>Beneficios adicionales</label>
+            <div class="campo span-2"><label for="busqBeneficiosOtros">Beneficios adicionales</label>
               <div class="benef-grid">
                 <label class="check-inline"><input type="checkbox" class="benef" value="Prepaga"> Prepaga</label>
                 <label class="check-inline"><input type="checkbox" class="benef" value="Bono por objetivos"> Bono por objetivos</label>
@@ -729,19 +730,19 @@
         <div class="busq-form-sec">
           <h4>4. Configuración del proceso <span class="muted">(uso interno, no se publica)</span></h4>
           <div class="busq-form-grid">
-            <div class="campo"><label>Estado de la publicación <span class="req">*</span></label>
-              <select id="busqEstado">
+            <div class="campo"><label for="busqEstado">Estado de la publicación <span class="req">*</span></label>
+              <select id="busqEstado" title="Estado de la publicación">
                 <option value="borrador">Borrador</option>
                 <option value="activa" selected>Activa / Publicada</option>
                 <option value="pausada">Pausada</option>
                 <option value="cerrada">Cerrada / Finalizada</option></select></div>
-            <div class="campo"><label>Fecha de cierre <span class="muted">(opcional)</span></label>
-              <input id="busqVencimiento" type="date"></div>
-            <div class="campo span-2"><label>Email del reclutador responsable <span class="muted">(opcional)</span></label>
+            <div class="campo"><label for="busqVencimiento">Fecha de cierre <span class="muted">(opcional)</span></label>
+              <input id="busqVencimiento" type="date" title="Fecha de cierre"></div>
+            <div class="campo span-2"><label for="busqReclutador">Email del reclutador responsable <span class="muted">(opcional)</span></label>
               <input id="busqReclutador" type="email" placeholder="reclutador@empresa.com"></div>
-            <div class="campo span-2"><label>Pregunta de filtrado 1 <span class="muted">(opcional)</span></label>
+            <div class="campo span-2"><label for="busqPregunta1">Pregunta de filtrado 1 <span class="muted">(opcional)</span></label>
               <input id="busqPregunta1" placeholder="Ej: ¿Tenés movilidad propia para trasladarte a la planta?"></div>
-            <div class="campo span-2"><label>Pregunta de filtrado 2 <span class="muted">(opcional)</span></label>
+            <div class="campo span-2"><label for="busqPregunta2">Pregunta de filtrado 2 <span class="muted">(opcional)</span></label>
               <input id="busqPregunta2" placeholder="Ej: ¿Cuál es tu disponibilidad de incorporación?"></div>
           </div>
         </div>
@@ -796,6 +797,7 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@5.1.3/dist/signature_pad.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="firmas.js"></script>
 <script src="puestos.js"></script>
 <script src="config.js"></script>
@@ -938,29 +940,187 @@
   mostrarPasoRegistro(1);
 
   const capturasVerificacion = { selfie: '', dniFrente: '', dniDorso: '' };
+  const advertenciasCaptura = { selfie: '', dniFrente: '', dniDorso: '' };
   const streamsCaptura = {};
   let capturaActiva = '';
+  let mediaPipeVision = null;
+  let mediaPipeFaceLandmarker = null;
+  let selfieLiveness = null;
+  const validacionDocumento = { dniFrente: '', dniDorso: '', dniDorsoMetodo: '' };
+  let tesseractMrzWorker = null;
   const compresionCapturas = {
     selfie: { maxLado: 900, calidad: 0.7 },
     dniFrente: { maxLado: 1200, calidad: 0.76 },
     dniDorso: { maxLado: 1200, calidad: 0.76 }
   };
   const parametrosValidacionImagen = {
-    anchoMin: 160,
-    altoMin: 120,
-    brilloMin: 0,
-    brilloMax: 255,
-    contrasteMin: 0,
-    nitidezMin: 0,
+    anchoMin: 320,
+    altoMin: 240,
+    brilloMin: 15,
+    brilloMax: 245,
+    contrasteMin: 5,
+    nitidezMin: 1,
     selfie: {
-      requerirDetectorRostro: false,
+      requerirDetectorRostro: true,
+      permitirSinDetector: true,
       rostrosMin: 1,
       rostrosMax: 1,
-      areaRostroMin: 0.01,
-      areaRostroMax: 0.9,
-      desplazamientoCentroMax: 0.5
-    }
+      areaRostroMin: 0.05,
+      areaRostroMax: 0.65,
+      desplazamientoCentroMax: 0.35
+    },
+    dniFrente: {
+      requerirDetectorRostro: true,
+      permitirSinDetector: true,
+      rostrosMin: 1,
+      areaRostroMin: 0.002,
+      areaRostroMax: 0.12,
+      altoRostroMax: 0.46,
+      centroDocumentoMinX: 0.06,
+      centroDocumentoMaxX: 0.94,
+      centroDocumentoMinY: 0.18,
+      centroDocumentoMaxY: 0.82,
+      centroSelfieMinX: 0.32,
+      centroSelfieMaxX: 0.68,
+      centroSelfieMinY: 0.22,
+      centroSelfieMaxY: 0.78
+    },
+    dniDorso: { requerirCodigo: true, permitirSinDetector: true }
   };
+
+  async function cargarFaceLandmarker() {
+    if (mediaPipeFaceLandmarker) return mediaPipeFaceLandmarker;
+    const vision = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/+esm');
+    mediaPipeVision = mediaPipeVision || await vision.FilesetResolver.forVisionTasks(
+      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/wasm'
+    );
+    const opciones = {
+      baseOptions: {
+        modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task'
+      },
+      runningMode: 'VIDEO',
+      numFaces: 2,
+      minFaceDetectionConfidence: 0.55,
+      minFacePresenceConfidence: 0.55,
+      minTrackingConfidence: 0.55,
+      outputFaceBlendshapes: true
+    };
+    try {
+      mediaPipeFaceLandmarker = await vision.FaceLandmarker.createFromOptions(mediaPipeVision, {
+        ...opciones,
+        baseOptions: { ...opciones.baseOptions, delegate: 'GPU' }
+      });
+    } catch (ex) {
+      mediaPipeFaceLandmarker = await vision.FaceLandmarker.createFromOptions(mediaPipeVision, opciones);
+    }
+    return mediaPipeFaceLandmarker;
+  }
+
+  function distanciaPuntos(a, b) {
+    return Math.hypot((a.x || 0) - (b.x || 0), (a.y || 0) - (b.y || 0));
+  }
+
+  function eyeAspectRatio(lm, indices) {
+    const horizontal = distanciaPuntos(lm[indices[0]], lm[indices[3]]);
+    if (!horizontal) return 0;
+    return (distanciaPuntos(lm[indices[1]], lm[indices[5]]) + distanciaPuntos(lm[indices[2]], lm[indices[4]])) / (2 * horizontal);
+  }
+
+  function puntajeParpadeo(resultado, landmarks) {
+    const categorias = resultado.faceBlendshapes && resultado.faceBlendshapes[0] && resultado.faceBlendshapes[0].categories || [];
+    const blinkLeft = categorias.find(c => c.categoryName === 'eyeBlinkLeft');
+    const blinkRight = categorias.find(c => c.categoryName === 'eyeBlinkRight');
+    if (blinkLeft || blinkRight) return Math.max(blinkLeft ? blinkLeft.score : 0, blinkRight ? blinkRight.score : 0);
+    const leftEar = eyeAspectRatio(landmarks, [33, 160, 158, 133, 153, 144]);
+    const rightEar = eyeAspectRatio(landmarks, [362, 385, 387, 263, 373, 380]);
+    return Math.max(0, 0.26 - ((leftEar + rightEar) / 2));
+  }
+
+  function resumenLandmarksSelfie(landmarks) {
+    let minX = 1, minY = 1, maxX = 0, maxY = 0;
+    landmarks.forEach(p => {
+      if (p.x < minX) minX = p.x;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.y > maxY) maxY = p.y;
+    });
+    const ancho = maxX - minX;
+    const alto = maxY - minY;
+    return {
+      centroX: minX + ancho / 2,
+      centroY: minY + alto / 2,
+      area: ancho * alto,
+      narizX: landmarks[1] ? landmarks[1].x : minX + ancho / 2
+    };
+  }
+
+  async function validarLivenessSelfie(video) {
+    let landmarker;
+    try {
+      landmarker = await cargarFaceLandmarker();
+    } catch (ex) {
+      return 'No pudimos revisar la selfie. Revisá la conexión.';
+    }
+
+    const muestras = [];
+    const inicio = performance.now();
+    const duracion = 2600;
+    let framesSinRostro = 0;
+    let framesMultiples = 0;
+    setEstadoCaptura('selfie', 'Mirá a cámara y parpadeá.', 'firma-vacia');
+
+    try {
+      while (performance.now() - inicio < duracion) {
+        const resultado = landmarker.detectForVideo(video, performance.now());
+        const caras = resultado.faceLandmarks || [];
+        if (!caras.length) {
+          framesSinRostro++;
+        } else if (caras.length > 1) {
+          framesMultiples++;
+        } else {
+          const resumen = resumenLandmarksSelfie(caras[0]);
+          muestras.push({
+            area: resumen.area,
+            centroX: resumen.centroX,
+            centroY: resumen.centroY,
+            narizX: resumen.narizX,
+            blink: puntajeParpadeo(resultado, caras[0])
+          });
+        }
+        await new Promise(resolve => setTimeout(resolve, 90));
+      }
+    } catch (ex) {
+      return 'No pudimos revisar la selfie. Cerrá otras apps con cámara e intentá de nuevo.';
+    }
+
+    if (framesMultiples > 2) return 'Debe verse una sola persona.';
+    if (muestras.length < 8 || framesSinRostro > 8) return 'No vemos bien tu cara. Buscá más luz.';
+
+    const areaProm = muestras.reduce((sum, m) => sum + m.area, 0) / muestras.length;
+    if (areaProm < 0.055) return 'Acercate un poco y repetí la foto.';
+    if (areaProm > 0.42) return 'Alejá un poco la cámara.';
+
+    const centroXProm = muestras.reduce((sum, m) => sum + m.centroX, 0) / muestras.length;
+    const centroYProm = muestras.reduce((sum, m) => sum + m.centroY, 0) / muestras.length;
+    if (Math.abs(centroXProm - 0.5) > 0.22 || Math.abs(centroYProm - 0.5) > 0.24) {
+      return 'Centrate en la cámara.';
+    }
+
+    const blinks = muestras.filter(m => m.blink > 0.32).length;
+    const narizMin = Math.min(...muestras.map(m => m.narizX));
+    const narizMax = Math.max(...muestras.map(m => m.narizX));
+    const movimiento = narizMax - narizMin;
+    if (blinks < 2 && movimiento < 0.025) {
+      return 'No pudimos confirmar la selfie. Parpadeá e intentá otra vez.';
+    }
+
+    selfieLiveness = {
+      estado: 'mediapipe_validado',
+      fecha: new Date().toISOString(),
+      metodo: blinks >= 2 ? 'parpadeo' : 'movimiento'
+    };
+    return '';
+  }
 
   function detenerCamara(tipo) {
     if (tipo) {
@@ -992,7 +1152,7 @@
     const video = document.getElementById('video-' + tipo);
     const preview = document.getElementById('preview-' + tipo);
     if (capturaActiva && capturaActiva !== tipo) {
-      setEstadoCaptura(tipo, 'Terminá o reintentá la captura abierta antes de usar otra cámara.', 'firma-error');
+      setEstadoCaptura(tipo, 'Cerrá la captura abierta antes de usar otra cámara.', 'firma-error');
       return;
     }
     try {
@@ -1006,11 +1166,11 @@
       preview.classList.add('oculto');
       document.querySelector(`[data-captura-shot="${tipo}"]`).classList.remove('oculto');
       document.querySelector(`[data-captura-retry="${tipo}"]`).classList.add('oculto');
-      setEstadoCaptura(tipo, 'Cámara lista. Tomá una foto clara.', 'firma-vacia');
+      setEstadoCaptura(tipo, 'Cámara lista. Sacá la foto.', 'firma-vacia');
     } catch (ex) {
       capturaActiva = '';
       actualizarBloqueoCapturas();
-      setEstadoCaptura(tipo, 'No se pudo abrir la cámara. Revisá permisos del navegador.', 'firma-vacia');
+      setEstadoCaptura(tipo, 'No se abrió la cámara. Revisá los permisos.', 'firma-vacia');
     }
   }
 
@@ -1060,38 +1220,508 @@
     };
   }
 
-  async function validarRostroSelfie(canvas) {
-    const cfg = parametrosValidacionImagen.selfie;
+  function validarEncuadreDocumento(canvas) {
+    if (canvas.width <= canvas.height * 1.05) {
+      return 'Giralo horizontal y que se vea completo.';
+    }
+
+    const w = Math.min(180, canvas.width);
+    const h = Math.max(1, Math.round(canvas.height * (w / canvas.width)));
+    const mini = document.createElement('canvas');
+    mini.width = w;
+    mini.height = h;
+    const ctxMini = mini.getContext('2d', { willReadFrequently: true });
+    ctxMini.drawImage(canvas, 0, 0, w, h);
+    const data = ctxMini.getImageData(0, 0, w, h).data;
+    let minX = w, minY = h, maxX = 0, maxY = 0, bordes = 0;
+
+    function gris(x, y) {
+      const i = (y * w + x) * 4;
+      return 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    }
+
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        const gx = Math.abs(gris(x + 1, y) - gris(x - 1, y));
+        const gy = Math.abs(gris(x, y + 1) - gris(x, y - 1));
+        if (gx + gy > 38) {
+          bordes++;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    if (bordes < w * h * 0.012) {
+      return 'No vemos bien el DNI. Acercalo y usá otro fondo.';
+    }
+
+    const anchoRel = (maxX - minX) / w;
+    const altoRel = (maxY - minY) / h;
+    if (anchoRel < 0.55 || altoRel < 0.32) {
+      return 'Acercá el DNI, pero que entre completo.';
+    }
+
+    return '';
+  }
+
+  function detectarPatronBarras(canvas) {
+    const w = Math.min(220, canvas.width);
+    const h = Math.max(1, Math.round(canvas.height * (w / canvas.width)));
+    const mini = document.createElement('canvas');
+    mini.width = w;
+    mini.height = h;
+    const ctxMini = mini.getContext('2d', { willReadFrequently: true });
+    ctxMini.drawImage(canvas, 0, 0, w, h);
+    const data = ctxMini.getImageData(0, 0, w, h).data;
+    const inicioY = Math.floor(h * 0.35);
+    let filasConBarras = 0;
+    let filasAnalizadas = 0;
+
+    for (let y = inicioY; y < h; y += 3) {
+      let cambiosFuertes = 0;
+      let cambios = 0;
+      let previo = null;
+      for (let x = 0; x < w; x += 2) {
+        const i = (y * w + x) * 4;
+        const gris = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        if (previo != null) {
+          const dif = Math.abs(gris - previo);
+          if (dif > 22) cambiosFuertes++;
+          cambios++;
+        }
+        previo = gris;
+      }
+      filasAnalizadas++;
+      if (cambios && cambiosFuertes / cambios > 0.16) filasConBarras++;
+    }
+
+    return filasAnalizadas ? filasConBarras / filasAnalizadas > 0.22 : false;
+  }
+
+  function calcularTexturaZona(canvas, zona) {
+    const w = Math.min(220, canvas.width);
+    const h = Math.max(1, Math.round(canvas.height * (w / canvas.width)));
+    const mini = document.createElement('canvas');
+    mini.width = w;
+    mini.height = h;
+    const ctxMini = mini.getContext('2d', { willReadFrequently: true });
+    ctxMini.drawImage(canvas, 0, 0, w, h);
+    const data = ctxMini.getImageData(0, 0, w, h).data;
+    const x0 = Math.floor(w * (zona && zona.x0 != null ? zona.x0 : 0));
+    const x1 = Math.floor(w * (zona && zona.x1 != null ? zona.x1 : 1));
+    const y0 = Math.floor(h * (zona && zona.y0 != null ? zona.y0 : 0));
+    const y1 = Math.floor(h * (zona && zona.y1 != null ? zona.y1 : 1));
+    let cambiosFuertes = 0;
+    let muestras = 0;
+    let filasActivas = 0;
+
+    for (let y = Math.max(1, y0); y < Math.min(h - 1, y1); y += 2) {
+      let cambiosFila = 0;
+      let prev = null;
+      for (let x = Math.max(1, x0); x < Math.min(w - 1, x1); x += 2) {
+        const i = (y * w + x) * 4;
+        const gris = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        if (prev != null) {
+          const dif = Math.abs(gris - prev);
+          if (dif > 18) {
+            cambiosFuertes++;
+            cambiosFila++;
+          }
+          muestras++;
+        }
+        prev = gris;
+      }
+      if (cambiosFila >= 4) filasActivas++;
+    }
+
+    const filas = Math.max(1, Math.floor((Math.min(h - 1, y1) - Math.max(1, y0)) / 2));
+    return {
+      densidad: cambiosFuertes / Math.max(muestras, 1),
+      filasActivas: filasActivas / filas
+    };
+  }
+
+  function validarTexturaFrenteDni(canvas) {
+    const texto = calcularTexturaZona(canvas, { x0: 0.35, x1: 0.96, y0: 0.18, y1: 0.86 });
+    const textoSuperior = calcularTexturaZona(canvas, { x0: 0.28, x1: 0.96, y0: 0.08, y1: 0.32 });
+    const textoMedio = calcularTexturaZona(canvas, { x0: 0.35, x1: 0.96, y0: 0.32, y1: 0.68 });
+    const foto = calcularTexturaZona(canvas, { x0: 0.04, x1: 0.36, y0: 0.18, y1: 0.86 });
+    const zonasTextoActivas = [textoSuperior, textoMedio].filter(z => z.densidad > 0.05 && z.filasActivas > 0.18).length;
+    if (texto.densidad < 0.075 || texto.filasActivas < 0.3 || zonasTextoActivas < 2) {
+      return 'No se leen los datos. Acercá el DNI y evitá reflejos.';
+    }
+    if (foto.densidad < 0.025) {
+      return 'No vemos la foto del DNI. Tomá el frente completo.';
+    }
+    return '';
+  }
+
+  function validarRostroComoFotoDocumento(box, canvas, cfg) {
+    const area = (box.width * box.height) / (canvas.width * canvas.height);
+    const altoRel = box.height / canvas.height;
+    const anchoRel = box.width / canvas.width;
+    const centroX = (box.x + box.width / 2) / canvas.width;
+    const centroY = (box.y + box.height / 2) / canvas.height;
+    const rostroCentradoTipoSelfie = centroX >= cfg.centroSelfieMinX
+      && centroX <= cfg.centroSelfieMaxX
+      && centroY >= cfg.centroSelfieMinY
+      && centroY <= cfg.centroSelfieMaxY
+      && (area > 0.045 || altoRel > 0.28);
+
+    if (area < cfg.areaRostroMin) return { ok: false, error: 'Acercá el DNI y repetí la foto.' };
+    if (area > cfg.areaRostroMax || altoRel > cfg.altoRostroMax || anchoRel > 0.35) {
+      return { ok: false, error: 'Parece una selfie. Tomá el frente del DNI.' };
+    }
+    if (rostroCentradoTipoSelfie) {
+      return { ok: false, error: 'Parece una selfie. Tomá el DNI completo.' };
+    }
+    if (centroX < cfg.centroDocumentoMinX || centroX > cfg.centroDocumentoMaxX || centroY < cfg.centroDocumentoMinY || centroY > cfg.centroDocumentoMaxY) {
+      return { ok: false, error: 'Ubicá el DNI completo dentro del cuadro.' };
+    }
+    return { ok: true };
+  }
+
+  function dniIngresadoRegistro() {
+    const input = document.getElementById('rDni');
+    return input ? input.value.replace(/[^0-9]/g, '') : '';
+  }
+
+  function normalizarTextoMrz(texto) {
+    return String(texto || '')
+      .replace(/\r/g, '\n')
+      .replace(/[ \t]+/g, '')
+      .replace(/\n{2,}/g, '\n')
+      .trim();
+  }
+
+  function validarTextoMrzDni(texto) {
+    const limpio = normalizarTextoMrz(texto)
+      .toUpperCase()
+      .replace(/[«‹<]/g, '<')
+      .replace(/[^\nA-Z0-9<]/g, '');
+    const dniIngresado = dniIngresadoRegistro();
+    const lineas = limpio.split(/\n+/)
+      .map(l => l.replace(/[^A-Z0-9<]/g, ''))
+      .filter(l => l.length >= 18);
+    const textoPlano = lineas.join('');
+    const tieneIdArg = /IDARG/.test(textoPlano);
+    const tieneSeparadoresMrz = (textoPlano.match(/</g) || []).length >= 8;
+    if (!tieneIdArg || !tieneSeparadoresMrz || (lineas.length < 2 && textoPlano.length < 55)) {
+      return { ok: false, error: 'No vemos bien las líneas de abajo del dorso.' };
+    }
+    if (dniIngresado && textoPlano.indexOf(dniIngresado) === -1) {
+      return { ok: false, error: 'El DNI leído no coincide con el ingresado.' };
+    }
+    return { ok: true, texto: lineas.join('\n') };
+  }
+
+  function canvasRecortado(canvas, y0Rel, y1Rel) {
+    const recorte = document.createElement('canvas');
+    const y0 = Math.max(0, Math.floor(canvas.height * y0Rel));
+    const y1 = Math.min(canvas.height, Math.floor(canvas.height * y1Rel));
+    recorte.width = canvas.width;
+    recorte.height = Math.max(1, y1 - y0);
+    recorte.getContext('2d').drawImage(canvas, 0, y0, canvas.width, recorte.height, 0, 0, recorte.width, recorte.height);
+    return recorte;
+  }
+
+  function prepararCanvasMrz(canvas) {
+    const zona = canvasRecortado(canvas, 0.5, 0.98);
+    const escala = Math.max(2, Math.min(3, 1600 / Math.max(zona.width, 1)));
+    const salida = document.createElement('canvas');
+    salida.width = Math.round(zona.width * escala);
+    salida.height = Math.round(zona.height * escala);
+    const ctx = salida.getContext('2d', { willReadFrequently: true });
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(zona, 0, 0, salida.width, salida.height);
+    const imageData = ctx.getImageData(0, 0, salida.width, salida.height);
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const gris = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      const v = gris < 150 ? 0 : 255;
+      data[i] = v;
+      data[i + 1] = v;
+      data[i + 2] = v;
+    }
+    ctx.putImageData(imageData, 0, 0);
+    return salida;
+  }
+
+  function detectarMrzVisual(canvas) {
+    const zona = canvasRecortado(canvas, 0.48, 0.98);
+    const w = Math.min(360, zona.width);
+    const h = Math.max(1, Math.round(zona.height * (w / zona.width)));
+    const mini = document.createElement('canvas');
+    mini.width = w;
+    mini.height = h;
+    const ctx = mini.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(zona, 0, 0, w, h);
+    const data = ctx.getImageData(0, 0, w, h).data;
+    const filas = [];
+
+    for (let y = 0; y < h; y++) {
+      let oscuros = 0;
+      let cambios = 0;
+      let minX = w;
+      let maxX = 0;
+      let previoOscuro = null;
+      for (let x = Math.floor(w * 0.08); x < Math.floor(w * 0.95); x++) {
+        const i = (y * w + x) * 4;
+        const gris = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        const oscuro = gris < 115;
+        if (oscuro) {
+          oscuros++;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+        }
+        if (previoOscuro != null && oscuro !== previoOscuro) cambios++;
+        previoOscuro = oscuro;
+      }
+      const anchoZona = Math.max(1, Math.floor(w * 0.87));
+      filas.push({
+        y,
+        densidad: oscuros / anchoZona,
+        cambios,
+        minX,
+        maxX,
+        anchoRel: maxX > minX ? (maxX - minX) / w : 0
+      });
+    }
+
+    const candidatas = filas.filter(f => f.densidad > 0.045 && f.densidad < 0.42 && f.cambios > 24 && f.anchoRel > 0.45);
+    const grupos = [];
+    candidatas.forEach(f => {
+      const ultimo = grupos[grupos.length - 1];
+      if (ultimo && f.y - ultimo.fin <= 2) {
+        ultimo.fin = f.y;
+        ultimo.peso += f.densidad;
+        ultimo.minX = Math.min(ultimo.minX, f.minX);
+        ultimo.maxX = Math.max(ultimo.maxX, f.maxX);
+      } else {
+        grupos.push({ inicio: f.y, fin: f.y, peso: f.densidad, minX: f.minX, maxX: f.maxX });
+      }
+    });
+
+    const lineas = grupos
+      .map(g => ({ ...g, alto: g.fin - g.inicio + 1, centro: (g.inicio + g.fin) / 2, anchoRel: (g.maxX - g.minX) / w }))
+      .filter(g => g.alto >= Math.max(2, h * 0.015) && g.alto <= h * 0.16 && g.anchoRel > 0.58)
+      .sort((a, b) => b.peso - a.peso)
+      .slice(0, 5)
+      .sort((a, b) => a.centro - b.centro);
+
+    if (lineas.length < 3) return false;
+    const ultimasTres = lineas.slice(-3);
+    const separaciones = [
+      ultimasTres[1].centro - ultimasTres[0].centro,
+      ultimasTres[2].centro - ultimasTres[1].centro
+    ];
+    const anchosValidos = ultimasTres.every(l => l.anchoRel > 0.62);
+    const alineadas = Math.max(...ultimasTres.map(l => l.minX)) - Math.min(...ultimasTres.map(l => l.minX)) <= w * 0.16;
+    const separacionSimilar = Math.abs(separaciones[0] - separaciones[1]) <= h * 0.07;
+    const zonaInferior = ultimasTres[0].centro > h * 0.28 && ultimasTres[2].centro > h * 0.52;
+    return anchosValidos && alineadas && separacionSimilar && zonaInferior;
+  }
+
+  function detectarZonaHuellaDorso(canvas) {
+    const zona = calcularTexturaZona(canvas, { x0: 0.68, x1: 0.96, y0: 0.12, y1: 0.66 });
+    const zonaTextoFrente = calcularTexturaZona(canvas, { x0: 0.36, x1: 0.66, y0: 0.18, y1: 0.7 });
+    return zona.densidad > 0.055 && zona.filasActivas > 0.28 && zona.densidad > zonaTextoFrente.densidad * 0.85;
+  }
+
+  function validarEstructuraDorsoVisual(canvas) {
+    if (!detectarMrzVisual(canvas)) return false;
+    return detectarZonaHuellaDorso(canvas);
+  }
+
+  async function obtenerTesseractMrzWorker() {
+    if (tesseractMrzWorker) return tesseractMrzWorker;
+    if (!window.Tesseract || !window.Tesseract.createWorker) {
+      throw new Error('No se pudo cargar el lector OCR.');
+    }
+    tesseractMrzWorker = await Tesseract.createWorker('eng');
+    await tesseractMrzWorker.setParameters({
+      tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<',
+      tessedit_pageseg_mode: '6',
+      preserve_interword_spaces: '1'
+    });
+    return tesseractMrzWorker;
+  }
+
+  async function leerMrzDni(canvas) {
+    const worker = await obtenerTesseractMrzWorker();
+    const mrzCanvas = prepararCanvasMrz(canvas);
+    const resultado = await worker.recognize(mrzCanvas);
+    const texto = resultado && resultado.data ? resultado.data.text : '';
+    const validacion = validarTextoMrzDni(texto);
+    return validacion.ok ? { texto: validacion.texto, metodo: 'Dorso leído' } : null;
+  }
+
+  async function escanearMrzDniDesdeVideo(video, canvas) {
+    const inicio = performance.now();
+    const duracion = 9000;
+    let ultimoError = '';
+    setEstadoCaptura('dniDorso', 'Buscando las líneas de abajo...', 'firma-vacia');
+
+    while (performance.now() - inicio < duracion) {
+      if (!video.videoWidth) break;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+      const errorEncuadre = validarEncuadreDocumento(canvas);
+      if (!errorEncuadre) {
+        try {
+          const mrz = await leerMrzDni(canvas);
+          if (mrz) return { ok: true, mrz };
+          if (validarEstructuraDorsoVisual(canvas)) {
+            return { ok: true, mrz: { metodo: 'Dorso detectado', texto: '' } };
+          }
+          ultimoError = 'No vemos bien las líneas de abajo. Acercá el dorso.';
+        } catch (ex) {
+          ultimoError = 'No pudimos revisar el dorso. Revisá conexión e intentá de nuevo.';
+        }
+      } else {
+        ultimoError = errorEncuadre;
+      }
+      await new Promise(resolve => setTimeout(resolve, 600));
+    }
+
+    return {
+      ok: false,
+      error: ultimoError || 'No vimos las líneas de abajo. Usá más luz y acercá el dorso.'
+    };
+  }
+
+  async function detectarRostros(canvas, maxRostros) {
     if (!('FaceDetector' in window)) {
-      return cfg.requerirDetectorRostro
-        ? 'No se pudo validar que sea una persona. Usá Chrome o Edge actualizado para tomar la selfie.'
-        : '';
+      return null;
+    }
+    const detector = new FaceDetector({ fastMode: true, maxDetectedFaces: maxRostros || 2 });
+    return detector.detect(canvas);
+  }
+
+  async function detectarRostrosDocumento(canvas, maxRostros) {
+    try {
+      const rostrosNativos = await detectarRostros(canvas, maxRostros);
+      if (rostrosNativos) return rostrosNativos;
+    } catch (ex) {
+      // Si falla el detector nativo, seguimos con MediaPipe.
     }
 
     try {
-      const detector = new FaceDetector({ fastMode: true, maxDetectedFaces: cfg.rostrosMax + 1 });
-      const rostros = await detector.detect(canvas);
-      if (rostros.length < cfg.rostrosMin) {
-        return cfg.requerirDetectorRostro ? 'No detectamos un rostro. Tomá una selfie frontal con buena luz.' : '';
+      const landmarker = await cargarFaceLandmarker();
+      const resultado = landmarker.detectForVideo(canvas, performance.now());
+      const caras = (resultado.faceLandmarks || []).slice(0, maxRostros || 2);
+      return caras.map(landmarks => {
+        let minX = 1, minY = 1, maxX = 0, maxY = 0;
+        landmarks.forEach(p => {
+          if (p.x < minX) minX = p.x;
+          if (p.x > maxX) maxX = p.x;
+          if (p.y < minY) minY = p.y;
+          if (p.y > maxY) maxY = p.y;
+        });
+        return {
+          boundingBox: {
+            x: minX * canvas.width,
+            y: minY * canvas.height,
+            width: (maxX - minX) * canvas.width,
+            height: (maxY - minY) * canvas.height
+          }
+        };
+      });
+    } catch (ex) {
+      return null;
+    }
+  }
+
+  async function validarRostroSelfie(canvas) {
+    const cfg = parametrosValidacionImagen.selfie;
+    try {
+      const rostros = await detectarRostros(canvas, cfg.rostrosMax + 1);
+      if (!rostros) {
+        if (cfg.permitirSinDetector) {
+          advertenciasCaptura.selfie = 'Selfie revisada.';
+          return '';
+        }
+        return 'No pudimos revisar la selfie. Probá con otro navegador.';
       }
-      if (!cfg.requerirDetectorRostro) return '';
-      if (rostros.length > cfg.rostrosMax) return 'Debe aparecer una sola persona en la selfie.';
+      if (rostros.length < cfg.rostrosMin) {
+        return 'No vemos tu cara. Mirá de frente y usá más luz.';
+      }
+      if (rostros.length > cfg.rostrosMax) return 'Debe verse una sola persona.';
 
       const box = rostros[0].boundingBox;
       const area = (box.width * box.height) / (canvas.width * canvas.height);
-      if (area < cfg.areaRostroMin) return 'El rostro se ve muy lejos. Acercate un poco y repetí la selfie.';
-      if (area > cfg.areaRostroMax) return 'El rostro está demasiado cerca. Alejá un poco la cámara.';
+      if (area < cfg.areaRostroMin) return 'Acercate un poco y repetí la foto.';
+      if (area > cfg.areaRostroMax) return 'Alejá un poco la cámara.';
 
       const centroX = box.x + box.width / 2;
       const centroY = box.y + box.height / 2;
       const desplazamiento = Math.hypot((centroX - canvas.width / 2) / canvas.width, (centroY - canvas.height / 2) / canvas.height);
-      if (desplazamiento > cfg.desplazamientoCentroMax) return 'Centrate en la cámara y repetí la selfie.';
+      if (desplazamiento > cfg.desplazamientoCentroMax) return 'Centrate en la cámara.';
       return '';
     } catch (ex) {
-      return cfg.requerirDetectorRostro
-        ? 'No se pudo analizar el rostro. Reintentá con buena luz o usá Chrome/Edge actualizado.'
-        : '';
+      if (cfg.permitirSinDetector) {
+        advertenciasCaptura.selfie = 'Selfie revisada.';
+        return '';
+      }
+      return 'No pudimos revisar la selfie. Probá con más luz.';
     }
+  }
+
+  async function validarDniFrente(canvas) {
+    const cfg = parametrosValidacionImagen.dniFrente;
+    const errorEncuadre = validarEncuadreDocumento(canvas);
+    if (errorEncuadre) return errorEncuadre;
+    const errorTextura = validarTexturaFrenteDni(canvas);
+    if (errorTextura) return errorTextura;
+    if (!cfg.requerirDetectorRostro) return '';
+    try {
+      const rostros = await detectarRostrosDocumento(canvas, 3);
+      if (!rostros) {
+        return 'No pudimos revisar el frente. Tomá el DNI completo.';
+      }
+      if (rostros.length < cfg.rostrosMin) {
+        return 'No vemos la foto del DNI. Tomá el frente completo.';
+      }
+      let errorRostro = 'Parece que no es el frente del DNI. Repetí la foto.';
+      const rostroValido = rostros.some(r => {
+        const resultado = validarRostroComoFotoDocumento(r.boundingBox, canvas, cfg);
+        if (!resultado.ok) errorRostro = resultado.error;
+        return resultado.ok;
+      });
+      if (!rostroValido) {
+        return errorRostro;
+      }
+      validacionDocumento.dniFrente = 'rostro_documento_y_estructura';
+      return '';
+    } catch (ex) {
+      return 'No pudimos revisar el frente. Repetí la foto.';
+    }
+  }
+
+  async function validarDniDorso(canvas) {
+    const cfg = parametrosValidacionImagen.dniDorso;
+    const errorEncuadre = validarEncuadreDocumento(canvas);
+    if (errorEncuadre) return errorEncuadre;
+    if (!cfg.requerirCodigo) return '';
+
+    const mrz = await leerMrzDni(canvas);
+    if (mrz) {
+      validacionDocumento.dniDorso = 'mrz_validado';
+      validacionDocumento.dniDorsoMetodo = mrz.metodo;
+      return '';
+    }
+    if (validarEstructuraDorsoVisual(canvas)) {
+      validacionDocumento.dniDorso = 'mrz_visual_validado';
+      validacionDocumento.dniDorsoMetodo = 'Dorso detectado';
+      return '';
+    }
+
+    return 'No vemos las líneas de abajo del dorso. Acercá el DNI.';
   }
 
   async function validarCaptura(tipo, canvas) {
@@ -1103,9 +1733,15 @@
     const metricas = calcularMetricasImagen(canvas);
     if (metricas.brillo < p.brilloMin) return 'La foto está muy oscura. Buscá más luz y repetila.';
     if (metricas.brillo > p.brilloMax) return 'La foto está demasiado iluminada. Evitá reflejos y repetila.';
-    if (metricas.contraste < p.contrasteMin) return 'La foto tiene poco contraste. Usá un fondo más claro y buena luz.';
-    if (metricas.nitidez < p.nitidezMin) return 'La foto parece borrosa. Mantené la cámara firme y repetila.';
+    if (metricas.contraste < p.contrasteMin) {
+      advertenciasCaptura[tipo] = 'La foto se ve poco clara.';
+    }
+    if (metricas.nitidez < p.nitidezMin) {
+      advertenciasCaptura[tipo] = 'La foto se ve borrosa.';
+    }
     if (tipo === 'selfie') return validarRostroSelfie(canvas);
+    if (tipo === 'dniFrente') return validarDniFrente(canvas);
+    if (tipo === 'dniDorso') return validarDniDorso(canvas);
     return '';
   }
 
@@ -1135,12 +1771,51 @@
     const canvas = document.getElementById('canvas-' + tipo);
     const preview = document.getElementById('preview-' + tipo);
     if (!video.videoWidth) return;
-    setEstadoCaptura(tipo, 'Analizando foto...', 'firma-vacia');
+    advertenciasCaptura[tipo] = '';
+    if (tipo === 'dniFrente') validacionDocumento.dniFrente = '';
+    if (tipo === 'dniDorso') {
+      validacionDocumento.dniDorso = '';
+      validacionDocumento.dniDorsoMetodo = '';
+    }
+    setEstadoCaptura(tipo, 'Revisando foto...', 'firma-vacia');
+    if (tipo === 'selfie') {
+      const errorLiveness = await validarLivenessSelfie(video);
+      if (errorLiveness) {
+        selfieLiveness = null;
+        capturasVerificacion[tipo] = '';
+        preview.src = '';
+        preview.classList.add('oculto');
+        setEstadoCaptura(tipo, errorLiveness, 'firma-error');
+        return;
+      }
+      setEstadoCaptura(tipo, 'Revisando foto...', 'firma-vacia');
+    }
+    if (tipo === 'dniDorso') {
+      const resultadoScan = await escanearMrzDniDesdeVideo(video, canvas);
+      if (!resultadoScan.ok) {
+        validacionDocumento.dniDorso = '';
+        validacionDocumento.dniDorsoMetodo = '';
+        capturasVerificacion[tipo] = '';
+        preview.src = '';
+        preview.classList.add('oculto');
+        setEstadoCaptura(tipo, resultadoScan.error, 'firma-error');
+        return;
+      }
+      validacionDocumento.dniDorso = resultadoScan.mrz.metodo === 'Dorso detectado' ? 'mrz_visual_validado' : 'mrz_validado';
+      validacionDocumento.dniDorsoMetodo = resultadoScan.mrz.metodo;
+      setEstadoCaptura(tipo, 'Dorso detectado. Guardando...', 'firma-vacia');
+    }
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-    const errorValidacion = await validarCaptura(tipo, canvas);
+    const errorValidacion = tipo === 'dniDorso' ? '' : await validarCaptura(tipo, canvas);
     if (errorValidacion) {
+      if (tipo === 'selfie') selfieLiveness = null;
+      if (tipo === 'dniFrente') validacionDocumento.dniFrente = '';
+      if (tipo === 'dniDorso') {
+        validacionDocumento.dniDorso = '';
+        validacionDocumento.dniDorsoMetodo = '';
+      }
       capturasVerificacion[tipo] = '';
       preview.src = '';
       preview.classList.add('oculto');
@@ -1157,12 +1832,17 @@
     detenerCamara(tipo);
     capturaActiva = '';
     actualizarBloqueoCapturas();
-    setEstadoCaptura(tipo, 'Foto capturada y aceptada.', 'firma-ok');
+    if (advertenciasCaptura[tipo]) {
+      setEstadoCaptura(tipo, 'Foto aceptada: ' + advertenciasCaptura[tipo], 'firma-advertencia');
+    } else {
+      setEstadoCaptura(tipo, 'Foto aceptada.', 'firma-ok');
+    }
   }
 
   function resetCapturas() {
     Object.keys(capturasVerificacion).forEach(tipo => {
       capturasVerificacion[tipo] = '';
+      advertenciasCaptura[tipo] = '';
       const preview = document.getElementById('preview-' + tipo);
       const video = document.getElementById('video-' + tipo);
       preview.src = '';
@@ -1172,6 +1852,10 @@
       document.querySelector(`[data-captura-retry="${tipo}"]`).classList.add('oculto');
       setEstadoCaptura(tipo, 'Pendiente.', '');
     });
+    selfieLiveness = null;
+    validacionDocumento.dniFrente = '';
+    validacionDocumento.dniDorso = '';
+    validacionDocumento.dniDorsoMetodo = '';
     detenerCamara();
     capturaActiva = '';
     actualizarBloqueoCapturas();
@@ -1194,6 +1878,13 @@
     btn.addEventListener('click', () => {
       const tipo = btn.dataset.capturaRetry;
       capturasVerificacion[tipo] = '';
+      advertenciasCaptura[tipo] = '';
+      if (tipo === 'selfie') selfieLiveness = null;
+      if (tipo === 'dniFrente') validacionDocumento.dniFrente = '';
+      if (tipo === 'dniDorso') {
+        validacionDocumento.dniDorso = '';
+        validacionDocumento.dniDorsoMetodo = '';
+      }
       iniciarCaptura(tipo);
     });
   });
@@ -1270,7 +1961,19 @@
       err.textContent = 'Las contraseñas no coinciden.'; err.style.display = 'block'; return;
     }
     if (!capturasVerificacion.selfie || !capturasVerificacion.dniFrente || !capturasVerificacion.dniDorso) {
-      err.textContent = 'Debés capturar selfie, frente del DNI y dorso del DNI para continuar.';
+      err.textContent = 'Faltan fotos: selfie, frente y dorso del DNI.';
+      err.style.display = 'block';
+      mostrarPasoRegistro(4);
+      return;
+    }
+    if (validacionDocumento.dniFrente !== 'rostro_documento_y_estructura') {
+      err.textContent = 'Repetí el frente del DNI: completo y legible.';
+      err.style.display = 'block';
+      mostrarPasoRegistro(4);
+      return;
+    }
+    if (validacionDocumento.dniDorso !== 'mrz_validado' && validacionDocumento.dniDorso !== 'mrz_visual_validado') {
+      err.textContent = 'Repetí el dorso: que se vean las líneas de abajo.';
       err.style.display = 'block';
       mostrarPasoRegistro(4);
       return;
@@ -1293,6 +1996,12 @@
         dniFrenteBase64: capturasVerificacion.dniFrente,
         dniDorsoBase64: capturasVerificacion.dniDorso,
         firmaLegalBase64: firmaEmpresaLegal.toBase64(),
+        selfieLivenessEstado: selfieLiveness && selfieLiveness.estado ? selfieLiveness.estado : '',
+        selfieLivenessFecha: selfieLiveness && selfieLiveness.fecha ? selfieLiveness.fecha : '',
+        selfieLivenessMetodo: selfieLiveness && selfieLiveness.metodo ? selfieLiveness.metodo : '',
+        dniFrenteValidacion: validacionDocumento.dniFrente || '',
+        dniDorsoValidacion: validacionDocumento.dniDorso || '',
+        dniDorsoMetodo: validacionDocumento.dniDorsoMetodo || '',
         aceptoTerminos: document.getElementById('rAceptoTerminos').checked
       });
       if (r.ok) {
@@ -1658,7 +2367,7 @@
     const idiomas = parseArr(r.Idiomas);
 
     let html = `
-      <button class="modal-cerrar" onclick="cerrarModal()">×</button>
+      <button class="modal-cerrar" type="button" onclick="cerrarModal()">×</button>
       <h2>${esc(r.Nombre)} ${esc(r.Apellido)}</h2>
       <p class="puesto">${esc(r.PuestoDeseado) || 'Sin puesto especificado'}</p>
 
@@ -2069,7 +2778,7 @@
   // Modal con los postulantes de una búsqueda; cada uno abre su detalle completo.
   function verPostulantesBusqueda(b) {
     const lista = postulantesDeBusqueda(b);
-    let html = `<button class="modal-cerrar" onclick="cerrarModal()">×</button>
+    let html = `<button class="modal-cerrar" type="button" onclick="cerrarModal()">×</button>
       <h2>Postulantes de la búsqueda</h2>
       <p class="puesto">${esc(b.Puesto)}</p>`;
     if (!lista.length) {
