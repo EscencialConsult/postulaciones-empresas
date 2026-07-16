@@ -113,7 +113,8 @@
         estado.style.display = 'none';
         grid.innerHTML = lista.map(b => {
           const meta = [b.Localidad, b.Modalidad, b.Jornada].filter(Boolean).map(esc).join(' · ');
-          const href = 'postular.html?puesto=' + encodeURIComponent(b.Puesto || '');
+          const href = 'postular.html?busqueda=' + encodeURIComponent(b.ID || '') +
+            '&puesto=' + encodeURIComponent(b.Puesto || '');
           return `<a class="card busq-inicio-card" href="${href}">
             <h3>${esc(b.Puesto)}</h3>
             <span class="busq-inicio-empresa">${esc(b.Empresa) || 'Empresa'}</span>

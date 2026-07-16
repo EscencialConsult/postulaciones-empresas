@@ -133,6 +133,28 @@
   .busq-estado-pausada { background: rgba(228,199,106,.2); color: #92700a; }
   .busq-estado-cerrada { background: rgba(107,114,128,.16); color: #4b5563; }
 
+  /* Layout con menú lateral */
+  .layout { max-width: 1200px; margin: 0 auto; padding: 22px 16px 64px; display: grid; grid-template-columns: 220px 1fr; gap: 24px; align-items: start; }
+  .sidebar { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 6px; background: #fff; border: 1px solid var(--borde); border-radius: 14px; padding: 12px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; text-align: left; width: 100%; background: none; border: none; padding: 12px 14px; border-radius: 10px; font-size: .95rem; font-weight: 700; color: var(--muted); cursor: pointer; transition: background .12s, color .12s; }
+  .nav-item:hover { background: #faf7fd; color: var(--dark); }
+  .nav-item.activo { background: var(--grad); color: var(--dark); }
+  .nav-ico { font-size: 1.1rem; line-height: 1; }
+  .contenido { min-width: 0; }
+
+  /* Dashboard */
+  .dash-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; }
+  .dash-stat { border: 1px solid var(--borde); border-radius: 14px; background: #fff; padding: 18px; }
+  .dash-stat .num { font-size: 1.9rem; font-weight: 800; line-height: 1; margin-bottom: 6px; color: var(--acento); }
+  .dash-stat .lbl { color: var(--muted); font-size: .85rem; font-weight: 700; }
+  .dash-recientes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 4px; }
+  .dash-col h3 { font-size: .95rem; margin: 0 0 10px; }
+  .dash-mini { border: 1px solid var(--borde); border-radius: 10px; background: #fff; padding: 12px 14px; margin-bottom: 8px; font-size: .9rem; cursor: pointer; transition: background .12s; }
+  .dash-mini:hover { background: #faf7fd; }
+  .dash-mini strong { display: block; }
+  .dash-mini span { color: var(--muted); font-size: .82rem; }
+  .dash-vacio { color: var(--muted); font-size: .88rem; padding: 8px 0; }
+
   /* ---------- Responsive ---------- */
   @media (max-width: 640px) {
     .login-wrap { padding: 20px 14px; gap: 18px; }
@@ -156,6 +178,11 @@
     .cuenta-grid .span-2 { grid-column: auto; }
     .busq-form-grid { grid-template-columns: 1fr; }
     .busq-form-grid .span-2 { grid-column: auto; }
+    .layout { grid-template-columns: 1fr; gap: 16px; padding: 16px 12px 48px; }
+    .sidebar { position: static; flex-direction: row; overflow-x: auto; }
+    .nav-item { white-space: nowrap; }
+    .dash-stats { grid-template-columns: 1fr; }
+    .dash-recientes { grid-template-columns: 1fr; }
     .cuenta-actions .btn { width: 100%; }
     th, td { padding: 10px 12px; }
     .modal { padding: 22px 18px; }
@@ -332,12 +359,28 @@
     </div>
   </div>
 
-  <div class="panel">
-    <div class="panel-head">
-      <span class="pill"><span class="dot"></span>Panel de empresa</span>
-      <h1>Tu espacio de trabajo</h1>
-      <p>Gestioná la base de postulantes y publicá tus búsquedas de personal.</p>
-    </div>
+  <div class="layout">
+    <aside class="sidebar" aria-label="Navegación del panel">
+      <button type="button" class="nav-item activo" data-modulo="dashboard"><span class="nav-ico">🏠</span> Inicio</button>
+      <button type="button" class="nav-item" data-modulo="postulantes"><span class="nav-ico">👥</span> Postulantes</button>
+      <button type="button" class="nav-item" data-modulo="busquedas"><span class="nav-ico">📢</span> Búsquedas</button>
+    </aside>
+
+    <div class="contenido">
+
+    <!-- MÓDULO: DASHBOARD / INICIO -->
+    <div id="moduloDashboard">
+      <div class="panel-head">
+        <span class="pill"><span class="dot"></span>Inicio</span>
+        <h1>Tu espacio de trabajo</h1>
+        <p>Resumen de tu actividad reciente en la plataforma.</p>
+      </div>
+
+      <div class="dash-stats">
+        <div class="dash-stat"><div class="num" id="statPostulantes">—</div><div class="lbl">Postulantes en la base</div></div>
+        <div class="dash-stat"><div class="num" id="statBusquedasActivas">—</div><div class="lbl">Mis búsquedas activas</div></div>
+        <div class="dash-stat"><div class="num" id="statPostulaciones">—</div><div class="lbl">Postulaciones a mis búsquedas</div></div>
+      </div>
 
     <section class="card cuenta-panel" aria-label="Estado y datos de empresa">
       <div class="cuenta-head">
@@ -395,13 +438,26 @@
       <div class="firma-estado" id="estadoPanelVerificacion"></div>
     </section>
 
-    <div class="modtabs" role="tablist">
-      <button class="modtab activo" id="tabPostulantes" type="button">Postulantes</button>
-      <button class="modtab" id="tabBusquedas" type="button">Búsquedas</button>
+      <div class="dash-recientes">
+        <div class="dash-col">
+          <h3>Últimos postulantes</h3>
+          <div id="dashUltimosPostulantes"><div class="dash-vacio">Cargando…</div></div>
+        </div>
+        <div class="dash-col">
+          <h3>Mis búsquedas recientes</h3>
+          <div id="dashUltimasBusquedas"><div class="dash-vacio">Cargando…</div></div>
+        </div>
+      </div>
     </div>
+    <!-- /moduloDashboard -->
 
-    <!-- MÓDULO: POSTULANTES (base integral) -->
-    <div id="moduloPostulantes">
+    <!-- MÓDULO: POSTULANTES (base integral compartida) -->
+    <div id="moduloPostulantes" class="oculto">
+      <div class="panel-head">
+        <span class="pill"><span class="dot"></span>Base integral</span>
+        <h1>Postulantes</h1>
+        <p>Base compartida con todos los perfiles cargados en la plataforma.</p>
+      </div>
       <div class="card filtros">
         <div class="campo"><label>Búsqueda general</label>
           <input id="q" placeholder="Nombre, email, skill, empresa…"></div>
@@ -486,8 +542,11 @@
       <div class="busq-lista" id="busqLista"></div>
       <div class="vacio oculto" id="busqVacio">Todavía no publicaste ninguna búsqueda.</div>
     </div>
-  </div>
-</div>
+    <!-- /moduloBusquedas -->
+
+    </div><!-- /contenido -->
+  </div><!-- /layout -->
+</div><!-- /panelWrap -->
 
 <!-- MODAL DETALLE -->
 <div class="overlay oculto" id="overlay">
@@ -867,9 +926,10 @@
     loginWrap.classList.add('oculto');
     panelWrap.classList.remove('oculto');
     document.getElementById('empresaNombre').textContent = empresa;
-    mostrarModulo('postulantes');
+    mostrarModulo('dashboard');
     cargarMiEmpresa();
-    cargar();
+    cargar();           // base de postulantes -> alimenta dashboard
+    cargarBusquedas();  // mis búsquedas -> alimenta dashboard
   }
 
   async function cargarMiEmpresa() {
@@ -1056,6 +1116,9 @@
       registros = r.registros;
       pintarTabla(registros);
       document.getElementById('resumen').textContent = `${r.total} postulante(s) encontrado(s)`;
+      renderDashboard();
+      // Recalcula los contadores por búsqueda ahora que hay postulantes.
+      if (busquedas && busquedas.length) pintarBusquedas(busquedas);
     } catch (ex) {
       document.getElementById('resumen').textContent = 'Error: ' + ex.message;
     } finally {
@@ -1216,15 +1279,48 @@
   }
 
   function mostrarModulo(nombre) {
-    const esBusq = nombre === 'busquedas';
-    document.getElementById('moduloPostulantes').classList.toggle('oculto', esBusq);
-    document.getElementById('moduloBusquedas').classList.toggle('oculto', !esBusq);
-    document.getElementById('tabPostulantes').classList.toggle('activo', !esBusq);
-    document.getElementById('tabBusquedas').classList.toggle('activo', esBusq);
-    if (esBusq) { initSelectoresBusqueda(); cargarBusquedas(); }
+    const modulos = ['dashboard', 'postulantes', 'busquedas'];
+    if (modulos.indexOf(nombre) === -1) nombre = 'dashboard';
+    modulos.forEach(m => {
+      const el = document.getElementById('modulo' + m.charAt(0).toUpperCase() + m.slice(1));
+      if (el) el.classList.toggle('oculto', m !== nombre);
+    });
+    document.querySelectorAll('.nav-item').forEach(b =>
+      b.classList.toggle('activo', b.dataset.modulo === nombre));
+    if (nombre === 'busquedas') { initSelectoresBusqueda(); cargarBusquedas(); }
+    if (nombre === 'dashboard') renderDashboard();
   }
-  document.getElementById('tabPostulantes').onclick = () => mostrarModulo('postulantes');
-  document.getElementById('tabBusquedas').onclick = () => mostrarModulo('busquedas');
+  document.querySelectorAll('.nav-item').forEach(b =>
+    b.onclick = () => mostrarModulo(b.dataset.modulo));
+
+  /* ---------- Dashboard (resumen) ---------- */
+  function renderDashboard() {
+    const totalPost = Array.isArray(registros) ? registros.length : 0;
+    document.getElementById('statPostulantes').textContent = totalPost;
+
+    const activas = (busquedas || []).filter(b => String(b.Estado || '').toLowerCase() === 'activa').length;
+    document.getElementById('statBusquedasActivas').textContent = activas;
+
+    const misIds = new Set((busquedas || []).map(b => String(b.ID)));
+    const postulaciones = (registros || []).filter(r => r.BusquedaID && misIds.has(String(r.BusquedaID))).length;
+    document.getElementById('statPostulaciones').textContent = postulaciones;
+
+    const up = document.getElementById('dashUltimosPostulantes');
+    const ult = (registros || []).slice(0, 5);
+    up.innerHTML = ult.length
+      ? ult.map((r, i) => `<div class="dash-mini" data-i="${i}"><strong>${esc(r.Nombre)} ${esc(r.Apellido)}</strong>
+          <span>${esc(r.PuestoDeseado) || 'Sin puesto'} · ${fecha(r.FechaRegistro)}</span></div>`).join('')
+      : '<div class="dash-vacio">Todavía no hay postulantes en la base.</div>';
+    up.querySelectorAll('.dash-mini').forEach(el => el.onclick = () => abrirDetalle(ult[+el.dataset.i]));
+
+    const ub = document.getElementById('dashUltimasBusquedas');
+    const ultB = (busquedas || []).slice(0, 5);
+    ub.innerHTML = ultB.length
+      ? ultB.map(b => `<div class="dash-mini"><strong>${esc(b.Puesto)}</strong>
+          <span>${esc(estadoLabelBusq[(b.Estado || 'activa').toLowerCase()] || b.Estado)} · ${postulantesDeBusqueda(b).length} postulación(es)</span></div>`).join('')
+      : '<div class="dash-vacio">Todavía no publicaste búsquedas.</div>';
+    ub.querySelectorAll('.dash-mini').forEach(el => el.onclick = () => mostrarModulo('busquedas'));
+  }
 
   function actualizarPermisoBusquedas(estadoCuenta, estadoVerif) {
     puedePublicar = (estadoCuenta === 'aprobado' && estadoVerif === 'aprobado');
@@ -1257,6 +1353,7 @@
       }
       busquedas = r.busquedas || [];
       pintarBusquedas(busquedas);
+      renderDashboard();
     } catch (ex) {
       lista.innerHTML = '<div class="vacio">Error: ' + esc(ex.message) + '</div>';
     } finally {
@@ -1295,6 +1392,8 @@
         '<p class="busq-desc">' + esc(b.Descripcion || '') + '</p>' +
         '<div class="busq-acciones"></div>';
       const acc = card.querySelector('.busq-acciones');
+      const nPost = postulantesDeBusqueda(b).length;
+      acc.appendChild(botonBusq('Ver postulantes (' + nPost + ')', 'btn-prim', () => verPostulantesBusqueda(b)));
       acc.appendChild(botonBusq('Editar', 'btn-sec', () => abrirFormBusqueda(b)));
       if (estado === 'activa') acc.appendChild(botonBusq('Pausar', 'btn-sec', () => estadoBusqueda(b.ID, 'pausada')));
       if (estado === 'pausada') acc.appendChild(botonBusq('Reactivar', 'btn-sec', () => estadoBusqueda(b.ID, 'activa')));
@@ -1382,6 +1481,33 @@
     } catch (ex) {
       alert('No se pudo actualizar la búsqueda: ' + ex.message);
     }
+  }
+
+  // Postulantes que aplicaron a una búsqueda concreta (filtra la base ya cargada).
+  function postulantesDeBusqueda(b) {
+    if (!Array.isArray(registros) || !b) return [];
+    return registros.filter(r => r.BusquedaID && String(r.BusquedaID) === String(b.ID));
+  }
+
+  // Modal con los postulantes de una búsqueda; cada uno abre su detalle completo.
+  function verPostulantesBusqueda(b) {
+    const lista = postulantesDeBusqueda(b);
+    let html = `<button class="modal-cerrar" onclick="cerrarModal()">×</button>
+      <h2>Postulantes de la búsqueda</h2>
+      <p class="puesto">${esc(b.Puesto)}</p>`;
+    if (!lista.length) {
+      html += `<p class="sub" style="color:var(--muted)">Todavía no hay postulaciones para esta búsqueda.</p>`;
+    } else {
+      html += `<div class="seccion"><h3>${lista.length} postulación(es)</h3>` +
+        lista.map((r, i) => `<div class="item-list postulante-item" data-i="${i}" style="cursor:pointer">
+          <strong>${esc(r.Nombre)} ${esc(r.Apellido)}</strong>
+          ${esc(r.Email)}${r.Telefono ? ' · ' + esc(r.Telefono) : ''}
+          ${r.Provincia ? ' · ' + esc(r.Provincia) : ''}</div>`).join('') + `</div>`;
+    }
+    document.getElementById('modal').innerHTML = html;
+    document.querySelectorAll('#modal .postulante-item').forEach(el =>
+      el.onclick = () => abrirDetalle(lista[+el.dataset.i]));
+    document.getElementById('overlay').classList.remove('oculto');
   }
 
   async function eliminarBusquedaUI(b) {

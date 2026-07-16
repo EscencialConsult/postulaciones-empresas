@@ -510,8 +510,11 @@
   }
 
   // Selector buscable de puesto deseado (evita variantes mal escritas).
-  // Si se llega desde una búsqueda publicada (?puesto=…) queda precargado.
-  var puestoPrecargado = new URLSearchParams(location.search).get('puesto') || '';
+  // Si se llega desde una búsqueda publicada (?busqueda=…&puesto=…) queda
+  // precargado el puesto y se registra a qué búsqueda corresponde.
+  var paramsURL = new URLSearchParams(location.search);
+  var puestoPrecargado = paramsURL.get('puesto') || '';
+  var busquedaOrigenId = paramsURL.get('busqueda') || '';
   crearSelectorPuesto({
     inputId: 'puestoBuscar',
     listaId: 'puestoLista',
@@ -705,6 +708,8 @@
       cvBase64: cvBase64,
       cvNombre: cvNombre,
       cvTipo: cvTipo,
+      busquedaId: busquedaOrigenId,
+      busquedaPuesto: busquedaOrigenId ? puestoPrecargado : '',
       firmaConsentimientoBase64: firmaConsentBase64,
       firmaConformidadBase64: firmaConfBase64
     };

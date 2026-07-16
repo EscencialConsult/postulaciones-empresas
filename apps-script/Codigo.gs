@@ -50,7 +50,9 @@ var COLUMNAS_POSTULANTES = [
   'CVNombre', 'CVUrl',
   // Firmas
   'FirmaConsentimientoUrl', 'FechaFirmaConsentimiento',
-  'FirmaConformidadUrl', 'FechaFirmaConformidad'
+  'FirmaConformidadUrl', 'FechaFirmaConformidad',
+  // Vínculo con una búsqueda publicada (si se postuló desde el inicio)
+  'BusquedaID', 'BusquedaPuesto'
 ];
 
 var COLUMNAS_USUARIOS = [
@@ -275,7 +277,10 @@ function guardarPostulante(d) {
     firmaConsent.url,
     d.firmaConsentimientoBase64 ? ahora : '',
     firmaConf.url,
-    d.firmaConformidadBase64 ? ahora : ''
+    d.firmaConformidadBase64 ? ahora : '',
+    // Vínculo con la búsqueda de origen (si vino desde una publicación)
+    limpiar(d.busquedaId),
+    limpiar(d.busquedaPuesto)
   ];
 
   hoja.appendRow(fila);
