@@ -37,6 +37,26 @@
   .cv-nota { font-size: .8rem; margin-top: 6px; color: var(--muted); }
   .cv-nota.error { color: var(--error); }
 
+  /* Selector de puesto (buscador desplegable) */
+  .puesto-selector { position: relative; }
+  .puesto-lista {
+    position: absolute; z-index: 40; left: 0; right: 0; top: calc(100% + 4px);
+    max-height: 264px; overflow-y: auto; background: #fff;
+    border: 1px solid var(--borde); border-radius: 12px;
+    box-shadow: 0 14px 32px rgba(26,24,29,.16);
+  }
+  .puesto-opcion {
+    padding: 10px 14px; cursor: pointer; font-size: .9rem;
+    border-bottom: 1px solid var(--gris-cl); line-height: 1.3;
+  }
+  .puesto-opcion:last-child { border-bottom: none; }
+  .puesto-opcion:hover { background: #faf7fd; }
+  .puesto-otros {
+    color: var(--acento); font-weight: 700;
+    position: sticky; bottom: 0; background: #fff;
+    border-top: 1px solid var(--borde);
+  }
+
   .check { display: flex; align-items: center; gap: 10px; }
   .check input { width: auto; }
   .check label { margin: 0; font-weight: 600; }
@@ -130,7 +150,17 @@
         <input name="email" type="email" required><div class="error-msg">Email inválido</div></div>
       <div class="campo"><label>Teléfono</label><input name="telefono" type="tel"></div>
       <div class="campo"><label>Puesto de trabajo deseado</label>
-        <input name="puestoDeseado" placeholder="Ej: Analista de datos"></div>
+        <div class="puesto-selector" id="puestoSelector">
+          <input type="text" id="puestoBuscar" class="puesto-input" autocomplete="off"
+                 placeholder="Buscá o seleccioná un puesto…">
+          <div class="puesto-lista oculto" id="puestoLista"></div>
+        </div>
+        <input type="hidden" name="puestoDeseado" id="puestoDeseado">
+        <div class="campo oculto" id="puestoOtroWrap" style="margin-top:10px">
+          <input type="text" id="puestoOtro" autocomplete="off"
+                 placeholder="Escribí el nombre del puesto">
+        </div>
+      </div>
       <div class="campo">
         <label>Adjuntá tu CV <span class="muted">(PDF o Word · máx. 5 MB)</span></label>
         <input type="file" id="cvArchivo" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
@@ -149,8 +179,42 @@
           <input name="identificacion"></div>
       </div>
       <div class="fila">
-        <div class="campo"><label>Provincia</label><input name="provincia"></div>
-        <div class="campo"><label>Código postal o ciudad</label><input name="codigoPostalCiudad"></div>
+        <div class="campo"><label>Provincia</label>
+          <select name="provincia">
+            <option value="">Seleccionar…</option>
+            <option>Buenos Aires</option>
+            <option>Ciudad Autónoma de Buenos Aires (CABA)</option>
+            <option>Catamarca</option>
+            <option>Chaco</option>
+            <option>Chubut</option>
+            <option>Córdoba</option>
+            <option>Corrientes</option>
+            <option>Entre Ríos</option>
+            <option>Formosa</option>
+            <option>Jujuy</option>
+            <option>La Pampa</option>
+            <option>La Rioja</option>
+            <option>Mendoza</option>
+            <option>Misiones</option>
+            <option>Neuquén</option>
+            <option>Río Negro</option>
+            <option>Salta</option>
+            <option>San Juan</option>
+            <option>San Luis</option>
+            <option>Santa Cruz</option>
+            <option>Santa Fe</option>
+            <option>Santiago del Estero</option>
+            <option>Tierra del Fuego</option>
+            <option>Tucumán</option>
+          </select></div>
+        <div class="campo"><label>Ciudad / Localidad</label>
+          <div class="puesto-selector" id="localidadSelector">
+            <input type="text" id="localidadBuscar" class="puesto-input" autocomplete="off"
+                   placeholder="Buscá o seleccioná tu localidad…">
+            <div class="puesto-lista oculto" id="localidadLista"></div>
+          </div>
+          <input type="hidden" name="codigoPostalCiudad" id="codigoPostalCiudad">
+        </div>
       </div>
       <div class="campo"><label>Perfil profesional</label>
         <textarea name="perfilProfesional" placeholder="Breve resumen de quién sos profesionalmente..."></textarea></div>
@@ -290,6 +354,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@5.1.3/dist/signature_pad.umd.min.js"></script>
 <script src="firmas.js"></script>
+<script src="puestos.js"></script>
 <script src="config.js"></script>
 <script>
   const totalEtapas = 6;
@@ -393,6 +458,23 @@
     div.querySelector('.btn-quitar').onclick = () => div.remove();
     return div;
   }
+
+  // Selector buscable de puesto deseado (evita variantes mal escritas)
+  crearSelectorPuesto({
+    inputId: 'puestoBuscar',
+    listaId: 'puestoLista',
+    hiddenId: 'puestoDeseado',
+    otroWrapId: 'puestoOtroWrap',
+    otroInputId: 'puestoOtro'
+  });
+
+  // Selector buscable de localidad de Tucumán (solo de la lista)
+  crearSelectorBuscable({
+    opciones: LOCALIDADES_TUCUMAN,
+    inputId: 'localidadBuscar',
+    listaId: 'localidadLista',
+    hiddenId: 'codigoPostalCiudad'
+  });
 
   document.getElementById('addFormacion').onclick = () =>
     document.getElementById('formaciones').appendChild(bloqueFormacion());
