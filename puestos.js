@@ -286,6 +286,9 @@ var LOCALIDADES_TUCUMAN = [
   'Villa Mariano Moreno', 'Villa Quinteros', 'Yerba Buena'
 ];
 
+// Idiomas más habituales. "Otros (especificar)" permite cargar uno manual.
+var IDIOMAS = ['Inglés', 'Francés', 'Portugués', 'Italiano', 'Ninguno'];
+
 /**
  * Convierte un input de texto en un buscador desplegable filtrable.
  * El usuario escribe para filtrar y elige una opción de la lista; el

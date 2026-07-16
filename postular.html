@@ -148,23 +148,26 @@
       </div>
       <div class="campo"><label>Email <span class="req">*</span></label>
         <input name="email" type="email" required><div class="error-msg">Email inválido</div></div>
-      <div class="campo"><label>Teléfono</label><input name="telefono" type="tel"></div>
-      <div class="campo"><label>Puesto de trabajo deseado</label>
+      <div class="campo"><label>Teléfono <span class="req">*</span></label>
+        <input name="telefono" type="tel" required><div class="error-msg">Requerido</div></div>
+      <div class="campo"><label>Puesto de trabajo deseado <span class="req">*</span></label>
         <div class="puesto-selector" id="puestoSelector">
           <input type="text" id="puestoBuscar" class="puesto-input" autocomplete="off"
                  placeholder="Buscá o seleccioná un puesto…">
           <div class="puesto-lista oculto" id="puestoLista"></div>
         </div>
-        <input type="hidden" name="puestoDeseado" id="puestoDeseado">
+        <input type="hidden" name="puestoDeseado" id="puestoDeseado" required>
         <div class="campo oculto" id="puestoOtroWrap" style="margin-top:10px">
           <input type="text" id="puestoOtro" autocomplete="off"
                  placeholder="Escribí el nombre del puesto">
         </div>
+        <div class="error-msg">Requerido</div>
       </div>
       <div class="campo">
-        <label>Adjuntá tu CV <span class="muted">(PDF o Word · máx. 5 MB)</span></label>
-        <input type="file" id="cvArchivo" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+        <label>Adjuntá tu CV <span class="req">*</span> <span class="muted">(PDF o Word · máx. 5 MB)</span></label>
+        <input type="file" id="cvArchivo" required accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
         <div class="cv-nota" id="cvNota"></div>
+        <div class="error-msg">Adjuntá tu CV</div>
       </div>
     </section>
 
@@ -173,51 +176,30 @@
       <h2>Información y ubicación</h2>
       <p class="sub">Datos personales y tu perfil profesional.</p>
       <div class="fila">
-        <div class="campo"><label>Fecha de nacimiento</label>
-          <input name="fechaNacimiento" type="date"></div>
-        <div class="campo"><label>Identificación (DNI/Cédula)</label>
-          <input name="identificacion"></div>
+        <div class="campo"><label>Fecha de nacimiento <span class="req">*</span></label>
+          <input name="fechaNacimiento" type="date" required><div class="error-msg">Requerido</div></div>
+        <div class="campo"><label>Identificación (DNI/Cédula) <span class="req">*</span></label>
+          <input name="identificacion" required><div class="error-msg">Requerido</div></div>
       </div>
       <div class="fila">
-        <div class="campo"><label>Provincia</label>
-          <select name="provincia">
-            <option value="">Seleccionar…</option>
-            <option>Buenos Aires</option>
-            <option>Ciudad Autónoma de Buenos Aires (CABA)</option>
-            <option>Catamarca</option>
-            <option>Chaco</option>
-            <option>Chubut</option>
-            <option>Córdoba</option>
-            <option>Corrientes</option>
-            <option>Entre Ríos</option>
-            <option>Formosa</option>
-            <option>Jujuy</option>
-            <option>La Pampa</option>
-            <option>La Rioja</option>
-            <option>Mendoza</option>
-            <option>Misiones</option>
-            <option>Neuquén</option>
-            <option>Río Negro</option>
-            <option>Salta</option>
-            <option>San Juan</option>
-            <option>San Luis</option>
-            <option>Santa Cruz</option>
-            <option>Santa Fe</option>
-            <option>Santiago del Estero</option>
-            <option>Tierra del Fuego</option>
-            <option>Tucumán</option>
-          </select></div>
-        <div class="campo"><label>Ciudad / Localidad</label>
+        <div class="campo"><label>Provincia <span class="req">*</span></label>
+          <select name="provincia" required>
+            <option value="Tucumán" selected>Tucumán</option>
+          </select>
+          <div class="error-msg">Requerido</div></div>
+        <div class="campo"><label>Ciudad / Localidad <span class="req">*</span></label>
           <div class="puesto-selector" id="localidadSelector">
             <input type="text" id="localidadBuscar" class="puesto-input" autocomplete="off"
                    placeholder="Buscá o seleccioná tu localidad…">
             <div class="puesto-lista oculto" id="localidadLista"></div>
           </div>
-          <input type="hidden" name="codigoPostalCiudad" id="codigoPostalCiudad">
+          <input type="hidden" name="codigoPostalCiudad" id="codigoPostalCiudad" required>
+          <div class="error-msg">Requerido</div>
         </div>
       </div>
-      <div class="campo"><label>Perfil profesional</label>
-        <textarea name="perfilProfesional" placeholder="Breve resumen de quién sos profesionalmente..."></textarea></div>
+      <div class="campo"><label>Perfil profesional <span class="req">*</span></label>
+        <textarea name="perfilProfesional" required placeholder="Breve resumen de quién sos profesionalmente..."></textarea>
+        <div class="error-msg">Requerido</div></div>
     </section>
 
     <!-- ETAPA 3 -->
@@ -227,8 +209,9 @@
       <div id="formaciones"></div>
       <button type="button" class="btn-agregar" id="addFormacion">+ Agregar formación</button>
       <div class="campo" style="margin-top:20px">
-        <label>Descripción de tu perfil profesional</label>
-        <textarea name="descripcionPerfil" placeholder="Contanos sobre tus fortalezas, objetivos y áreas de interés..."></textarea>
+        <label>Descripción de tu perfil profesional <span class="req">*</span></label>
+        <textarea name="descripcionPerfil" required placeholder="Contanos sobre tus fortalezas, objetivos y áreas de interés..."></textarea>
+        <div class="error-msg">Requerido</div>
       </div>
     </section>
 
@@ -237,12 +220,14 @@
       <h2>Disponibilidad e idiomas</h2>
       <p class="sub">Tu flexibilidad y habilidades lingüísticas.</p>
       <div class="fila">
-        <div class="campo"><label>Disponibilidad para viajar</label>
-          <select name="dispViajar"><option value="">Seleccionar…</option>
-            <option>Sí</option><option>No</option><option>A convenir</option></select></div>
-        <div class="campo"><label>Disponibilidad de cambio de residencia</label>
-          <select name="dispCambioResidencia"><option value="">Seleccionar…</option>
-            <option>Sí</option><option>No</option><option>A convenir</option></select></div>
+        <div class="campo"><label>Disponibilidad para viajar <span class="req">*</span></label>
+          <select name="dispViajar" required><option value="">Seleccionar…</option>
+            <option>Sí</option><option>No</option><option>A convenir</option></select>
+          <div class="error-msg">Requerido</div></div>
+        <div class="campo"><label>Disponibilidad de cambio de residencia <span class="req">*</span></label>
+          <select name="dispCambioResidencia" required><option value="">Seleccionar…</option>
+            <option>Sí</option><option>No</option><option>A convenir</option></select>
+          <div class="error-msg">Requerido</div></div>
       </div>
       <label class="lbl" style="margin:12px 0 6px">Idiomas</label>
       <div id="idiomas"></div>
@@ -399,6 +384,34 @@
   });
 
   /* ---------- Bloques repetibles ---------- */
+
+  // Formación fija (Primaria / Secundaria): no se puede quitar. El campo
+  // "Hasta" solo se pide/mostra cuando el nivel está marcado como completado.
+  function bloqueFormacionFija(nivel) {
+    const div = document.createElement('div');
+    div.className = 'bloque';
+    div.innerHTML = `
+      <div class="bloque-cab"><strong>${nivel}</strong></div>
+      <input type="hidden" data-c="nivel" value="${nivel}">
+      <div class="campo"><label>Centro educativo <span class="req">*</span></label>
+        <input data-c="centro" required><div class="error-msg">Requerido</div></div>
+      <div class="check" style="margin:2px 0 14px">
+        <input type="checkbox" data-c="completada" id="comp-${nivel}">
+        <label for="comp-${nivel}">Completada</label>
+      </div>
+      <div class="fila">
+        <div class="campo"><label>Desde (mes/año) <span class="req">*</span></label>
+          <input data-c="desde" type="month" required><div class="error-msg">Requerido</div></div>
+        <div class="campo oculto" data-hasta><label>Hasta (mes/año) <span class="req">*</span></label>
+          <input data-c="hasta" type="month" required><div class="error-msg">Requerido</div></div>
+      </div>`;
+    const chk = div.querySelector('[data-c="completada"]');
+    const hastaWrap = div.querySelector('[data-hasta]');
+    chk.addEventListener('change', () => hastaWrap.classList.toggle('oculto', !chk.checked));
+    return div;
+  }
+
+  // Formación agregable: solo niveles superiores (sin Primaria/Secundaria).
   function bloqueFormacion() {
     const div = document.createElement('div');
     div.className = 'bloque';
@@ -406,40 +419,73 @@
       <div class="bloque-cab"><strong>Formación</strong>
         <button type="button" class="btn-quitar">Quitar</button></div>
       <div class="fila">
-        <div class="campo"><label>Nivel de estudios</label>
-          <select data-c="nivel">
+        <div class="campo"><label>Nivel de estudios <span class="req">*</span></label>
+          <select data-c="nivel" required>
             <option value="">Seleccionar…</option>
-            <option>Primaria</option><option>Secundaria</option>
             <option>Terciario / Técnico</option><option>Universitario</option>
             <option>Posgrado / Máster</option><option>Doctorado</option>
-          </select></div>
-        <div class="campo"><label>Estado</label>
-          <select data-c="estado"><option value="">Seleccionar…</option>
-            <option>Cursando</option><option>Finalizado</option></select></div>
+          </select><div class="error-msg">Requerido</div></div>
+        <div class="campo"><label>Estado <span class="req">*</span></label>
+          <select data-c="estado" required><option value="">Seleccionar…</option>
+            <option>Cursando</option><option>Finalizado</option></select>
+          <div class="error-msg">Requerido</div></div>
       </div>
-      <div class="campo"><label>Centro educativo</label><input data-c="centro"></div>
+      <div class="campo"><label>Centro educativo <span class="req">*</span></label>
+        <input data-c="centro" required><div class="error-msg">Requerido</div></div>
       <div class="fila">
-        <div class="campo"><label>Desde (mes/año)</label><input data-c="desde" type="month"></div>
-        <div class="campo"><label>Hasta (mes/año)</label><input data-c="hasta" type="month"></div>
+        <div class="campo"><label>Desde (mes/año) <span class="req">*</span></label>
+          <input data-c="desde" type="month" required><div class="error-msg">Requerido</div></div>
+        <div class="campo oculto" data-hasta><label>Hasta (mes/año) <span class="req">*</span></label>
+          <input data-c="hasta" type="month" required><div class="error-msg">Requerido</div></div>
       </div>`;
+    const estado = div.querySelector('[data-c="estado"]');
+    const hastaWrap = div.querySelector('[data-hasta]');
+    estado.addEventListener('change', () =>
+      hastaWrap.classList.toggle('oculto', estado.value !== 'Finalizado'));
     div.querySelector('.btn-quitar').onclick = () => div.remove();
     return div;
   }
 
-  function bloqueIdioma() {
+  // Idioma: buscador filtrable (Inglés, Francés, …) con opción "Otros".
+  let idiomaSeq = 0;
+  function agregarIdioma() {
+    const n = ++idiomaSeq;
     const div = document.createElement('div');
     div.className = 'bloque';
     div.innerHTML = `
       <div class="bloque-cab"><strong>Idioma</strong>
         <button type="button" class="btn-quitar">Quitar</button></div>
       <div class="fila">
-        <div class="campo"><label>Idioma</label><input data-c="idioma" placeholder="Ej: Inglés"></div>
-        <div class="campo"><label>Nivel</label>
-          <select data-c="nivel"><option value="">Seleccionar…</option>
+        <div class="campo"><label>Idioma <span class="req">*</span></label>
+          <div class="puesto-selector">
+            <input type="text" id="idiomaBuscar-${n}" class="puesto-input" autocomplete="off"
+                   placeholder="Buscá o seleccioná un idioma…">
+            <div class="puesto-lista oculto" id="idiomaLista-${n}"></div>
+          </div>
+          <input type="hidden" data-c="idioma" id="idiomaVal-${n}" required>
+          <div class="campo oculto" id="idiomaOtroWrap-${n}" style="margin-top:8px">
+            <input type="text" id="idiomaOtro-${n}" autocomplete="off" placeholder="Escribí el idioma">
+          </div>
+          <div class="error-msg">Requerido</div></div>
+        <div class="campo"><label>Nivel <span class="req">*</span></label>
+          <select data-c="nivel" required><option value="">Seleccionar…</option>
             <option>Básico</option><option>Intermedio</option>
-            <option>Avanzado</option><option>Nativo</option></select></div>
+            <option>Avanzado</option><option>Nativo</option></select>
+          <div class="error-msg">Requerido</div></div>
       </div>`;
-    div.querySelector('.btn-quitar').onclick = () => div.remove();
+    div.querySelector('.btn-quitar').onclick = () => {
+      if (document.querySelectorAll('#idiomas .bloque').length > 1) div.remove();
+    };
+    document.getElementById('idiomas').appendChild(div);
+    crearSelectorBuscable({
+      opciones: IDIOMAS,
+      inputId: 'idiomaBuscar-' + n,
+      listaId: 'idiomaLista-' + n,
+      hiddenId: 'idiomaVal-' + n,
+      conOtros: true,
+      otroWrapId: 'idiomaOtroWrap-' + n,
+      otroInputId: 'idiomaOtro-' + n
+    });
     return div;
   }
 
@@ -450,12 +496,16 @@
       <div class="bloque-cab"><strong>Experiencia</strong>
         <button type="button" class="btn-quitar">Quitar</button></div>
       <div class="fila">
-        <div class="campo"><label>Cargo</label><input data-c="cargo"></div>
-        <div class="campo"><label>Empresa</label><input data-c="empresa"></div>
+        <div class="campo"><label>Cargo <span class="req">*</span></label>
+          <input data-c="cargo" required><div class="error-msg">Requerido</div></div>
+        <div class="campo"><label>Empresa <span class="req">*</span></label>
+          <input data-c="empresa" required><div class="error-msg">Requerido</div></div>
       </div>
-      <div class="campo"><label>Funciones y logros del cargo</label>
-        <textarea data-c="funciones"></textarea></div>`;
-    div.querySelector('.btn-quitar').onclick = () => div.remove();
+      <div class="campo"><label>Funciones y logros del cargo <span class="req">*</span></label>
+        <textarea data-c="funciones" required></textarea><div class="error-msg">Requerido</div></div>`;
+    div.querySelector('.btn-quitar').onclick = () => {
+      if (document.querySelectorAll('#experiencias .bloque').length > 1) div.remove();
+    };
     return div;
   }
 
@@ -478,14 +528,14 @@
 
   document.getElementById('addFormacion').onclick = () =>
     document.getElementById('formaciones').appendChild(bloqueFormacion());
-  document.getElementById('addIdioma').onclick = () =>
-    document.getElementById('idiomas').appendChild(bloqueIdioma());
+  document.getElementById('addIdioma').onclick = agregarIdioma;
   document.getElementById('addExperiencia').onclick = () =>
     document.getElementById('experiencias').appendChild(bloqueExperiencia());
 
-  // Uno de cada por defecto
-  document.getElementById('formaciones').appendChild(bloqueFormacion());
-  document.getElementById('idiomas').appendChild(bloqueIdioma());
+  // Primaria y Secundaria vienen fijas; el resto se agrega con el botón.
+  document.getElementById('formaciones').appendChild(bloqueFormacionFija('Primaria'));
+  document.getElementById('formaciones').appendChild(bloqueFormacionFija('Secundaria'));
+  agregarIdioma();
   document.getElementById('experiencias').appendChild(bloqueExperiencia());
 
   // Ocultar experiencias si es primer empleo
@@ -538,11 +588,21 @@
     const sec = document.querySelector(`.etapa[data-etapa="${n}"]`);
     let ok = true;
     sec.querySelectorAll('[required]').forEach(inp => {
+      // Campos dentro de un contenedor oculto (ej. experiencia si es primer
+      // empleo, "Hasta" sin completar) no se validan.
+      if (inp.closest('.oculto')) return;
+      // Las casillas (consentimiento, "completada") se validan aparte.
+      if (inp.type === 'checkbox') return;
       const campo = inp.closest('.campo');
-      let malo = !inp.value.trim();
-      if (inp.type === 'email' && inp.value.trim())
-        malo = !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(inp.value.trim());
-      campo.classList.toggle('invalido', malo);
+      let malo;
+      if (inp.type === 'file') {
+        malo = !inp.files || inp.files.length === 0;
+      } else {
+        malo = !inp.value.trim();
+        if (inp.type === 'email' && inp.value.trim())
+          malo = !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(inp.value.trim());
+      }
+      if (campo) campo.classList.toggle('invalido', malo);
       if (malo) ok = false;
     });
     return ok;
@@ -563,8 +623,12 @@
       const obj = {};
       let vacio = true;
       b.querySelectorAll('[data-c]').forEach(el => {
-        obj[el.dataset.c] = el.value.trim();
-        if (el.value.trim()) vacio = false;
+        if (el.type === 'checkbox') {
+          obj[el.dataset.c] = el.checked ? 'Sí' : 'No';
+        } else {
+          obj[el.dataset.c] = el.value.trim();
+          if (el.value.trim()) vacio = false;
+        }
       });
       if (!vacio) items.push(obj);
     });
