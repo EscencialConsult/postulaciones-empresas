@@ -149,6 +149,65 @@ textarea { resize: vertical; min-height: 92px; }
 .oculto { display: none !important; }
 .muted { color: var(--muted); }
 
+/* ---------- Modal legal ---------- */
+.legal-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(26,24,29,.58);
+  backdrop-filter: blur(3px);
+}
+
+.legal-modal {
+  width: min(960px, 100%);
+  height: min(82vh, 820px);
+  background: #fff;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  box-shadow: 0 30px 70px rgba(26,24,29,.28);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.legal-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--borde);
+  background: #fff;
+}
+
+.legal-modal-head h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.legal-modal-close {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--dark);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.legal-modal-frame {
+  width: 100%;
+  flex: 1;
+  border: 0;
+  background: #fff;
+}
+
 /* ---------- Responsive (global) ---------- */
 @media (max-width: 640px) {
   .appbar { padding: 14px 16px; gap: 12px; }
@@ -159,6 +218,8 @@ textarea { resize: vertical; min-height: 92px; }
   .tile { width: 48px; height: 48px; font-size: 22px; }
   .site-footer { padding: 16px; gap: 10px; }
   .site-footer p { font-size: .8rem; }
+  .legal-modal-overlay { padding: 10px; }
+  .legal-modal { height: 88vh; border-radius: 12px; }
 }
 @media (max-width: 380px) {
   .logo .marca-txt { font-size: 1.12rem; }

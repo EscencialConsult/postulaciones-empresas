@@ -223,7 +223,7 @@
           <input type="checkbox" id="check-consentimiento" required>
           <label for="check-consentimiento">
             He leído y acepto la
-            <a href="politica-privacidad.html" target="_blank" rel="noopener">Política de Privacidad</a>
+            <a href="politica-privacidad.html" data-legal-doc="politica">Política de Privacidad</a>
             y autorizo el uso de mis datos personales para procesos de reclutamiento conforme a la Ley N.º 25.326.
           </label>
         </div>
@@ -269,6 +269,16 @@
   </div>
 </div>
 
+<div class="legal-modal-overlay oculto" id="legalOverlay" role="dialog" aria-modal="true" aria-labelledby="legalTitulo">
+  <div class="legal-modal">
+    <div class="legal-modal-head">
+      <h2 id="legalTitulo">Documento legal</h2>
+      <button type="button" class="legal-modal-close" id="legalCerrar" aria-label="Cerrar">×</button>
+    </div>
+    <iframe class="legal-modal-frame" id="legalFrame" title="Documento legal"></iframe>
+  </div>
+</div>
+
 <footer class="site-footer">
   <div class="footer-links">
     <a href="politica-privacidad.html">Política de Privacidad</a>
@@ -291,6 +301,37 @@
   const btnSiguiente = document.getElementById('btnSiguiente');
   const btnEnviar = document.getElementById('btnEnviar');
   const aviso = document.getElementById('aviso');
+
+  function abrirLegal(tipo) {
+    const docs = {
+      politica: { titulo: 'Política de Privacidad', url: 'politica-privacidad.html' },
+      terminos: { titulo: 'Términos y Condiciones', url: 'terminos-condiciones.html' }
+    };
+    const doc = docs[tipo];
+    if (!doc) return;
+    document.getElementById('legalTitulo').textContent = doc.titulo;
+    document.getElementById('legalFrame').src = doc.url;
+    document.getElementById('legalOverlay').classList.remove('oculto');
+  }
+
+  function cerrarLegal() {
+    document.getElementById('legalOverlay').classList.add('oculto');
+    document.getElementById('legalFrame').src = 'about:blank';
+  }
+
+  document.querySelectorAll('[data-legal-doc]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      abrirLegal(link.dataset.legalDoc);
+    });
+  });
+  document.getElementById('legalCerrar').addEventListener('click', cerrarLegal);
+  document.getElementById('legalOverlay').addEventListener('click', (e) => {
+    if (e.target.id === 'legalOverlay') cerrarLegal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !document.getElementById('legalOverlay').classList.contains('oculto')) cerrarLegal();
+  });
 
   /* ---------- Bloques repetibles ---------- */
   function bloqueFormacion() {

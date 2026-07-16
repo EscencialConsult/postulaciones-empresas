@@ -48,6 +48,11 @@ Se crea un usuario de ejemplo en la pestaña `Usuarios`:
 > **Cambiá la contraseña** y agregá más empresas simplemente añadiendo filas
 > (Usuario / Password / Empresa). Las columnas Token y TokenExpira se llenan solas.
 
+### 3.1) Verificación manual de empresas
+El registro de empresas solicita selfie del representante y fotos del frente y dorso del DNI.
+Las imágenes se guardan en Drive y la empresa queda con verificación `pendiente` hasta que
+administración revise la documentación desde `admin.html`.
+
 ### 4) Publicar como Aplicación Web
 1. Arriba a la derecha: **Implementar → Nueva implementación**.
 2. Engranaje ⚙ → tipo **Aplicación web**.

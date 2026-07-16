@@ -22,6 +22,11 @@
   .registro-nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 18px; }
   .registro-nav .btn { min-width: 140px; }
   .registro-nav .btn-prim { margin-left: auto; }
+  .capturas-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .captura-card { border: 1px solid var(--borde); border-radius: 12px; padding: 12px; background: #fff; }
+  .captura-card h3 { font-size: .9rem; margin: 0 0 4px; }
+  .captura-card p { color: var(--muted); font-size: .8rem; margin: 0 0 10px; }
+  .captura-card .firma-controles { flex-wrap: wrap; gap: 8px; }
   .login h1 { font-size: 1.5rem; margin: 14px 0 4px; }
   .login > p { color: var(--muted); margin: 0 0 24px; font-size: .92rem; }
   .err { color: var(--error); font-size: .85rem; margin-top: 10px; display: none; }
@@ -52,11 +57,16 @@
   .estado-verificacion-pendiente { background: rgba(107,225,227,.14); color: #0f766e; border-color: rgba(107,225,227,.38); }
   .estado-verificacion-aprobado { background: rgba(18,185,129,.14); color: #0f766e; border-color: rgba(18,185,129,.32); }
   .estado-verificacion-rechazado { background: rgba(209,67,111,.14); color: #b0234f; border-color: rgba(209,67,111,.32); }
+  .cuenta-datos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .cuenta-dato { border: 1px solid var(--borde); border-radius: 10px; background: #faf9fd; padding: 11px 12px; min-width: 0; }
+  .cuenta-dato span { display: block; color: var(--muted); font-size: .74rem; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 4px; }
+  .cuenta-dato strong { display: block; color: var(--dark); font-size: .94rem; line-height: 1.25; overflow-wrap: anywhere; }
+  .cuenta-dato.span-2 { grid-column: span 2; }
   .cuenta-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 14px; }
   .cuenta-grid .campo { margin-bottom: 14px; }
   .cuenta-grid .span-2 { grid-column: span 2; }
   .cuenta-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .cuenta-msg { color: var(--muted); font-size: .88rem; font-weight: 700; }
+  .cuenta-msg { color: var(--muted); font-size: .88rem; font-weight: 700; min-height: 20px; }
 
   .filtros { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; margin-bottom: 20px; padding: 18px; }
   .filtros .campo { margin: 0; flex: 1; min-width: 150px; }
@@ -94,6 +104,7 @@
     .registro-card { max-width: 100%; }
     .registro-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .registro-grid { grid-template-columns: 1fr; }
+    .capturas-grid { grid-template-columns: 1fr; }
     .registro-nav { flex-direction: column-reverse; }
     .registro-nav .btn { width: 100%; min-width: 0; }
     .topbar .inner { padding: 12px 16px; }
@@ -103,6 +114,8 @@
     .filtros .campo { min-width: 0; flex-basis: 100%; }
     .filtros .acciones { width: 100%; }
     .filtros .acciones .btn { flex: 1; }
+    .cuenta-datos { grid-template-columns: 1fr; }
+    .cuenta-dato.span-2 { grid-column: auto; }
     .cuenta-grid { grid-template-columns: 1fr; }
     .cuenta-grid .span-2 { grid-column: auto; }
     .cuenta-actions .btn { width: 100%; }
@@ -190,25 +203,71 @@
       <h2>Verificación y legales</h2>
       <div class="verificacion-box">
         <h2>Verificación de identidad</h2>
-        <p>Tomate una selfie clara del representante legal. Si el proveedor externo todavía no está configurado, la cuenta quedará pendiente de revisión.</p>
-        <video id="verifVideo" class="verificacion-video oculto" playsinline muted></video>
-        <canvas id="verifCanvas" class="oculto"></canvas>
-        <img id="verifPreview" class="verificacion-preview oculto" alt="Selfie capturada">
-        <div class="firma-controles">
-          <button type="button" class="btn btn-sec btn-firma-limpiar" id="btnIniciarCamara">Abrir cámara</button>
-          <button type="button" class="btn btn-sec btn-firma-limpiar oculto" id="btnTomarSelfie">Tomar foto</button>
-          <button type="button" class="btn btn-sec btn-firma-limpiar oculto" id="btnReintentarSelfie">Reintentar</button>
+        <p>Tomá una selfie y fotos claras del frente y dorso del DNI del representante. La cuenta quedará pendiente hasta que administración revise la documentación.</p>
+        <div class="capturas-grid">
+          <div class="captura-card" data-captura="selfie">
+            <h3>Selfie</h3>
+            <p>Rostro claro, buena luz, sin lentes oscuros.</p>
+            <video id="video-selfie" class="verificacion-video oculto" playsinline muted></video>
+            <canvas id="canvas-selfie" class="oculto"></canvas>
+            <img id="preview-selfie" class="verificacion-preview oculto" alt="Selfie capturada">
+            <div class="firma-controles">
+              <button type="button" class="btn btn-sec btn-firma-limpiar" data-captura-start="selfie">Abrir cámara</button>
+              <button type="button" class="btn btn-sec btn-firma-limpiar oculto" data-captura-shot="selfie">Tomar foto</button>
+              <button type="button" class="btn btn-sec btn-firma-limpiar oculto" data-captura-retry="selfie">Reintentar</button>
+            </div>
+            <div class="firma-estado" id="estado-selfie">Pendiente.</div>
+          </div>
+          <div class="captura-card" data-captura="dniFrente">
+            <h3>DNI frente</h3>
+            <p>Que se vean número, nombre y foto del documento.</p>
+            <video id="video-dniFrente" class="verificacion-video oculto" playsinline muted></video>
+            <canvas id="canvas-dniFrente" class="oculto"></canvas>
+            <img id="preview-dniFrente" class="verificacion-preview oculto" alt="Frente del DNI capturado">
+            <div class="firma-controles">
+              <button type="button" class="btn btn-sec btn-firma-limpiar" data-captura-start="dniFrente">Abrir cámara</button>
+              <button type="button" class="btn btn-sec btn-firma-limpiar oculto" data-captura-shot="dniFrente">Tomar foto</button>
+              <button type="button" class="btn btn-sec btn-firma-limpiar oculto" data-captura-retry="dniFrente">Reintentar</button>
+            </div>
+            <div class="firma-estado" id="estado-dniFrente">Pendiente.</div>
+          </div>
+          <div class="captura-card" data-captura="dniDorso">
+            <h3>DNI dorso</h3>
+            <p>Que se vean código y datos del reverso.</p>
+            <video id="video-dniDorso" class="verificacion-video oculto" playsinline muted></video>
+            <canvas id="canvas-dniDorso" class="oculto"></canvas>
+            <img id="preview-dniDorso" class="verificacion-preview oculto" alt="Dorso del DNI capturado">
+            <div class="firma-controles">
+              <button type="button" class="btn btn-sec btn-firma-limpiar" data-captura-start="dniDorso">Abrir cámara</button>
+              <button type="button" class="btn btn-sec btn-firma-limpiar oculto" data-captura-shot="dniDorso">Tomar foto</button>
+              <button type="button" class="btn btn-sec btn-firma-limpiar oculto" data-captura-retry="dniDorso">Reintentar</button>
+            </div>
+            <div class="firma-estado" id="estado-dniDorso">Pendiente.</div>
+          </div>
         </div>
-        <div class="firma-estado" id="estadoVerificacion">Verificación pendiente.</div>
       </div>
       <div class="check" style="margin-top:16px">
         <input type="checkbox" id="rAceptoTerminos" required>
         <label for="rAceptoTerminos">
           He leído y acepto los
-          <a href="terminos-condiciones.html" target="_blank" rel="noopener">Términos y Condiciones</a>
+          <a href="terminos-condiciones.html" data-legal-doc="terminos">Términos y Condiciones</a>
           y la
-          <a href="politica-privacidad.html" target="_blank" rel="noopener">Política de Privacidad</a>
+          <a href="politica-privacidad.html" data-legal-doc="politica">Política de Privacidad</a>
         </label>
+      </div>
+      <div class="firma-seccion" id="firma-empresa-legal">
+        <h3 class="firma-titulo">Firma del representante</h3>
+        <p class="firma-desc">Al firmar, el representante confirma la aceptación de los documentos legales y declara que los datos enviados son correctos y veraces.</p>
+        <div class="firma-canvas-wrap">
+          <canvas id="canvas-empresa-legal" class="firma-canvas"></canvas>
+          <div class="firma-placeholder" id="placeholder-empresa-legal">
+            Firmá aquí con el dedo o el mouse
+          </div>
+        </div>
+        <div class="firma-controles">
+          <button type="button" class="btn btn-sec btn-firma-limpiar" id="limpiar-empresa-legal">Borrar firma</button>
+          <span class="firma-estado" id="estado-empresa-legal"></span>
+        </div>
       </div>
     </section>
 
@@ -254,7 +313,20 @@
         </div>
       </div>
 
-      <form id="empresaForm" novalidate>
+      <div class="cuenta-datos" id="cuentaDatos">
+        <div class="cuenta-dato span-2"><span>Razón social</span><strong id="verEmpresa">—</strong></div>
+        <div class="cuenta-dato"><span>CUIT / CUIL</span><strong id="verCuit">—</strong></div>
+        <div class="cuenta-dato"><span>Rubro</span><strong id="verRubro">—</strong></div>
+        <div class="cuenta-dato"><span>Contacto</span><strong id="verContacto">—</strong></div>
+        <div class="cuenta-dato"><span>Teléfono</span><strong id="verTelefono">—</strong></div>
+        <div class="cuenta-dato span-2"><span>Email de acceso</span><strong id="verEmail">—</strong></div>
+      </div>
+
+      <div class="cuenta-actions" id="cuentaVistaActions">
+        <button type="button" class="btn btn-sec" id="btnEditarEmpresa">Editar datos</button>
+      </div>
+
+      <form id="empresaForm" class="oculto" novalidate>
         <div class="cuenta-grid">
           <div class="campo span-2"><label>Razón social</label><input id="miEmpresa" required></div>
           <div class="campo"><label>CUIT / CUIL</label><input id="miCuit" inputmode="numeric" required maxlength="13"></div>
@@ -268,9 +340,21 @@
         </div>
         <div class="cuenta-actions">
           <button type="submit" class="btn btn-prim" id="btnGuardarEmpresa">Guardar cambios</button>
-          <span class="cuenta-msg" id="empresaMsg"></span>
+          <button type="button" class="btn btn-sec" id="btnCancelarEmpresa">Cancelar</button>
         </div>
       </form>
+      <div class="cuenta-msg" id="empresaMsg" aria-live="polite"></div>
+    </section>
+
+    <section class="card cuenta-panel" id="seccionVerificacion" style="display:none">
+      <div class="cuenta-head">
+        <div>
+          <h2>Verificación de identidad</h2>
+          <p>Administración revisará la selfie y las fotos del DNI cargadas durante el registro.</p>
+        </div>
+      </div>
+      <div id="verifPanelStatus" style="margin-bottom:14px"></div>
+      <div class="firma-estado" id="estadoPanelVerificacion"></div>
     </section>
 
     <div class="card filtros">
@@ -304,6 +388,16 @@
   <div class="modal" id="modal"></div>
 </div>
 
+<div class="legal-modal-overlay oculto" id="legalOverlay" role="dialog" aria-modal="true" aria-labelledby="legalTitulo">
+  <div class="legal-modal">
+    <div class="legal-modal-head">
+      <h2 id="legalTitulo">Documento legal</h2>
+      <button type="button" class="legal-modal-close" id="legalCerrar" aria-label="Cerrar">×</button>
+    </div>
+    <iframe class="legal-modal-frame" id="legalFrame" title="Documento legal"></iframe>
+  </div>
+</div>
+
 <footer class="site-footer">
   <div class="footer-links">
     <a href="politica-privacidad.html">Política de Privacidad</a>
@@ -313,6 +407,8 @@
   <img class="footer-logo" src="assets/logo2-trim.png" alt="ONE">
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@5.1.3/dist/signature_pad.umd.min.js"></script>
+<script src="firmas.js"></script>
 <script src="config.js"></script>
 <script>
   let token = sessionStorage.getItem('token') || '';
@@ -322,6 +418,37 @@
 
   const loginWrap = document.getElementById('loginWrap');
   const panelWrap = document.getElementById('panelWrap');
+
+  function abrirLegal(tipo) {
+    const docs = {
+      politica: { titulo: 'Política de Privacidad', url: 'politica-privacidad.html' },
+      terminos: { titulo: 'Términos y Condiciones', url: 'terminos-condiciones.html' }
+    };
+    const doc = docs[tipo];
+    if (!doc) return;
+    document.getElementById('legalTitulo').textContent = doc.titulo;
+    document.getElementById('legalFrame').src = doc.url;
+    document.getElementById('legalOverlay').classList.remove('oculto');
+  }
+
+  function cerrarLegal() {
+    document.getElementById('legalOverlay').classList.add('oculto');
+    document.getElementById('legalFrame').src = 'about:blank';
+  }
+
+  document.querySelectorAll('[data-legal-doc]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      abrirLegal(link.dataset.legalDoc);
+    });
+  });
+  document.getElementById('legalCerrar').addEventListener('click', cerrarLegal);
+  document.getElementById('legalOverlay').addEventListener('click', (e) => {
+    if (e.target.id === 'legalOverlay') cerrarLegal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !document.getElementById('legalOverlay').classList.contains('oculto')) cerrarLegal();
+  });
 
   /* ---------- LOGIN ---------- */
   document.getElementById('loginForm').addEventListener('submit', async (e) => {
@@ -364,6 +491,7 @@
   const btnRegistroSiguiente = document.getElementById('btnRegistroSiguiente');
   const btnRegistro = document.getElementById('btnRegistro');
   let pasoRegistro = 1;
+  let firmaEmpresaLegal = null;
 
   function setRegistroError(mensaje) {
     const err = document.getElementById('registroErr');
@@ -383,6 +511,7 @@
     btnRegistroAtras.disabled = pasoRegistro === 1;
     btnRegistroSiguiente.classList.toggle('oculto', pasoRegistro === registroPasos.length);
     btnRegistro.classList.toggle('oculto', pasoRegistro !== registroPasos.length);
+    if (pasoRegistro === 4) initFirmaEmpresaLegal();
     setRegistroError('');
   }
 
@@ -409,6 +538,7 @@
         return false;
       }
     }
+    if (paso === 4 && !validarFirmaEmpresaLegal()) return false;
     return true;
   }
 
@@ -418,64 +548,123 @@
   });
   mostrarPasoRegistro(1);
 
-  let selfieBase64 = '';
-  let streamVerificacion = null;
+  const capturasVerificacion = { selfie: '', dniFrente: '', dniDorso: '' };
+  const streamsCaptura = {};
 
-  function setEstadoVerificacion(mensaje, clase) {
-    const el = document.getElementById('estadoVerificacion');
+  function detenerCamara(tipo) {
+    if (tipo) {
+      if (streamsCaptura[tipo]) {
+        streamsCaptura[tipo].getTracks().forEach(track => track.stop());
+        streamsCaptura[tipo] = null;
+      }
+      return;
+    }
+    Object.keys(streamsCaptura).forEach(detenerCamara);
+  }
+
+  function setEstadoCaptura(tipo, mensaje, clase) {
+    const el = document.getElementById('estado-' + tipo);
     el.textContent = mensaje;
     el.className = 'firma-estado ' + (clase || '');
   }
 
-  function detenerCamara() {
-    if (streamVerificacion) {
-      streamVerificacion.getTracks().forEach(track => track.stop());
-      streamVerificacion = null;
-    }
-  }
-
-  document.getElementById('btnIniciarCamara').addEventListener('click', async () => {
-    const video = document.getElementById('verifVideo');
-    const btnTomar = document.getElementById('btnTomarSelfie');
-    const btnReintentar = document.getElementById('btnReintentarSelfie');
-    const preview = document.getElementById('verifPreview');
+  async function iniciarCaptura(tipo) {
+    const video = document.getElementById('video-' + tipo);
+    const preview = document.getElementById('preview-' + tipo);
     try {
-      detenerCamara();
-      streamVerificacion = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
-      video.srcObject = streamVerificacion;
+      detenerCamara(tipo);
+      streamsCaptura[tipo] = await navigator.mediaDevices.getUserMedia({ video: { facingMode: tipo === 'selfie' ? 'user' : 'environment' }, audio: false });
+      video.srcObject = streamsCaptura[tipo];
       await video.play();
       video.classList.remove('oculto');
       preview.classList.add('oculto');
-      btnTomar.classList.remove('oculto');
-      btnReintentar.classList.add('oculto');
-      setEstadoVerificacion('Cámara lista. Toma una foto clara del rostro.', 'firma-vacia');
+      document.querySelector(`[data-captura-shot="${tipo}"]`).classList.remove('oculto');
+      document.querySelector(`[data-captura-retry="${tipo}"]`).classList.add('oculto');
+      setEstadoCaptura(tipo, 'Cámara lista. Tomá una foto clara.', 'firma-vacia');
     } catch (ex) {
-      setEstadoVerificacion('No se pudo abrir la cámara. Podés crear la cuenta y quedará pendiente de revisión.', 'firma-vacia');
+      setEstadoCaptura(tipo, 'No se pudo abrir la cámara. Revisá permisos del navegador.', 'firma-vacia');
     }
-  });
+  }
 
-  document.getElementById('btnTomarSelfie').addEventListener('click', () => {
-    const video = document.getElementById('verifVideo');
-    const canvas = document.getElementById('verifCanvas');
-    const preview = document.getElementById('verifPreview');
+  function tomarCaptura(tipo) {
+    const video = document.getElementById('video-' + tipo);
+    const canvas = document.getElementById('canvas-' + tipo);
+    const preview = document.getElementById('preview-' + tipo);
     if (!video.videoWidth) return;
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-    selfieBase64 = canvas.toDataURL('image/jpeg', 0.82).split(',')[1] || '';
-    preview.src = 'data:image/jpeg;base64,' + selfieBase64;
+    capturasVerificacion[tipo] = canvas.toDataURL('image/jpeg', 0.84).split(',')[1] || '';
+    preview.src = 'data:image/jpeg;base64,' + capturasVerificacion[tipo];
     preview.classList.remove('oculto');
     video.classList.add('oculto');
-    document.getElementById('btnTomarSelfie').classList.add('oculto');
-    document.getElementById('btnReintentarSelfie').classList.remove('oculto');
+    document.querySelector(`[data-captura-shot="${tipo}"]`).classList.add('oculto');
+    document.querySelector(`[data-captura-retry="${tipo}"]`).classList.remove('oculto');
+    detenerCamara(tipo);
+    setEstadoCaptura(tipo, 'Foto capturada.', 'firma-ok');
+  }
+
+  function resetCapturas() {
+    Object.keys(capturasVerificacion).forEach(tipo => {
+      capturasVerificacion[tipo] = '';
+      const preview = document.getElementById('preview-' + tipo);
+      const video = document.getElementById('video-' + tipo);
+      preview.src = '';
+      preview.classList.add('oculto');
+      video.classList.add('oculto');
+      document.querySelector(`[data-captura-shot="${tipo}"]`).classList.add('oculto');
+      document.querySelector(`[data-captura-retry="${tipo}"]`).classList.add('oculto');
+      setEstadoCaptura(tipo, 'Pendiente.', '');
+    });
     detenerCamara();
-    setEstadoVerificacion('Selfie capturada. Se enviará para verificación al crear la cuenta.', 'firma-ok');
+  }
+
+  document.querySelectorAll('[data-captura-start]').forEach(btn => {
+    btn.addEventListener('click', () => iniciarCaptura(btn.dataset.capturaStart));
+  });
+  document.querySelectorAll('[data-captura-shot]').forEach(btn => {
+    btn.addEventListener('click', () => tomarCaptura(btn.dataset.capturaShot));
+  });
+  document.querySelectorAll('[data-captura-retry]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tipo = btn.dataset.capturaRetry;
+      capturasVerificacion[tipo] = '';
+      iniciarCaptura(tipo);
+    });
   });
 
-  document.getElementById('btnReintentarSelfie').addEventListener('click', () => {
-    selfieBase64 = '';
-    document.getElementById('btnIniciarCamara').click();
-  });
+  function initFirmaEmpresaLegal() {
+    if (firmaEmpresaLegal) return;
+    firmaEmpresaLegal = initFirma('empresa-legal', { penColor: '#1a181d' });
+  }
+
+  function setEstadoFirmaEmpresa(mensaje, clase) {
+    const el = document.getElementById('estado-empresa-legal');
+    el.textContent = mensaje || '';
+    el.className = 'firma-estado ' + (clase || '');
+  }
+
+  function validarFirmaEmpresaLegal() {
+    initFirmaEmpresaLegal();
+    if (!firmaEmpresaLegal || firmaEmpresaLegal.isEmpty() || !firmaEmpresaLegal.hasMinStrokes(3)) {
+      setEstadoFirmaEmpresa('Por favor, dibujá la firma del representante con al menos 3 trazos.', 'firma-error');
+      return false;
+    }
+    if (!document.getElementById('rAceptoTerminos').checked) {
+      setEstadoFirmaEmpresa('Aceptá los Términos y Condiciones y la Política de Privacidad.', 'firma-error');
+      return false;
+    }
+    setEstadoFirmaEmpresa('Firma y aceptación listas.', 'firma-ok');
+    return true;
+  }
+
+  function resetFirmaEmpresaLegal() {
+    if (firmaEmpresaLegal) firmaEmpresaLegal.clear();
+    const placeholder = document.getElementById('placeholder-empresa-legal');
+    if (placeholder) placeholder.style.display = 'flex';
+    setEstadoFirmaEmpresa('', '');
+  }
+
   document.getElementById('irRegistro').onclick = (e) => {
     e.preventDefault();
     loginForm.classList.add('oculto'); registroForm.classList.remove('oculto'); mostrarPasoRegistro(1);
@@ -506,8 +695,20 @@
     if (!document.getElementById('rAceptoTerminos').checked) {
       err.textContent = 'Debés aceptar los Términos y Condiciones y la Política de Privacidad.'; err.style.display = 'block'; return;
     }
+    if (!validarFirmaEmpresaLegal()) {
+      err.textContent = 'Debés firmar la aceptación legal del representante.';
+      err.style.display = 'block';
+      mostrarPasoRegistro(4);
+      return;
+    }
     if (pass !== pass2) {
       err.textContent = 'Las contraseñas no coinciden.'; err.style.display = 'block'; return;
+    }
+    if (!capturasVerificacion.selfie || !capturasVerificacion.dniFrente || !capturasVerificacion.dniDorso) {
+      err.textContent = 'Debés capturar selfie, frente del DNI y dorso del DNI para continuar.';
+      err.style.display = 'block';
+      mostrarPasoRegistro(4);
+      return;
     }
 
     btn.disabled = true; btn.textContent = 'Creando cuenta…';
@@ -523,15 +724,17 @@
         email: document.getElementById('rEmail').value,
         telefono: document.getElementById('rTelefono').value,
         password: pass,
-        selfieBase64: selfieBase64,
+        selfieBase64: capturasVerificacion.selfie,
+        dniFrenteBase64: capturasVerificacion.dniFrente,
+        dniDorsoBase64: capturasVerificacion.dniDorso,
+        firmaLegalBase64: firmaEmpresaLegal.toBase64(),
         aceptoTerminos: document.getElementById('rAceptoTerminos').checked
       });
       if (r.ok) {
         // La cuenta queda pendiente de aprobación: volvemos al login con aviso.
         registroForm.reset();
-        selfieBase64 = '';
-        detenerCamara();
-        document.getElementById('verifPreview').classList.add('oculto');
+        resetCapturas();
+        resetFirmaEmpresaLegal();
         registroForm.classList.add('oculto');
         loginForm.classList.remove('oculto');
         const info = document.getElementById('loginInfo');
@@ -547,10 +750,13 @@
 
   document.getElementById('btnSalir').onclick = () => {
     sessionStorage.clear(); token = ''; empresa = ''; miEmpresaActual = null;
+    detenerCamara();
+    if (typeof detenerCamaraPanel === 'function') detenerCamaraPanel();
     panelWrap.classList.add('oculto'); loginWrap.classList.remove('oculto');
   };
 
   function entrarPanel() {
+    detenerCamara();
     loginWrap.classList.add('oculto');
     panelWrap.classList.remove('oculto');
     document.getElementById('empresaNombre').textContent = empresa;
@@ -560,7 +766,11 @@
 
   async function cargarMiEmpresa() {
     const msg = document.getElementById('empresaMsg');
+    const btnEditar = document.getElementById('btnEditarEmpresa');
+    btnEditar.disabled = true;
     msg.textContent = '';
+    msg.style.color = 'var(--muted)';
+    mostrarEdicionEmpresa(false);
     try {
       const r = await apiCall({ action: 'miEmpresa', token: token });
       if (!r.ok) {
@@ -571,7 +781,28 @@
       pintarMiEmpresa(miEmpresaActual);
     } catch (ex) {
       document.getElementById('cuentaResumen').textContent = 'No se pudieron cargar los datos de la empresa.';
-      msg.textContent = ex.message;
+      msg.style.color = 'var(--error)';
+      msg.textContent = /Acci[oó]n no reconocida/i.test(ex.message)
+        ? 'El panel publicado todavía no reconoce esta acción. Publicá una nueva versión del Apps Script y volvé a iniciar sesión.'
+        : ex.message;
+    }
+  }
+
+  function valorCuenta(valor) {
+    return valor ? String(valor) : '—';
+  }
+
+  function setTexto(id, valor) {
+    document.getElementById(id).textContent = valorCuenta(valor);
+  }
+
+  function mostrarEdicionEmpresa(mostrar) {
+    document.getElementById('cuentaDatos').classList.toggle('oculto', mostrar);
+    document.getElementById('cuentaVistaActions').classList.toggle('oculto', mostrar);
+    document.getElementById('empresaForm').classList.toggle('oculto', !mostrar);
+    if (mostrar) {
+      document.getElementById('empresaMsg').textContent = '';
+      document.getElementById('miEmpresa').focus();
     }
   }
 
@@ -585,12 +816,39 @@
     document.getElementById('miEmail').value = e.email || e.usuario || '';
     document.getElementById('miPasswordActual').value = '';
     document.getElementById('miNuevaPassword').value = '';
-    document.getElementById('cuentaResumen').textContent = `${e.email || e.usuario || ''} · registrada ${fecha(e.fecha)}`;
+    setTexto('verEmpresa', e.empresa);
+    setTexto('verCuit', e.cuit);
+    setTexto('verRubro', e.rubro);
+    setTexto('verContacto', [e.nombre, e.apellido].filter(Boolean).join(' '));
+    setTexto('verTelefono', e.telefono);
+    setTexto('verEmail', e.email || e.usuario);
+    document.getElementById('cuentaResumen').textContent = `${e.email || e.usuario || 'Sin email'} · registrada ${fecha(e.fecha)}`;
     pintarBadgeEstado('badgeEstadoEmpresa', e.estado, 'cuenta');
     pintarBadgeEstado('badgeEstadoVerificacion', e.estadoVerificacion || 'pendiente', 'verificacion');
+    document.getElementById('btnEditarEmpresa').disabled = false;
+    mostrarEdicionEmpresa(false);
     empresa = e.empresa || empresa;
     sessionStorage.setItem('empresa', empresa);
     document.getElementById('empresaNombre').textContent = empresa;
+
+    // Mostrar sección de re-verificación según estado
+    var estadoVerif = (e.estadoVerificacion || 'pendiente').toLowerCase();
+    var estadoCuenta = (e.estado || '').toLowerCase();
+    var seccionVerif = document.getElementById('seccionVerificacion');
+    var statusEl = document.getElementById('verifPanelStatus');
+
+    if (estadoCuenta !== 'aprobado') {
+      seccionVerif.style.display = 'none';
+    } else if (estadoVerif === 'aprobado') {
+      seccionVerif.style.display = 'none';
+    } else {
+      seccionVerif.style.display = '';
+      if (estadoVerif === 'rechazado') {
+        statusEl.innerHTML = '<div class="info" style="border-color:rgba(209,67,111,.5);background:rgba(209,67,111,.1);color:#b0234f">La documentación no fue aprobada. Contactá a administración para enviar nuevas fotos.</div>';
+      } else {
+        statusEl.innerHTML = '<div class="info">Tu verificación está pendiente. Administración revisará la selfie y las fotos del DNI cargadas en el registro.</div>';
+      }
+    }
   }
 
   function pintarBadgeEstado(id, estado, tipo) {
@@ -601,6 +859,15 @@
     el.textContent = (tipo === 'verificacion' ? labelsVerif : labelsCuenta)[normalizado] || normalizado;
     el.className = `estado-badge ${tipo === 'verificacion' ? 'estado-verificacion-' : 'estado-'}${esc(normalizado)}`;
   }
+
+  document.getElementById('btnEditarEmpresa').addEventListener('click', () => {
+    mostrarEdicionEmpresa(true);
+  });
+
+  document.getElementById('btnCancelarEmpresa').addEventListener('click', () => {
+    if (miEmpresaActual) pintarMiEmpresa(miEmpresaActual);
+    document.getElementById('empresaMsg').textContent = '';
+  });
 
   document.getElementById('empresaForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -644,6 +911,7 @@
       }
       miEmpresaActual = r.empresa;
       pintarMiEmpresa(miEmpresaActual);
+      mostrarEdicionEmpresa(false);
       msg.style.color = 'var(--ok)';
       msg.textContent = r.mensaje || 'Datos actualizados.';
     } catch (ex) {

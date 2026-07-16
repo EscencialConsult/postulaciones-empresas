@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ===================================================================
  *  PLATAFORMA DE POSTULANTES — Backend (Google Apps Script)
  * ===================================================================
@@ -57,7 +57,11 @@ var COLUMNAS_USUARIOS = [
   'Email', 'FechaRegistro', 'Rol', 'Estado', 'Cuit', 'Rubro',
   'Nombre', 'Apellido', 'Telefono',
   'Dni', 'EstadoVerificación', 'FechaVerificación', 'ConfianzaVerificación',
-  'AceptoTerminos', 'FechaAceptoTerminos'
+  'AceptoTerminos', 'FechaAceptoTerminos',
+  'SelfieUrl', 'NombreVerificado',
+  'VerificacionLegacyId', 'VerificacionLegacyUrl', 'VerificacionLegacyEstado', 'VerificacionLegacyFecha',
+  'DniFrenteUrl', 'DniDorsoUrl',
+  'FirmaLegalUrl', 'FechaFirmaLegal'
 ];
 
 // Duración del token de sesión (horas)
@@ -92,6 +96,7 @@ function manejar(e) {
       case 'exportar':  return json(exportarPostulantes(datos));
       case 'listarEmpresas': return json(listarEmpresas(datos));
       case 'aprobarEmpresa': return json(aprobarEmpresa(datos));
+      case 'cambiarEstadoVerificacion': return json(cambiarEstadoVerificacion(datos));
       // Firmas
       case 'firmarPostulacion': return json(firmarPostulacion(datos));
       default:
@@ -317,70 +322,36 @@ function limpiar(v) {
  * Registro de una nueva empresa/consultora. Crea el usuario y devuelve
  * un token para entrar directamente al panel.
  */
-function verificarIdentidadDNI(d) {
-  var dni = limpiar(d.dni).replace(/[^0-9]/g, '');
-  if (dni.length !== 8) {
-    return { ok: false, error: 'El DNI debe tener 8 dígitos.' };
-  }
-
-  if (!d.selfieBase64) {
-    return {
-      ok: true,
-      verificado: false,
-      estado: 'pendiente',
-      error: 'Falta la selfie para verificación automática.'
-    };
-  }
-
-  var props = PropertiesService.getScriptProperties();
-  var apiKey = props.getProperty('DIDIT_API_KEY');
-  var verifyUrl = props.getProperty('DIDIT_VERIFY_URL');
-  var workflowId = props.getProperty('DIDIT_WORKFLOW_ID') || '';
-
-  if (!apiKey || !verifyUrl) {
-    return {
-      ok: true,
-      verificado: false,
-      estado: 'pendiente',
-      error: 'Proveedor de verificación no configurado.'
-    };
-  }
-
+/**
+ * Guarda una imagen de verificación en Drive y devuelve { url }.
+ */
+function guardarImagenVerificacion(base64, tipo, usuario) {
+  if (!base64) return { error: 'Falta la imagen de ' + tipo + '.' };
   try {
-    var response = UrlFetchApp.fetch(verifyUrl, {
-      method: 'post',
-      muteHttpExceptions: true,
-      contentType: 'application/json',
-      headers: { Authorization: 'Bearer ' + apiKey },
-      payload: JSON.stringify({
-        documentType: 'DNI',
-        documentNumber: dni,
-        selfieBase64: String(d.selfieBase64),
-        workflowId: workflowId
-      })
-    });
-
-    var code = response.getResponseCode();
-    var body = response.getContentText() || '{}';
-    var result = JSON.parse(body);
-    if (code < 200 || code >= 300) {
-      return { ok: false, error: result.error || result.message || ('Error de verificación (' + code + ').') };
-    }
-
-    var status = String(result.status || result.decision || '').toLowerCase();
-    var aprobado = ['approved', 'aprobado', 'verified', 'success'].indexOf(status) !== -1;
-    return {
-      ok: true,
-      verificado: aprobado,
-      estado: aprobado ? 'aprobado' : (status === 'rejected' || status === 'rechazado' ? 'rechazado' : 'pendiente'),
-      confianza: result.confidence || result.score || '',
-      nombreVerificado: result.fullName || (result.data ? result.data.fullName : '')
-    };
+    var idx = String(base64).indexOf('base64,');
+    if (idx !== -1) base64 = String(base64).substring(idx + 7);
+    var bytes = Utilities.base64Decode(base64);
+    var nombre = tipo + '_' + limpiar(usuario || 'empresa').replace(/[^a-zA-Z0-9_-]/g, '_') + '_' + Utilities.getUuid() + '.jpg';
+    var blob = Utilities.newBlob(bytes, 'image/jpeg', nombre);
+    var carpeta = obtenerCarpetaCV();
+    var archivo = carpeta.createFile(blob);
+    try {
+      archivo.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch (e) { /* algunos dominios restringen el uso compartido público */ }
+    return { url: archivo.getUrl() };
   } catch (err) {
-    return { ok: false, error: 'Error en verificación: ' + String(err && err.message ? err.message : err) };
+    return { error: 'No se pudo guardar la imagen de ' + tipo + ': ' + String(err && err.message ? err.message : err) };
   }
 }
 
+function verificarIdentidadDNI(d) {
+  var dni = limpiar(d.dni).replace(/[^0-9]/g, '');
+  if (dni.length !== 8) return { ok: false, error: 'El DNI debe tener 8 dígitos.' };
+  if (!d.selfieBase64) return { ok: false, error: 'Falta la selfie del representante.' };
+  if (!d.dniFrenteBase64) return { ok: false, error: 'Falta la foto del frente del DNI.' };
+  if (!d.dniDorsoBase64) return { ok: false, error: 'Falta la foto del dorso del DNI.' };
+  return { ok: true, estado: 'pendiente' };
+}
 function registrarEmpresa(d) {
   var empresa  = limpiar(d.empresa);
   var password = String(d.password || '');
@@ -411,12 +382,12 @@ function registrarEmpresa(d) {
   if (!d.aceptoTerminos) {
     return { ok: false, error: 'Debés aceptar los Términos y Condiciones.' };
   }
+  if (!d.firmaLegalBase64) {
+    return { ok: false, error: 'Debés firmar la aceptación legal del representante.' };
+  }
   if (password.length < 6) {
     return { ok: false, error: 'La contraseña debe tener al menos 6 caracteres.' };
   }
-
-  var verificacion = verificarIdentidadDNI({ dni: dni, selfieBase64: d.selfieBase64 });
-  if (!verificacion.ok) return verificacion;
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var hoja = obtenerHoja(ss, HOJA_USUARIOS, COLUMNAS_USUARIOS);
@@ -428,22 +399,46 @@ function registrarEmpresa(d) {
     }
   }
 
+  var verificacion = verificarIdentidadDNI({
+    dni: dni,
+    selfieBase64: d.selfieBase64,
+    dniFrenteBase64: d.dniFrenteBase64,
+    dniDorsoBase64: d.dniDorsoBase64
+  });
+  if (!verificacion.ok) return verificacion;
+
+  var selfieGuardada = guardarImagenVerificacion(d.selfieBase64, 'selfie', usuario);
+  if (selfieGuardada.error) return { ok: false, error: selfieGuardada.error };
+  var frenteGuardado = guardarImagenVerificacion(d.dniFrenteBase64, 'dni_frente', usuario);
+  if (frenteGuardado.error) return { ok: false, error: frenteGuardado.error };
+  var dorsoGuardado = guardarImagenVerificacion(d.dniDorsoBase64, 'dni_dorso', usuario);
+  if (dorsoGuardado.error) return { ok: false, error: dorsoGuardado.error };
+  var firmaLegal = guardarArchivoFirma(d.firmaLegalBase64, 'empresa_legal_' + usuario + '.png');
+  if (firmaLegal.error) return { ok: false, error: firmaLegal.error };
+
   // La empresa queda PENDIENTE de aprobación por el administrador (sin token de acceso).
-  // Orden: Usuario, Password, Empresa, Token, TokenExpira, Email, FechaRegistro, Rol, Estado, Cuit, Rubro, Nombre, Apellido, Telefono
   hoja.appendRow([
     usuario, password, empresa, '', '', email, new Date(), 'empresa', 'pendiente',
     cuit, rubro, nombre, apellido, telefono,
     dni,
-    verificacion.estado || (verificacion.verificado ? 'aprobado' : 'pendiente'),
+    'pendiente',
     new Date(),
-    verificacion.confianza || '',
+    '',
     'Si',
+    new Date(),
+    selfieGuardada.url,
+    '',
+    '', '', '', '',
+    frenteGuardado.url,
+    dorsoGuardado.url,
+    firmaLegal.url,
     new Date()
   ]);
 
   return {
     ok: true, pendiente: true,
-    mensaje: 'Tu cuenta fue creada y quedó pendiente de aprobación. Te avisaremos cuando esté habilitada.'
+    verificacion: 'pendiente',
+    mensaje: 'Tu cuenta fue creada y quedó pendiente de aprobación. Revisaremos la selfie y las fotos del DNI.'
   };
 }
 
@@ -521,7 +516,13 @@ function empresaDesdeFila(fila) {
     fechaVerificacion: (fila[16] instanceof Date) ? fila[16].toISOString() : fila[16],
     confianzaVerificacion: fila[17] || '',
     aceptoTerminos: fila[18] || '',
-    fechaAceptoTerminos: (fila[19] instanceof Date) ? fila[19].toISOString() : fila[19]
+    fechaAceptoTerminos: (fila[19] instanceof Date) ? fila[19].toISOString() : fila[19],
+    selfieUrl: fila[20] || '',
+    nombreVerificado: fila[21] || '',
+    dniFrenteUrl: fila[26] || '',
+    dniDorsoUrl: fila[27] || '',
+    firmaLegalUrl: fila[28] || '',
+    fechaFirmaLegal: (fila[29] instanceof Date) ? fila[29].toISOString() : fila[29]
   };
 }
 
@@ -796,3 +797,31 @@ function firmarPostulacion(d) {
   }
   return { ok: false, error: 'Postulante no encontrado con ese email.' };
 }
+
+/* -------------------------------------------------------------------
+ *  VERIFICACIÓN — ACCIONES ADICIONALES
+ * ----------------------------------------------------------------- */
+
+function cambiarEstadoVerificacion(d) {
+  if (!requireAdmin(d.token)) return { ok: false, error: 'Acceso exclusivo del administrador.' };
+
+  var usuario = limpiar(d.usuario).toLowerCase();
+  var nuevo = limpiar(d.estado).toLowerCase();
+  if (['aprobado', 'rechazado', 'pendiente'].indexOf(nuevo) === -1) {
+    return { ok: false, error: 'Estado de verificación inválido.' };
+  }
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_USUARIOS, COLUMNAS_USUARIOS);
+  var valores = hoja.getDataRange().getValues();
+
+  for (var i = 1; i < valores.length; i++) {
+    if (String(valores[i][0]).trim().toLowerCase() === usuario) {
+      hoja.getRange(i + 1, 16).setValue(nuevo);
+      hoja.getRange(i + 1, 17).setValue(new Date());
+      return { ok: true, estadoVerificacion: nuevo };
+    }
+  }
+  return { ok: false, error: 'Empresa no encontrada.' };
+}
+

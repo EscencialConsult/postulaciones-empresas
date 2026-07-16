@@ -354,7 +354,7 @@
   /* ---------- DETALLE EMPRESA ---------- */
   function abrirEmpresa(e) {
     const contacto = [e.nombre, e.apellido].filter(Boolean).join(' ');
-    const html = `
+    let html = `
       <button class="modal-cerrar" onclick="cerrarModal()">×</button>
       <h2>${esc(e.empresa)}</h2>
       <p class="puesto">${esc(e.rubro) || 'Sin rubro especificado'}</p>
@@ -363,8 +363,9 @@
         ${dato('Rubro', e.rubro)}
         ${dato('DNI representante', e.dni)}
         ${dato('Estado', e.estado)}${dato('Verificación', e.estadoVerificacion)}
-        ${dato('Confianza verificacion', e.confianzaVerificacion)}
+        ${dato('Confianza verificación', e.confianzaVerificacion)}
         ${dato('Aceptó términos', e.aceptoTerminos)}
+        ${dato('Fecha firma legal', fecha(e.fechaFirmaLegal))}
         ${dato('Registrada', fecha(e.fecha))}
       </div>
       <div class="seccion"><h3>Contacto</h3>
@@ -372,8 +373,52 @@
         ${dato('Email', e.email)}${dato('Teléfono', e.telefono)}
         ${dato('Usuario', e.usuario)}
       </div>`;
+
+    // Selfie de verificación
+    if (e.selfieUrl || e.dniFrenteUrl || e.dniDorsoUrl) {
+      html += `<div class="seccion"><h3>Evidencias de verificación</h3>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
+          ${e.selfieUrl ? `<a href="${esc(e.selfieUrl)}" target="_blank" rel="noopener"><img src="${esc(e.selfieUrl)}" alt="Selfie" style="width:180px;max-width:100%;border-radius:12px;border:1px solid var(--borde)"><small style="display:block;color:var(--muted);margin-top:4px">Selfie</small></a>` : ''}
+          ${e.dniFrenteUrl ? `<a href="${esc(e.dniFrenteUrl)}" target="_blank" rel="noopener"><img src="${esc(e.dniFrenteUrl)}" alt="DNI frente" style="width:180px;max-width:100%;border-radius:12px;border:1px solid var(--borde)"><small style="display:block;color:var(--muted);margin-top:4px">DNI frente</small></a>` : ''}
+          ${e.dniDorsoUrl ? `<a href="${esc(e.dniDorsoUrl)}" target="_blank" rel="noopener"><img src="${esc(e.dniDorsoUrl)}" alt="DNI dorso" style="width:180px;max-width:100%;border-radius:12px;border:1px solid var(--borde)"><small style="display:block;color:var(--muted);margin-top:4px">DNI dorso</small></a>` : ''}
+        </div>
+      </div>`;
+    }
+
+    if (e.firmaLegalUrl) {
+      html += `<div class="seccion"><h3>Aceptación legal firmada</h3>
+        <a href="${esc(e.firmaLegalUrl)}" target="_blank" rel="noopener">
+          <img src="${esc(e.firmaLegalUrl)}" alt="Firma legal del representante" class="firma-preview">
+        </a>
+      </div>`;
+    }
+
+    // Acciones de verificación
+    var estadoVerif = (e.estadoVerificacion || 'pendiente').toLowerCase();
+    html += `<div class="seccion"><h3>Gestión de verificación</h3>
+      <div class="acciones-cel" style="margin-top:8px">`;
+    if (estadoVerif !== 'aprobado') {
+      html += `<button class="btn-mini btn-aprobar" onclick="cambiarVerif('${esc(e.usuario)}','aprobado')">Marcar como verificado</button>`;
+    }
+    if (estadoVerif !== 'rechazado') {
+      html += `<button class="btn-mini btn-rechazar" onclick="cambiarVerif('${esc(e.usuario)}','rechazado')">Marcar como no verificado</button>`;
+    }
+    if (estadoVerif !== 'pendiente') {
+      html += `<button class="btn-mini" onclick="cambiarVerif('${esc(e.usuario)}','pendiente')">Marcar como pendiente</button>`;
+    }
+    html += `</div></div>`;
+
     document.getElementById('modal').innerHTML = html;
     document.getElementById('overlay').classList.remove('oculto');
+  }
+
+  async function cambiarVerif(usuario, estado) {
+    try {
+      const r = await apiCall({ action: 'cambiarEstadoVerificacion', token: token, usuario: usuario, estado: estado });
+      if (!r.ok) { if (sesionExpirada(r.error)) return; throw new Error(r.error); }
+      cerrarModal();
+      cargarEmpresas();
+    } catch (ex) { alert('Error: ' + ex.message); }
   }
 
   /* ---------- DETALLE POSTULANTE ---------- */
