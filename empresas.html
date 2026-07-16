@@ -575,9 +575,15 @@
           </div>
         </div>
         <div class="ats-filtros">
-          <div class="ats-f"><label>Puesto deseado</label><input id="fPuesto" placeholder="Ej: Analista"></div>
-          <div class="ats-f"><label>Provincia</label><select id="fProvincia"><option value="">Todas</option></select></div>
-          <div class="ats-f"><label>Localidad</label><select id="fLocalidad"><option value="">Todas</option></select></div>
+          <div class="ats-f"><label>Puesto deseado</label>
+            <input id="fPuesto" list="dlPuestos" autocomplete="off" placeholder="Buscá o elegí un puesto…">
+            <datalist id="dlPuestos"></datalist></div>
+          <div class="ats-f"><label>Provincia</label>
+            <input id="fProvincia" list="dlProvincias" autocomplete="off" placeholder="Todas">
+            <datalist id="dlProvincias"></datalist></div>
+          <div class="ats-f"><label>Localidad</label>
+            <input id="fLocalidad" list="dlLocalidades" autocomplete="off" placeholder="Todas">
+            <datalist id="dlLocalidades"></datalist></div>
           <div class="ats-f"><label>Idioma</label><select id="fIdioma"><option value="">Todos</option></select></div>
           <div class="ats-f"><label>Formación</label>
             <select id="fFormacion"><option value="">Todas</option>
@@ -1519,6 +1525,20 @@
   const ATS_CAMPOS = ['q','fPuesto','fProvincia','fLocalidad','fIdioma','fFormacion','fViajar',
     'fResidencia','fExperiencia','fCV','fBusqueda','fDesde','fHasta','fOrden'];
 
+  // Normaliza para comparar sin distinguir mayúsculas ni acentos.
+  function norm(s) {
+    return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
+  function llenarDatalist(id, valores) {
+    const dl = document.getElementById(id);
+    if (dl) dl.innerHTML = valores.map(v => `<option value="${esc(v)}">`).join('');
+  }
+  // Catálogos fijos (una sola vez): puestos, provincias y localidades.
+  llenarDatalist('dlPuestos', typeof PUESTOS !== 'undefined' ? PUESTOS : []);
+  llenarDatalist('dlProvincias', typeof PROVINCIAS !== 'undefined' ? PROVINCIAS : []);
+  llenarDatalist('dlLocalidades', typeof LOCALIDADES_TUCUMAN !== 'undefined' ? LOCALIDADES_TUCUMAN : []);
+
   function opcionesUnicas(getter) {
     const s = new Set();
     (registros || []).forEach(r => {
@@ -1537,8 +1557,7 @@
   }
 
   function poblarFiltrosATS() {
-    poblarSelectATS('fProvincia', opcionesUnicas(r => r.Provincia), 'Todas');
-    poblarSelectATS('fLocalidad', opcionesUnicas(r => r.CodigoPostalCiudad), 'Todas');
+    // Provincia y localidad usan catálogos fijos (datalist); idioma se arma de datos.
     poblarSelectATS('fIdioma', opcionesUnicas(r => parseArr(r.Idiomas).map(x => x.idioma)), 'Todos');
     const bq = document.getElementById('fBusqueda');
     const actual = bq.value;
@@ -1549,19 +1568,19 @@
 
   function aplicarFiltrosATS() {
     const v = (id) => document.getElementById(id).value;
-    const q = v('q').toLowerCase().trim();
-    const fp = v('fPuesto').toLowerCase().trim();
-    const prov = v('fProvincia'), loc = v('fLocalidad'), idi = v('fIdioma').toLowerCase();
+    const q = norm(v('q').trim());
+    const fp = norm(v('fPuesto').trim());
+    const prov = norm(v('fProvincia').trim()), loc = norm(v('fLocalidad').trim()), idi = v('fIdioma').toLowerCase();
     const form = v('fFormacion'), viajar = v('fViajar'), resid = v('fResidencia');
     const exp = v('fExperiencia'), cv = v('fCV'), bid = v('fBusqueda');
     const desde = v('fDesde'), hasta = v('fHasta'), orden = v('fOrden');
     const dISO = (x) => String(x || '').slice(0, 10);
 
     let out = (registros || []).filter(r => {
-      if (q && JSON.stringify(r).toLowerCase().indexOf(q) === -1) return false;
-      if (fp && String(r.PuestoDeseado || '').toLowerCase().indexOf(fp) === -1) return false;
-      if (prov && String(r.Provincia || '') !== prov) return false;
-      if (loc && String(r.CodigoPostalCiudad || '') !== loc) return false;
+      if (q && norm(JSON.stringify(r)).indexOf(q) === -1) return false;
+      if (fp && norm(r.PuestoDeseado).indexOf(fp) === -1) return false;
+      if (prov && norm(r.Provincia).indexOf(prov) === -1) return false;
+      if (loc && norm(r.CodigoPostalCiudad).indexOf(loc) === -1) return false;
       if (idi && parseArr(r.Idiomas).map(x => String(x.idioma || '').toLowerCase()).indexOf(idi) === -1) return false;
       if (form && parseArr(r.Formacion).map(f => String(f.nivel || '')).indexOf(form) === -1) return false;
       if (viajar && String(r.DispViajar || '') !== viajar) return false;

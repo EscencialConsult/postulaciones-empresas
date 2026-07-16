@@ -289,6 +289,14 @@ var LOCALIDADES_TUCUMAN = [
 // Idiomas más habituales. "Otros (especificar)" permite cargar uno manual.
 var IDIOMAS = ['Inglés', 'Francés', 'Portugués', 'Italiano', 'Ninguno'];
 
+// Provincias argentinas (para filtros/desplegables).
+var PROVINCIAS = [
+  'Buenos Aires', 'Ciudad Autónoma de Buenos Aires (CABA)', 'Catamarca', 'Chaco', 'Chubut',
+  'Córdoba', 'Corrientes', 'Entre Ríos', 'Formosa', 'Jujuy', 'La Pampa', 'La Rioja',
+  'Mendoza', 'Misiones', 'Neuquén', 'Río Negro', 'Salta', 'San Juan', 'San Luis',
+  'Santa Cruz', 'Santa Fe', 'Santiago del Estero', 'Tierra del Fuego', 'Tucumán'
+];
+
 /**
  * Convierte un input de texto en un buscador desplegable filtrable.
  * El usuario escribe para filtrar y elige una opción de la lista; el
