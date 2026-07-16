@@ -33,8 +33,7 @@
   .busq-card2 { text-decoration: none; color: inherit; overflow: hidden; padding: 0; display: flex; flex-direction: column;
                 transition: transform .16s ease, box-shadow .2s ease, border-color .2s ease; }
   .busq-card2:hover { transform: translateY(-5px); box-shadow: 0 22px 44px rgba(26,24,29,.14); border-color: var(--pink); }
-  .busq-card2-top { height: 104px; background: var(--grad); display: flex; align-items: center; justify-content: center; }
-  .busq-card2-top svg { width: 42px; height: 42px; color: #fff; opacity: .95; }
+  .busq-card2-top { height: 122px; background: #e9d9f6 url('assets/busqueda-cover.svg') center/cover no-repeat; }
   .busq-card2-body { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
   .busq-badge2 { align-self: flex-start; background: var(--grad); color: var(--dark); font-size: .68rem; font-weight: 800;
                  text-transform: uppercase; letter-spacing: .05em; padding: 4px 11px; border-radius: 999px; }
@@ -45,7 +44,28 @@
   .busq-card2-meta svg { width: 15px; height: 15px; flex-shrink: 0; }
   .busq-card2-desc { margin: 2px 0 0; font-size: .9rem; color: var(--dark); line-height: 1.45;
                      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .busq-card2 { cursor: pointer; }
   .busq-card2-cta { margin-top: 14px; width: 100%; justify-content: center; }
+
+  /* Modal de detalle de la búsqueda */
+  .bd-overlay { position: fixed; inset: 0; background: rgba(26,24,29,.55); backdrop-filter: blur(2px);
+                display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 60; }
+  .bd-modal { background: #fff; border-radius: 18px; max-width: 560px; width: 100%; max-height: 90vh;
+              overflow-y: auto; box-shadow: 0 30px 60px rgba(26,24,29,.28); position: relative; }
+  .bd-cover { height: 150px; background: #e9d9f6 url('assets/busqueda-cover.svg') center/cover no-repeat; border-radius: 18px 18px 0 0; }
+  .bd-close { position: absolute; top: 12px; right: 14px; z-index: 2; width: 34px; height: 34px; border-radius: 50%;
+              border: none; background: rgba(255,255,255,.92); font-size: 1.4rem; cursor: pointer; line-height: 1; color: var(--dark); }
+  .bd-body { padding: 20px 24px 26px; }
+  .bd-body h2 { margin: 10px 0 2px; font-size: 1.5rem; }
+  .bd-empresa { color: var(--acento); font-weight: 700; margin: 0 0 12px; }
+  .bd-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .bd-chip { background: #f2eef8; color: var(--dark); font-size: .82rem; font-weight: 700; padding: 4px 12px; border-radius: 999px; }
+  .bd-sec { margin-top: 16px; }
+  .bd-sec h4 { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 5px; }
+  .bd-sec p { margin: 0; color: var(--dark); font-size: .95rem; line-height: 1.5; white-space: pre-wrap; }
+  .bd-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .bd-tags span { background: rgba(178,60,166,.1); color: var(--acento); font-size: .82rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+  .bd-cta { display: inline-flex; margin-top: 22px; }
 
   /* ---------- Responsive ---------- */
   @media (max-width: 640px) {
@@ -92,6 +112,10 @@
     <div class="busq-inicio-grid" id="busqInicioGrid"></div>
   </section>
 
+  <div class="bd-overlay oculto" id="bdOverlay" role="dialog" aria-modal="true">
+    <div class="bd-modal" id="bdModal"></div>
+  </div>
+
   <footer class="site-footer">
     <div class="footer-links">
       <a href="politica-privacidad.html">Política de Privacidad</a>
@@ -116,8 +140,6 @@
 
       const svg = (paths) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
         'stroke-linecap="round" stroke-linejoin="round">' + paths + '</svg>';
-      const ICON_MALETIN = svg('<rect x="3" y="7.5" width="18" height="12" rx="2"/>' +
-        '<path d="M8 7.5V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1.5"/><path d="M3 12.5h18"/>');
       const ICON_PIN = svg('<path d="M12 21s-6-5.2-6-10a6 6 0 0 1 12 0c0 4.8-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/>');
       const ICON_RELOJ = svg('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>');
 
@@ -128,12 +150,10 @@
 
         seccion.classList.remove('oculto');
         estado.style.display = 'none';
-        grid.innerHTML = lista.map(b => {
-          const href = 'postular.html?busqueda=' + encodeURIComponent(b.ID || '') +
-            '&puesto=' + encodeURIComponent(b.Puesto || '');
+        grid.innerHTML = lista.map((b, i) => {
           const ubic = [esc(b.Localidad), b.Modalidad ? '(' + esc(b.Modalidad) + ')' : ''].filter(Boolean).join(' ');
-          return `<a class="card busq-card2" href="${href}">
-            <div class="busq-card2-top">${ICON_MALETIN}</div>
+          return `<div class="card busq-card2" data-i="${i}" role="button" tabindex="0">
+            <div class="busq-card2-top"></div>
             <div class="busq-card2-body">
               ${b.Area ? `<span class="busq-badge2">${esc(b.Area)}</span>` : ''}
               <h3>${esc(b.Puesto)}</h3>
@@ -143,14 +163,70 @@
                 ${b.TipoContrato ? `<span>${ICON_RELOJ} ${esc(b.TipoContrato)}</span>` : ''}
               </div>
               <p class="busq-card2-desc">${esc(b.Descripcion || b.Responsabilidades || '')}</p>
-              <span class="btn btn-prim busq-card2-cta">Postularme ahora →</span>
+              <span class="btn btn-prim busq-card2-cta">Ver detalle y postularme →</span>
             </div>
-          </a>`;
+          </div>`;
         }).join('');
+
+        grid.querySelectorAll('.busq-card2').forEach(el => {
+          const b = lista[+el.dataset.i];
+          el.addEventListener('click', () => abrirDetalleBusqueda(b));
+          el.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrirDetalleBusqueda(b); }
+          });
+        });
       } catch (e) {
         // Si el backend no responde, no rompemos la página de inicio.
         seccion.classList.add('oculto');
       }
+
+      /* ---------- Detalle de la búsqueda ---------- */
+      function abrirDetalleBusqueda(b) {
+        const href = 'postular.html?busqueda=' + encodeURIComponent(b.ID || '') +
+          '&puesto=' + encodeURIComponent(b.Puesto || '');
+        const chips = [b.Modalidad, b.TipoContrato, b.Localidad].filter(Boolean)
+          .map(x => `<span class="bd-chip">${esc(x)}</span>`).join('');
+        const salario = (b.SalarioMin || b.SalarioMax)
+          ? ('$' + esc(b.SalarioMin || '') + (b.SalarioMax ? ' - $' + esc(b.SalarioMax) : '')).replace('$ - ', '') : '';
+        const idioma = (b.IdiomaRequerido && b.IdiomaRequerido !== 'Sin requisito de idioma')
+          ? (esc(b.IdiomaRequerido) + (b.NivelIdioma ? ' — ' + esc(b.NivelIdioma) : '')) : '';
+        const habil = String(b.Habilidades || '').split(',').map(s => s.trim()).filter(Boolean);
+        const benef = String(b.Beneficios || '').split(',').map(s => s.trim()).filter(Boolean);
+        const tags = (arr) => `<div class="bd-tags">${arr.map(x => `<span>${esc(x)}</span>`).join('')}</div>`;
+        const sec = (t, c) => c ? `<div class="bd-sec"><h4>${t}</h4><p>${c}</p></div>` : '';
+
+        const html = `<button class="bd-close" aria-label="Cerrar">×</button>
+          <div class="bd-cover"></div>
+          <div class="bd-body">
+            ${b.Area ? `<span class="busq-badge2">${esc(b.Area)}</span>` : ''}
+            <h2>${esc(b.Puesto)}</h2>
+            <p class="bd-empresa">${esc(b.Empresa) || 'Empresa'}</p>
+            ${chips ? `<div class="bd-chips">${chips}</div>` : ''}
+            ${sec('Descripción', esc(b.Descripcion))}
+            ${sec('Responsabilidades', esc(b.Responsabilidades))}
+            ${sec('Requisitos excluyentes', esc(b.RequisitosExcluyentes))}
+            ${sec('Requisitos deseables', esc(b.RequisitosDeseables))}
+            ${habil.length ? `<div class="bd-sec"><h4>Habilidades clave</h4>${tags(habil)}</div>` : ''}
+            ${sec('Idioma requerido', idioma)}
+            ${sec('Salario', salario)}
+            ${sec('Horario y jornada', esc(b.Horario))}
+            ${benef.length ? `<div class="bd-sec"><h4>Beneficios</h4>${tags(benef)}</div>` : ''}
+            <a class="btn btn-prim bd-cta" href="${href}">Postularme ahora →</a>
+          </div>`;
+        const modal = document.getElementById('bdModal');
+        modal.innerHTML = html;
+        modal.querySelector('.bd-close').onclick = cerrarDetalleBusqueda;
+        document.getElementById('bdOverlay').classList.remove('oculto');
+      }
+      function cerrarDetalleBusqueda() {
+        document.getElementById('bdOverlay').classList.add('oculto');
+      }
+      document.getElementById('bdOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'bdOverlay') cerrarDetalleBusqueda();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') cerrarDetalleBusqueda();
+      });
     })();
   </script>
 </body>

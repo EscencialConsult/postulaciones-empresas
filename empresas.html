@@ -2075,11 +2075,13 @@
     if (!lista.length) {
       html += `<p class="sub" style="color:var(--muted)">Todavía no hay postulaciones para esta búsqueda.</p>`;
     } else {
-      html += `<div class="seccion"><h3>${lista.length} postulación(es)</h3>` +
+      html += `<div class="seccion"><h3>${lista.length} postulación(es)</h3>
+        <p class="sub" style="color:var(--muted);margin:-2px 0 10px">Hacé clic en un postulante para ver su perfil completo.</p>` +
         lista.map((r, i) => `<div class="item-list postulante-item" data-i="${i}" style="cursor:pointer">
           <strong>${esc(r.Nombre)} ${esc(r.Apellido)}</strong>
           ${esc(r.Email)}${r.Telefono ? ' · ' + esc(r.Telefono) : ''}
-          ${r.Provincia ? ' · ' + esc(r.Provincia) : ''}</div>`).join('') + `</div>`;
+          ${r.Provincia ? ' · ' + esc(r.Provincia) : ''}
+          <div style="color:var(--acento);font-weight:700;font-size:.82rem;margin-top:6px">Ver perfil completo →</div></div>`).join('') + `</div>`;
     }
     document.getElementById('modal').innerHTML = html;
     document.querySelectorAll('#modal .postulante-item').forEach(el =>
