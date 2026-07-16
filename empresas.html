@@ -135,29 +135,73 @@
   .busq-estado-pausada { background: rgba(228,199,106,.2); color: #92700a; }
   .busq-estado-cerrada { background: rgba(107,114,128,.16); color: #4b5563; }
 
-  /* Layout con menú lateral */
-  .layout { max-width: 1200px; margin: 0 auto; padding: 22px 16px 64px; display: grid; grid-template-columns: 220px 1fr; gap: 24px; align-items: start; }
-  .sidebar { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 6px; background: #fff; border: 1px solid var(--borde); border-radius: 14px; padding: 12px; }
-  .nav-item { display: flex; align-items: center; gap: 10px; text-align: left; width: 100%; background: none; border: none; padding: 12px 14px; border-radius: 10px; font-size: .95rem; font-weight: 700; color: var(--muted); cursor: pointer; transition: background .12s, color .12s; }
+  /* ===== App shell (sidebar de alto completo + contenido + footer) ===== */
+  .app { display: flex; min-height: 100vh; align-items: stretch; }
+  .side { width: 250px; flex-shrink: 0; background: #fff; border-right: 1px solid var(--borde);
+          display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
+  .side-logo { display: flex; align-items: center; gap: 9px; padding: 20px 20px 18px; text-decoration: none;
+               border-bottom: 1px solid var(--borde); }
+  .side-logo .logo-img { height: 30px; }
+  .side-logo .marca-txt { font-weight: 800; font-size: 1.1rem; color: var(--dark); }
+  .side-nav { display: flex; flex-direction: column; gap: 4px; padding: 16px 12px; flex: 1; overflow-y: auto; }
+  .side-nav .cap { font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+                   color: var(--muted); padding: 6px 14px 4px; }
+  .nav-item { display: flex; align-items: center; gap: 11px; text-align: left; width: 100%; background: none;
+              border: none; padding: 11px 14px; border-radius: 10px; font-size: .94rem; font-weight: 700;
+              color: var(--muted); cursor: pointer; transition: background .12s, color .12s; }
   .nav-item:hover { background: #faf7fd; color: var(--dark); }
   .nav-item.activo { background: var(--grad); color: var(--dark); }
-  .nav-ico { font-size: 1.1rem; line-height: 1; }
-  .contenido { min-width: 0; }
+  .nav-ico { font-size: 1.15rem; line-height: 1; width: 22px; text-align: center; }
+  .side-foot { padding: 14px 12px; border-top: 1px solid var(--borde); display: flex; flex-direction: column; gap: 10px; }
+  .side-user { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 2px; }
+  .side-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--grad); color: #fff;
+                 display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0; }
+  .side-user-info { display: flex; flex-direction: column; min-width: 0; }
+  .side-user-info strong { font-size: .88rem; color: var(--dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .side-user-info span { font-size: .74rem; color: var(--muted); }
+
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .main-inner { flex: 1; width: 100%; max-width: 1080px; margin: 0 auto; padding: 30px 34px 40px; }
+  .app-footer { border-top: 1px solid var(--borde); background: #fff; padding: 16px 34px; display: flex;
+                justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+                font-size: .82rem; color: var(--muted); }
+  .app-footer a { color: var(--muted); text-decoration: none; margin-right: 16px; }
+  .app-footer a:hover { color: var(--acento); }
+
+  /* Oculta el footer global oscuro mientras se ve el panel */
+  #panelWrap:not(.oculto) ~ .site-footer { display: none; }
 
   /* Dashboard */
-  .dash-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; }
-  .dash-stat { border: 1px solid var(--borde); border-radius: 14px; background: #fff; padding: 18px; }
-  .dash-stat .num { font-size: 1.9rem; font-weight: 800; line-height: 1; margin-bottom: 6px; color: var(--acento); }
-  .dash-stat .lbl { color: var(--muted); font-size: .85rem; font-weight: 700; }
-  .dash-recientes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 4px; }
-  .dash-col h3 { font-size: .95rem; margin: 0 0 10px; }
-  .dash-mini { border: 1px solid var(--borde); border-radius: 10px; background: #fff; padding: 12px 14px; margin-bottom: 8px; font-size: .9rem; cursor: pointer; transition: background .12s; }
+  .dash-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .dash-stat { display: flex; align-items: center; gap: 15px; border: 1px solid var(--borde); border-radius: 16px;
+               background: #fff; padding: 20px; box-shadow: 0 6px 18px rgba(26,24,29,.04); }
+  .dash-ico { width: 48px; height: 48px; border-radius: 13px; display: flex; align-items: center; justify-content: center;
+              font-size: 1.4rem; flex-shrink: 0; }
+  .dash-ico-a { background: rgba(178,60,166,.12); }
+  .dash-ico-b { background: rgba(107,225,227,.18); }
+  .dash-ico-c { background: rgba(18,185,129,.14); }
+  .dash-stat .num { font-size: 1.9rem; font-weight: 800; line-height: 1; margin-bottom: 4px; color: var(--dark); }
+  .dash-stat .lbl { color: var(--muted); font-size: .84rem; font-weight: 700; }
+  .dash-recientes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+  .dash-col { border: 1px solid var(--borde); border-radius: 16px; background: #fff; padding: 18px 18px 8px; }
+  .dash-col h3 { font-size: .95rem; margin: 0 0 12px; }
+  .dash-mini { border: 1px solid var(--borde); border-radius: 10px; background: #fff; padding: 11px 13px; margin-bottom: 8px; font-size: .9rem; cursor: pointer; transition: background .12s; }
   .dash-mini:hover { background: #faf7fd; }
   .dash-mini strong { display: block; }
   .dash-mini span { color: var(--muted); font-size: .82rem; }
   .dash-vacio { color: var(--muted); font-size: .88rem; padding: 8px 0; }
 
   /* ---------- Responsive ---------- */
+  @media (max-width: 860px) {
+    .app { flex-direction: column; }
+    .side { width: auto; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--borde); }
+    .side-logo { border-bottom: 1px solid var(--borde); }
+    .side-nav { flex-direction: row; overflow-x: auto; flex: initial; padding: 10px 12px; }
+    .side-nav .cap { display: none; }
+    .nav-item { white-space: nowrap; width: auto; }
+    .side-foot { flex-direction: row; align-items: center; justify-content: space-between; }
+    .side-foot .btn { width: auto; }
+  }
   @media (max-width: 640px) {
     .login-wrap { padding: 20px 14px; gap: 18px; }
     .login { padding: 24px 20px; }
@@ -175,9 +219,9 @@
     .captura-card[data-captura^="dni"] .verificacion-preview { aspect-ratio: 4 / 3; }
     .registro-nav { flex-direction: column-reverse; }
     .registro-nav .btn { width: 100%; min-width: 0; }
-    .topbar .inner { padding: 12px 16px; }
-    .panel { padding: 20px 12px 44px; }
     .panel-head h1 { font-size: 1.3rem; }
+    .main-inner { padding: 22px 16px 32px; }
+    .app-footer { padding: 14px 16px; }
     .filtros { padding: 16px; gap: 10px; }
     .filtros .campo { min-width: 0; flex-basis: 100%; }
     .filtros .acciones { width: 100%; }
@@ -188,9 +232,6 @@
     .cuenta-grid .span-2 { grid-column: auto; }
     .busq-form-grid { grid-template-columns: 1fr; }
     .busq-form-grid .span-2 { grid-column: auto; }
-    .layout { grid-template-columns: 1fr; gap: 16px; padding: 16px 12px 48px; }
-    .sidebar { position: static; flex-direction: row; overflow-x: auto; }
-    .nav-item { white-space: nowrap; }
     .dash-stats { grid-template-columns: 1fr; }
     .dash-recientes { grid-template-columns: 1fr; }
     .cuenta-actions .btn { width: 100%; }
@@ -360,24 +401,32 @@
 
 <!-- PANEL -->
 <div id="panelWrap" class="oculto">
-  <div class="topbar">
-    <div class="inner">
-      <a class="logo" href="index.html"><img class="logo-img" src="assets/logo-trim.png" alt="ONE" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-block'"><span class="ring" style="display:none"></span><span class="marca-txt">Talent Hub</span></a>
-      <div style="display:flex; align-items:center; gap:16px">
-        <span class="empresa" id="empresaNombre"></span>
-        <button class="btn btn-sec" id="btnSalir">Salir</button>
+  <div class="app">
+    <aside class="side" aria-label="Navegación del panel">
+      <a class="side-logo" href="index.html">
+        <img class="logo-img" src="assets/logo-trim.png" alt="ONE" onerror="this.style.display='none'">
+        <span class="marca-txt">Talent Hub</span>
+      </a>
+      <nav class="side-nav">
+        <span class="cap">Menú</span>
+        <button type="button" class="nav-item activo" data-modulo="dashboard"><span class="nav-ico">🏠</span> Inicio</button>
+        <button type="button" class="nav-item" data-modulo="postulantes"><span class="nav-ico">👥</span> Postulantes</button>
+        <button type="button" class="nav-item" data-modulo="busquedas"><span class="nav-ico">📢</span> Búsquedas</button>
+      </nav>
+      <div class="side-foot">
+        <div class="side-user">
+          <span class="side-avatar" id="empresaAvatar">E</span>
+          <div class="side-user-info">
+            <strong id="empresaNombre">Empresa</strong>
+            <span>Cuenta de empresa</span>
+          </div>
+        </div>
+        <button class="btn btn-sec btn-w" id="btnSalir">Salir</button>
       </div>
-    </div>
-  </div>
-
-  <div class="layout">
-    <aside class="sidebar" aria-label="Navegación del panel">
-      <button type="button" class="nav-item activo" data-modulo="dashboard"><span class="nav-ico">🏠</span> Inicio</button>
-      <button type="button" class="nav-item" data-modulo="postulantes"><span class="nav-ico">👥</span> Postulantes</button>
-      <button type="button" class="nav-item" data-modulo="busquedas"><span class="nav-ico">📢</span> Búsquedas</button>
     </aside>
 
-    <div class="contenido">
+    <main class="main">
+      <div class="main-inner">
 
     <!-- MÓDULO: DASHBOARD / INICIO -->
     <div id="moduloDashboard">
@@ -388,9 +437,12 @@
       </div>
 
       <div class="dash-stats">
-        <div class="dash-stat"><div class="num" id="statPostulantes">—</div><div class="lbl">Postulantes en la base</div></div>
-        <div class="dash-stat"><div class="num" id="statBusquedasActivas">—</div><div class="lbl">Mis búsquedas activas</div></div>
-        <div class="dash-stat"><div class="num" id="statPostulaciones">—</div><div class="lbl">Postulaciones a mis búsquedas</div></div>
+        <div class="dash-stat"><span class="dash-ico dash-ico-a">👥</span>
+          <div><div class="num" id="statPostulantes">—</div><div class="lbl">Postulantes en la base</div></div></div>
+        <div class="dash-stat"><span class="dash-ico dash-ico-b">📢</span>
+          <div><div class="num" id="statBusquedasActivas">—</div><div class="lbl">Mis búsquedas activas</div></div></div>
+        <div class="dash-stat"><span class="dash-ico dash-ico-c">✅</span>
+          <div><div class="num" id="statPostulaciones">—</div><div class="lbl">Postulaciones a mis búsquedas</div></div></div>
       </div>
 
     <section class="card cuenta-panel" aria-label="Estado y datos de empresa">
@@ -555,8 +607,16 @@
     </div>
     <!-- /moduloBusquedas -->
 
-    </div><!-- /contenido -->
-  </div><!-- /layout -->
+      </div><!-- /main-inner -->
+      <footer class="app-footer">
+        <div>
+          <a href="politica-privacidad.html">Política de Privacidad</a>
+          <a href="terminos-condiciones.html">Términos y Condiciones</a>
+        </div>
+        <span>© ONE Talent Hub · Fundación para el Desarrollo Profesional</span>
+      </footer>
+    </main><!-- /main -->
+  </div><!-- /app -->
 </div><!-- /panelWrap -->
 
 <!-- MODAL DETALLE -->
@@ -1113,6 +1173,7 @@
     loginWrap.classList.add('oculto');
     panelWrap.classList.remove('oculto');
     document.getElementById('empresaNombre').textContent = empresa;
+    document.getElementById('empresaAvatar').textContent = (empresa || 'E').trim().charAt(0).toUpperCase();
     mostrarModulo('dashboard');
     cargarMiEmpresa();
     cargar();           // base de postulantes -> alimenta dashboard
@@ -1185,6 +1246,7 @@
     empresa = e.empresa || empresa;
     sessionStorage.setItem('empresa', empresa);
     document.getElementById('empresaNombre').textContent = empresa;
+    document.getElementById('empresaAvatar').textContent = (empresa || 'E').trim().charAt(0).toUpperCase();
 
     // Mostrar sección de re-verificación según estado
     var estadoVerif = (e.estadoVerificacion || 'pendiente').toLowerCase();
