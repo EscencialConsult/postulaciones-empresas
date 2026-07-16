@@ -74,6 +74,16 @@
   .filtros .campo { margin: 0; flex: 1; min-width: 150px; }
   .filtros .acciones { display: flex; gap: 8px; }
 
+  /* Filtro estilo ATS */
+  .ats { padding: 16px 18px; margin-bottom: 18px; }
+  .ats-top { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .ats-search { flex: 1; min-width: 220px; }
+  .ats-search input { width: 100%; }
+  .ats-top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .ats-filtros { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px 14px; }
+  .ats-f label { display: block; font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); margin-bottom: 4px; }
+  .ats-f input, .ats-f select { width: 100%; }
+
   .resumen { color: var(--muted); font-size: .9rem; margin-bottom: 12px; font-weight: 600; }
 
   .tabla-wrap { overflow-x: auto; }
@@ -554,14 +564,41 @@
         <h1>Postulantes</h1>
         <p>Base compartida con todos los perfiles cargados en la plataforma.</p>
       </div>
-      <div class="card filtros">
-        <div class="campo"><label>Búsqueda general</label>
-          <input id="q" placeholder="Nombre, email, skill, empresa…"></div>
-        <div class="campo"><label>Puesto deseado</label><input id="fPuesto" placeholder="Ej: Analista"></div>
-        <div class="campo"><label>Provincia</label><input id="fProvincia"></div>
-        <div class="acciones">
-          <button class="btn btn-prim" id="btnBuscar">Buscar</button>
-          <button class="btn btn-sec" id="btnExportar">⬇ Exportar CSV</button>
+      <div class="card ats">
+        <div class="ats-top">
+          <div class="ats-search">
+            <input id="q" placeholder="Buscar por nombre, email, skill, puesto…">
+          </div>
+          <div class="ats-top-actions">
+            <button class="btn btn-sec" id="btnLimpiarFiltros" type="button">Limpiar filtros</button>
+            <button class="btn btn-sec" id="btnExportar" type="button">⬇ Exportar CSV</button>
+          </div>
+        </div>
+        <div class="ats-filtros">
+          <div class="ats-f"><label>Puesto deseado</label><input id="fPuesto" placeholder="Ej: Analista"></div>
+          <div class="ats-f"><label>Provincia</label><select id="fProvincia"><option value="">Todas</option></select></div>
+          <div class="ats-f"><label>Localidad</label><select id="fLocalidad"><option value="">Todas</option></select></div>
+          <div class="ats-f"><label>Idioma</label><select id="fIdioma"><option value="">Todos</option></select></div>
+          <div class="ats-f"><label>Formación</label>
+            <select id="fFormacion"><option value="">Todas</option>
+              <option>Primaria</option><option>Secundaria</option><option>Terciario / Técnico</option>
+              <option>Universitario</option><option>Posgrado / Máster</option><option>Doctorado</option></select></div>
+          <div class="ats-f"><label>Disp. a viajar</label>
+            <select id="fViajar"><option value="">Todas</option><option>Sí</option><option>No</option><option>A convenir</option></select></div>
+          <div class="ats-f"><label>Cambio de residencia</label>
+            <select id="fResidencia"><option value="">Todas</option><option>Sí</option><option>No</option><option>A convenir</option></select></div>
+          <div class="ats-f"><label>Experiencia</label>
+            <select id="fExperiencia"><option value="">Todas</option>
+              <option value="primer">Busca primer empleo</option><option value="con">Con experiencia</option></select></div>
+          <div class="ats-f"><label>CV adjunto</label>
+            <select id="fCV"><option value="">Todos</option><option value="si">Con CV</option><option value="no">Sin CV</option></select></div>
+          <div class="ats-f"><label>Búsqueda de origen</label>
+            <select id="fBusqueda"><option value="">Todas</option></select></div>
+          <div class="ats-f"><label>Registrado desde</label><input id="fDesde" type="date"></div>
+          <div class="ats-f"><label>Registrado hasta</label><input id="fHasta" type="date"></div>
+          <div class="ats-f"><label>Ordenar por</label>
+            <select id="fOrden"><option value="reciente">Más recientes</option>
+              <option value="antiguo">Más antiguos</option><option value="nombre">Nombre (A–Z)</option></select></div>
         </div>
       </div>
 
@@ -1449,7 +1486,9 @@
     }
   });
 
-  /* ---------- CARGAR / BUSCAR ---------- */
+  /* ---------- CARGAR (trae toda la base; se filtra en el cliente) ---------- */
+  let registrosFiltrados = [];
+
   async function cargar() {
     const cargando = document.getElementById('cargando');
     const tabla = document.getElementById('tabla');
@@ -1458,19 +1497,14 @@
     tabla.classList.add('oculto'); vacio.classList.add('oculto');
 
     try {
-      const r = await apiCall({
-        action: 'listar', token: token,
-        q: document.getElementById('q').value,
-        puesto: document.getElementById('fPuesto').value,
-        provincia: document.getElementById('fProvincia').value
-      });
+      const r = await apiCall({ action: 'listar', token: token });
       if (!r.ok) {
         if (/sesión/i.test(r.error || '')) { document.getElementById('btnSalir').click(); }
         throw new Error(r.error);
       }
-      registros = r.registros;
-      pintarTabla(registros);
-      document.getElementById('resumen').textContent = `${r.total} postulante(s) encontrado(s)`;
+      registros = r.registros || [];
+      poblarFiltrosATS();
+      aplicarFiltrosATS();
       renderDashboard();
       // Recalcula los contadores por búsqueda ahora que hay postulantes.
       if (busquedas && busquedas.length) pintarBusquedas(busquedas);
@@ -1480,6 +1514,98 @@
       cargando.classList.add('oculto');
     }
   }
+
+  /* ---------- Filtro ATS (client-side) ---------- */
+  const ATS_CAMPOS = ['q','fPuesto','fProvincia','fLocalidad','fIdioma','fFormacion','fViajar',
+    'fResidencia','fExperiencia','fCV','fBusqueda','fDesde','fHasta','fOrden'];
+
+  function opcionesUnicas(getter) {
+    const s = new Set();
+    (registros || []).forEach(r => {
+      const v = getter(r);
+      (Array.isArray(v) ? v : [v]).forEach(x => { if (x) s.add(String(x).trim()); });
+    });
+    return Array.from(s).sort((a, b) => a.localeCompare(b, 'es'));
+  }
+
+  function poblarSelectATS(id, valores, labelTodas) {
+    const sel = document.getElementById(id);
+    const actual = sel.value;
+    sel.innerHTML = `<option value="">${labelTodas}</option>` +
+      valores.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+    sel.value = actual;
+  }
+
+  function poblarFiltrosATS() {
+    poblarSelectATS('fProvincia', opcionesUnicas(r => r.Provincia), 'Todas');
+    poblarSelectATS('fLocalidad', opcionesUnicas(r => r.CodigoPostalCiudad), 'Todas');
+    poblarSelectATS('fIdioma', opcionesUnicas(r => parseArr(r.Idiomas).map(x => x.idioma)), 'Todos');
+    const bq = document.getElementById('fBusqueda');
+    const actual = bq.value;
+    bq.innerHTML = '<option value="">Todas</option><option value="__none__">Espontáneas (sin búsqueda)</option>' +
+      (busquedas || []).map(b => `<option value="${esc(b.ID)}">${esc(b.Puesto)}</option>`).join('');
+    bq.value = actual;
+  }
+
+  function aplicarFiltrosATS() {
+    const v = (id) => document.getElementById(id).value;
+    const q = v('q').toLowerCase().trim();
+    const fp = v('fPuesto').toLowerCase().trim();
+    const prov = v('fProvincia'), loc = v('fLocalidad'), idi = v('fIdioma').toLowerCase();
+    const form = v('fFormacion'), viajar = v('fViajar'), resid = v('fResidencia');
+    const exp = v('fExperiencia'), cv = v('fCV'), bid = v('fBusqueda');
+    const desde = v('fDesde'), hasta = v('fHasta'), orden = v('fOrden');
+    const dISO = (x) => String(x || '').slice(0, 10);
+
+    let out = (registros || []).filter(r => {
+      if (q && JSON.stringify(r).toLowerCase().indexOf(q) === -1) return false;
+      if (fp && String(r.PuestoDeseado || '').toLowerCase().indexOf(fp) === -1) return false;
+      if (prov && String(r.Provincia || '') !== prov) return false;
+      if (loc && String(r.CodigoPostalCiudad || '') !== loc) return false;
+      if (idi && parseArr(r.Idiomas).map(x => String(x.idioma || '').toLowerCase()).indexOf(idi) === -1) return false;
+      if (form && parseArr(r.Formacion).map(f => String(f.nivel || '')).indexOf(form) === -1) return false;
+      if (viajar && String(r.DispViajar || '') !== viajar) return false;
+      if (resid && String(r.DispCambioResidencia || '') !== resid) return false;
+      if (exp === 'primer' && r.PrimerEmpleo !== 'Sí') return false;
+      if (exp === 'con' && r.PrimerEmpleo === 'Sí') return false;
+      if (cv === 'si' && !r.CVUrl) return false;
+      if (cv === 'no' && r.CVUrl) return false;
+      if (bid === '__none__' && r.BusquedaID) return false;
+      if (bid && bid !== '__none__' && String(r.BusquedaID || '') !== bid) return false;
+      if (desde && dISO(r.FechaRegistro) < desde) return false;
+      if (hasta && dISO(r.FechaRegistro) > hasta) return false;
+      return true;
+    });
+
+    if (orden === 'antiguo') out.sort((a, b) => new Date(a.FechaRegistro) - new Date(b.FechaRegistro));
+    else if (orden === 'nombre') out.sort((a, b) =>
+      (a.Nombre + ' ' + a.Apellido).localeCompare(b.Nombre + ' ' + b.Apellido, 'es'));
+    else out.sort((a, b) => new Date(b.FechaRegistro) - new Date(a.FechaRegistro));
+
+    registrosFiltrados = out;
+    pintarTabla(out);
+    const total = (registros || []).length;
+    document.getElementById('resumen').textContent =
+      out.length === total ? `${total} postulante(s)` : `${out.length} de ${total} postulante(s)`;
+  }
+
+  function limpiarFiltrosATS() {
+    ATS_CAMPOS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el.tagName === 'SELECT') el.selectedIndex = 0;
+      else el.value = '';
+    });
+    document.getElementById('fOrden').value = 'reciente';
+    aplicarFiltrosATS();
+  }
+
+  // Filtrado en vivo (input y change para cubrir texto, selects y fechas)
+  ATS_CAMPOS.forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', aplicarFiltrosATS);
+    el.addEventListener('change', aplicarFiltrosATS);
+  });
+  document.getElementById('btnLimpiarFiltros').onclick = limpiarFiltrosATS;
 
   function pintarTabla(lista) {
     const tbody = document.getElementById('tbody');
@@ -1504,9 +1630,6 @@
       tbody.appendChild(tr);
     });
   }
-
-  document.getElementById('btnBuscar').onclick = cargar;
-  document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') cargar(); });
 
   /* ---------- DETALLE ---------- */
   function abrirDetalle(r) {
@@ -1572,13 +1695,14 @@
 
   /* ---------- EXPORTAR CSV ---------- */
   document.getElementById('btnExportar').onclick = () => {
-    if (!registros.length) { alert('No hay datos para exportar.'); return; }
+    const datos = (registrosFiltrados && registrosFiltrados.length) ? registrosFiltrados : registros;
+    if (!datos.length) { alert('No hay datos para exportar.'); return; }
     const cols = ['Nombre','Apellido','Email','Telefono','PuestoDeseado','FechaNacimiento',
       'Identificacion','Provincia','CodigoPostalCiudad','PerfilProfesional','DescripcionPerfil',
       'DispViajar','DispCambioResidencia','PrimerEmpleo','CVUrl'];
     const cab = cols.concat(['Formacion','Idiomas','Experiencias','FechaRegistro']);
 
-    const filas = registros.map(r => {
+    const filas = datos.map(r => {
       const base = cols.map(c => csvCampo(r[c]));
       base.push(csvCampo(parseArr(r.Formacion).map(f =>
         `${f.nivel} en ${f.centro} (${f.estado}, ${f.desde}-${f.hasta})`).join(' | ')));
@@ -1725,6 +1849,7 @@
       busquedas = r.busquedas || [];
       pintarBusquedas(busquedas);
       renderDashboard();
+      poblarFiltrosATS(); // actualiza el filtro "Búsqueda de origen"
     } catch (ex) {
       lista.innerHTML = '<div class="vacio">Error: ' + esc(ex.message) + '</div>';
     } finally {
