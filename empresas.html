@@ -1534,9 +1534,10 @@
     const dl = document.getElementById(id);
     if (dl) dl.innerHTML = valores.map(v => `<option value="${esc(v)}">`).join('');
   }
-  // Catálogos fijos (una sola vez): puestos, provincias y localidades.
+  // Catálogos fijos (una sola vez): puestos y localidades.
+  // Provincia: solo Tucumán (es la única con localidades cargadas).
   llenarDatalist('dlPuestos', typeof PUESTOS !== 'undefined' ? PUESTOS : []);
-  llenarDatalist('dlProvincias', typeof PROVINCIAS !== 'undefined' ? PROVINCIAS : []);
+  llenarDatalist('dlProvincias', ['Tucumán']);
   llenarDatalist('dlLocalidades', typeof LOCALIDADES_TUCUMAN !== 'undefined' ? LOCALIDADES_TUCUMAN : []);
 
   function opcionesUnicas(getter) {
