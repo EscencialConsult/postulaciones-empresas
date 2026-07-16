@@ -625,6 +625,8 @@
 
     <!-- MÓDULO: BÚSQUEDAS -->
     <div id="moduloBusquedas" class="oculto">
+      <!-- VISTA LISTA -->
+      <div id="busqVistaLista">
       <div class="busq-head">
         <div>
           <h2>Mis búsquedas</h2>
@@ -754,9 +756,69 @@
         </div>
       </form>
 
+      <div class="campo" style="max-width:440px; margin-bottom:14px">
+        <label>Buscar búsqueda</label>
+        <input id="busqBuscarLista" autocomplete="off" placeholder="Por nombre, área o localidad…">
+      </div>
       <div class="cargando oculto" id="busqCargando">Cargando búsquedas…</div>
-      <div class="busq-lista" id="busqLista"></div>
-      <div class="vacio oculto" id="busqVacio">Todavía no publicaste ninguna búsqueda.</div>
+      <div class="card tabla-wrap">
+        <table id="busqTabla" class="oculto">
+          <thead><tr><th>Búsqueda</th><th>Publicada</th><th>Cierre</th><th>Estado</th><th>Postulantes</th></tr></thead>
+          <tbody id="busqTbody"></tbody>
+        </table>
+        <div class="vacio oculto" id="busqVacio">Todavía no publicaste ninguna búsqueda.</div>
+      </div>
+      </div>
+      <!-- /busqVistaLista -->
+
+      <!-- VISTA DETALLE -->
+      <div id="busqVistaDetalle" class="oculto">
+        <button class="btn btn-sec" id="btnVolverBusq" type="button" style="margin-bottom:16px">← Volver a búsquedas</button>
+        <div id="busqDetInfo"></div>
+
+        <h3 style="margin:22px 0 2px">Postulantes de esta búsqueda</h3>
+        <p class="sub" style="color:var(--muted); margin:0 0 12px">Filtrá para encontrar los perfiles exactos que buscás.</p>
+        <div class="card ats">
+          <div class="ats-top">
+            <div class="ats-search"><input id="dpq" placeholder="Buscar por nombre, email, skill…"></div>
+            <div class="ats-top-actions">
+              <button class="btn btn-sec" id="btnDpLimpiar" type="button">Limpiar filtros</button>
+              <button class="btn btn-sec" id="btnDpExportar" type="button">⬇ Exportar CSV</button>
+            </div>
+          </div>
+          <div class="ats-filtros">
+            <div class="ats-f"><label>Puesto deseado</label><input id="dpPuesto" list="dlPuestos" autocomplete="off"></div>
+            <div class="ats-f"><label>Localidad</label><input id="dpLocalidad" list="dlLocalidades" autocomplete="off" placeholder="Todas"></div>
+            <div class="ats-f"><label>Idioma</label><select id="dpIdioma"><option value="">Todos</option></select></div>
+            <div class="ats-f"><label>Formación</label>
+              <select id="dpFormacion"><option value="">Todas</option>
+                <option>Primaria</option><option>Secundaria</option><option>Terciario / Técnico</option>
+                <option>Universitario</option><option>Posgrado / Máster</option><option>Doctorado</option></select></div>
+            <div class="ats-f"><label>Disp. a viajar</label>
+              <select id="dpViajar"><option value="">Todas</option><option>Sí</option><option>No</option><option>A convenir</option></select></div>
+            <div class="ats-f"><label>Experiencia</label>
+              <select id="dpExperiencia"><option value="">Todas</option>
+                <option value="primer">Busca primer empleo</option><option value="con">Con experiencia</option></select></div>
+            <div class="ats-f"><label>CV adjunto</label>
+              <select id="dpCV"><option value="">Todos</option><option value="si">Con CV</option><option value="no">Sin CV</option></select></div>
+            <div class="ats-f"><label>Ordenar por</label>
+              <select id="dpOrden"><option value="reciente">Más recientes</option>
+                <option value="antiguo">Más antiguos</option><option value="nombre">Nombre (A–Z)</option></select></div>
+          </div>
+        </div>
+        <div class="resumen" id="dpResumen"></div>
+        <div class="card tabla-wrap">
+          <table id="dpTabla" class="oculto">
+            <thead><tr>
+              <th>Nombre</th><th>Puesto deseado</th><th>Email</th><th>Teléfono</th>
+              <th>Provincia</th><th>Idiomas</th><th>Registro</th>
+            </tr></thead>
+            <tbody id="dpTbody"></tbody>
+          </table>
+          <div class="vacio oculto" id="dpVacio">No hay postulantes con esos criterios.</div>
+        </div>
+      </div>
+      <!-- /busqVistaDetalle -->
     </div>
     <!-- /moduloBusquedas -->
 
@@ -2222,7 +2284,7 @@
       aplicarFiltrosATS();
       renderDashboard();
       // Recalcula los contadores por búsqueda ahora que hay postulantes.
-      if (busquedas && busquedas.length) pintarBusquedas(busquedas);
+      if (busquedas && busquedas.length) pintarBusquedas();
     } catch (ex) {
       document.getElementById('resumen').textContent = 'Error: ' + ex.message;
     } finally {
@@ -2276,41 +2338,44 @@
     bq.value = actual;
   }
 
-  function aplicarFiltrosATS() {
-    const v = (id) => document.getElementById(id).value;
-    const q = norm(v('q').trim());
-    const fp = norm(v('fPuesto').trim());
-    const prov = norm(v('fProvincia').trim()), loc = norm(v('fLocalidad').trim()), idi = v('fIdioma').toLowerCase();
-    const form = v('fFormacion'), viajar = v('fViajar'), resid = v('fResidencia');
-    const exp = v('fExperiencia'), cv = v('fCV'), bid = v('fBusqueda');
-    const desde = v('fDesde'), hasta = v('fHasta'), orden = v('fOrden');
+  // Núcleo reutilizable: filtra + ordena una lista de postulantes según f.
+  function filtrarPostulantes(base, f) {
     const dISO = (x) => String(x || '').slice(0, 10);
-
-    let out = (registros || []).filter(r => {
-      if (q && norm(JSON.stringify(r)).indexOf(q) === -1) return false;
-      if (fp && norm(r.PuestoDeseado).indexOf(fp) === -1) return false;
-      if (prov && norm(r.Provincia).indexOf(prov) === -1) return false;
-      if (loc && norm(r.CodigoPostalCiudad).indexOf(loc) === -1) return false;
-      if (idi && parseArr(r.Idiomas).map(x => String(x.idioma || '').toLowerCase()).indexOf(idi) === -1) return false;
-      if (form && parseArr(r.Formacion).map(f => String(f.nivel || '')).indexOf(form) === -1) return false;
-      if (viajar && String(r.DispViajar || '') !== viajar) return false;
-      if (resid && String(r.DispCambioResidencia || '') !== resid) return false;
-      if (exp === 'primer' && r.PrimerEmpleo !== 'Sí') return false;
-      if (exp === 'con' && r.PrimerEmpleo === 'Sí') return false;
-      if (cv === 'si' && !r.CVUrl) return false;
-      if (cv === 'no' && r.CVUrl) return false;
-      if (bid === '__none__' && r.BusquedaID) return false;
-      if (bid && bid !== '__none__' && String(r.BusquedaID || '') !== bid) return false;
-      if (desde && dISO(r.FechaRegistro) < desde) return false;
-      if (hasta && dISO(r.FechaRegistro) > hasta) return false;
+    let out = (base || []).filter(r => {
+      if (f.q && norm(JSON.stringify(r)).indexOf(f.q) === -1) return false;
+      if (f.puesto && norm(r.PuestoDeseado).indexOf(f.puesto) === -1) return false;
+      if (f.prov && norm(r.Provincia).indexOf(f.prov) === -1) return false;
+      if (f.loc && norm(r.CodigoPostalCiudad).indexOf(f.loc) === -1) return false;
+      if (f.idi && parseArr(r.Idiomas).map(x => String(x.idioma || '').toLowerCase()).indexOf(f.idi) === -1) return false;
+      if (f.form && parseArr(r.Formacion).map(x => String(x.nivel || '')).indexOf(f.form) === -1) return false;
+      if (f.viajar && String(r.DispViajar || '') !== f.viajar) return false;
+      if (f.resid && String(r.DispCambioResidencia || '') !== f.resid) return false;
+      if (f.exp === 'primer' && r.PrimerEmpleo !== 'Sí') return false;
+      if (f.exp === 'con' && r.PrimerEmpleo === 'Sí') return false;
+      if (f.cv === 'si' && !r.CVUrl) return false;
+      if (f.cv === 'no' && r.CVUrl) return false;
+      if (f.bid === '__none__' && r.BusquedaID) return false;
+      if (f.bid && f.bid !== '__none__' && String(r.BusquedaID || '') !== f.bid) return false;
+      if (f.desde && dISO(r.FechaRegistro) < f.desde) return false;
+      if (f.hasta && dISO(r.FechaRegistro) > f.hasta) return false;
       return true;
     });
-
-    if (orden === 'antiguo') out.sort((a, b) => new Date(a.FechaRegistro) - new Date(b.FechaRegistro));
-    else if (orden === 'nombre') out.sort((a, b) =>
+    if (f.orden === 'antiguo') out.sort((a, b) => new Date(a.FechaRegistro) - new Date(b.FechaRegistro));
+    else if (f.orden === 'nombre') out.sort((a, b) =>
       (a.Nombre + ' ' + a.Apellido).localeCompare(b.Nombre + ' ' + b.Apellido, 'es'));
     else out.sort((a, b) => new Date(b.FechaRegistro) - new Date(a.FechaRegistro));
+    return out;
+  }
 
+  function aplicarFiltrosATS() {
+    const v = (id) => document.getElementById(id).value;
+    const out = filtrarPostulantes(registros, {
+      q: norm(v('q').trim()), puesto: norm(v('fPuesto').trim()),
+      prov: norm(v('fProvincia').trim()), loc: norm(v('fLocalidad').trim()),
+      idi: v('fIdioma').toLowerCase(), form: v('fFormacion'), viajar: v('fViajar'),
+      resid: v('fResidencia'), exp: v('fExperiencia'), cv: v('fCV'), bid: v('fBusqueda'),
+      desde: v('fDesde'), hasta: v('fHasta'), orden: v('fOrden')
+    });
     registrosFiltrados = out;
     pintarTabla(out);
     const total = (registros || []).length;
@@ -2423,9 +2488,9 @@
   document.getElementById('overlay').onclick = (e) => { if (e.target.id === 'overlay') cerrarModal(); };
 
   /* ---------- EXPORTAR CSV ---------- */
-  document.getElementById('btnExportar').onclick = () => {
-    const datos = (registrosFiltrados && registrosFiltrados.length) ? registrosFiltrados : registros;
-    if (!datos.length) { alert('No hay datos para exportar.'); return; }
+  // Exporta una lista de postulantes a CSV (reutilizable en varias vistas).
+  function exportarCSV(datos, nombreBase) {
+    if (!datos || !datos.length) { alert('No hay datos para exportar.'); return; }
     const cols = ['Nombre','Apellido','Email','Telefono','PuestoDeseado','FechaNacimiento',
       'Identificacion','Provincia','CodigoPostalCiudad','PerfilProfesional','DescripcionPerfil',
       'DispViajar','DispCambioResidencia','PrimerEmpleo','CVUrl'];
@@ -2446,9 +2511,12 @@
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'postulantes_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.download = (nombreBase || 'postulantes') + '_' + new Date().toISOString().slice(0,10) + '.csv';
     a.click();
-  };
+  }
+
+  document.getElementById('btnExportar').onclick = () =>
+    exportarCSV((registrosFiltrados && registrosFiltrados.length) ? registrosFiltrados : registros, 'postulantes');
 
   /* ---------- Helpers ---------- */
   function parseArr(v) {
@@ -2462,7 +2530,12 @@
   function dato(k, v) { return v ? `<div class="dato"><span class="k">${k}</span><span>${esc(v)}</span></div>` : ''; }
   function fecha(iso) {
     if (!iso) return '—';
-    const d = new Date(iso); if (isNaN(d)) return String(iso).slice(0,10);
+    const s = String(iso);
+    // Fechas "solo día" (YYYY-MM-DD): se formatean sin usar zona horaria
+    // para no correrse un día (ej. fecha de cierre).
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) return `${+m[3]}/${+m[2]}/${m[1]}`;
+    const d = new Date(s); if (isNaN(d)) return s.slice(0, 10);
     return d.toLocaleDateString('es');
   }
 
@@ -2511,7 +2584,7 @@
     });
     document.querySelectorAll('.nav-item').forEach(b =>
       b.classList.toggle('activo', b.dataset.modulo === nombre));
-    if (nombre === 'busquedas') { initSelectoresBusqueda(); cargarBusquedas(); }
+    if (nombre === 'busquedas') { initSelectoresBusqueda(); volverALista(); cargarBusquedas(); }
     if (nombre === 'dashboard') renderDashboard();
   }
   document.querySelectorAll('.nav-item').forEach(b =>
@@ -2564,11 +2637,7 @@
 
   async function cargarBusquedas() {
     const cargando = document.getElementById('busqCargando');
-    const vacio = document.getElementById('busqVacio');
-    const lista = document.getElementById('busqLista');
     cargando.classList.remove('oculto');
-    vacio.classList.add('oculto');
-    lista.innerHTML = '';
     try {
       const r = await apiCall({ action: 'listarMisBusquedas', token: token });
       if (!r.ok) {
@@ -2576,11 +2645,13 @@
         throw new Error(r.error);
       }
       busquedas = r.busquedas || [];
-      pintarBusquedas(busquedas);
+      pintarBusquedas();
       renderDashboard();
       poblarFiltrosATS(); // actualiza el filtro "Búsqueda de origen"
     } catch (ex) {
-      lista.innerHTML = '<div class="vacio">Error: ' + esc(ex.message) + '</div>';
+      const vacio = document.getElementById('busqVacio');
+      vacio.classList.remove('oculto');
+      vacio.textContent = 'Error: ' + ex.message;
     } finally {
       cargando.classList.add('oculto');
     }
@@ -2595,39 +2666,182 @@
     return b;
   }
 
-  function pintarBusquedas(lista) {
-    const cont = document.getElementById('busqLista');
+  // Listado compacto: nombre, publicada, cierre, estado, postulantes. Click -> detalle.
+  function pintarBusquedas() {
+    const tbody = document.getElementById('busqTbody');
+    const tabla = document.getElementById('busqTabla');
     const vacio = document.getElementById('busqVacio');
-    cont.innerHTML = '';
-    if (!lista.length) { vacio.classList.remove('oculto'); return; }
-    vacio.classList.add('oculto');
+    const q = norm(document.getElementById('busqBuscarLista').value.trim());
+    let lista = busquedas || [];
+    if (q) lista = lista.filter(b =>
+      norm([b.Puesto, b.Area, b.Localidad, b.Modalidad, b.TipoContrato].filter(Boolean).join(' ')).indexOf(q) !== -1);
 
+    tbody.innerHTML = '';
+    if (!lista.length) {
+      tabla.classList.add('oculto');
+      vacio.classList.remove('oculto');
+      vacio.textContent = (busquedas && busquedas.length)
+        ? 'Ninguna búsqueda coincide con el filtro.'
+        : 'Todavía no publicaste ninguna búsqueda.';
+      return;
+    }
+    vacio.classList.add('oculto');
+    tabla.classList.remove('oculto');
     lista.forEach(b => {
       const estado = (b.Estado || 'activa').toLowerCase();
-      const meta = [b.Area, b.Modalidad, b.Localidad, b.TipoContrato]
-        .filter(Boolean).map(esc).join(' · ');
-      const card = document.createElement('div');
-      card.className = 'busq-card';
-      card.innerHTML =
-        '<div class="busq-card-top">' +
-          '<h3>' + esc(b.Puesto) + '</h3>' +
-          '<span class="busq-estado busq-estado-' + esc(estado) + '">' + esc(estadoLabelBusq[estado] || estado) + '</span>' +
-        '</div>' +
-        '<div class="busq-meta">' + (meta || '—') + '</div>' +
-        '<p class="busq-desc">' + esc(b.Descripcion || b.Responsabilidades || '') + '</p>' +
-        '<div class="busq-acciones"></div>';
-      const acc = card.querySelector('.busq-acciones');
       const nPost = postulantesDeBusqueda(b).length;
-      acc.appendChild(botonBusq('Ver postulantes (' + nPost + ')', 'btn-prim', () => verPostulantesBusqueda(b)));
-      acc.appendChild(botonBusq('Editar', 'btn-sec', () => abrirFormBusqueda(b)));
-      if (estado === 'borrador') acc.appendChild(botonBusq('Publicar', 'btn-sec', () => estadoBusqueda(b.ID, 'activa')));
-      if (estado === 'activa') acc.appendChild(botonBusq('Pausar', 'btn-sec', () => estadoBusqueda(b.ID, 'pausada')));
-      if (estado === 'pausada') acc.appendChild(botonBusq('Reactivar', 'btn-sec', () => estadoBusqueda(b.ID, 'activa')));
-      if (estado !== 'cerrada') acc.appendChild(botonBusq('Cerrar', 'btn-sec', () => estadoBusqueda(b.ID, 'cerrada')));
-      acc.appendChild(botonBusq('Eliminar', 'btn-sec', () => eliminarBusquedaUI(b)));
-      cont.appendChild(card);
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td><strong>' + esc(b.Puesto) + '</strong></td>' +
+        '<td>' + fecha(b.FechaCreacion) + '</td>' +
+        '<td>' + (b.FechaVencimiento ? fecha(b.FechaVencimiento) : '—') + '</td>' +
+        '<td><span class="busq-estado busq-estado-' + esc(estado) + '">' + esc(estadoLabelBusq[estado] || estado) + '</span></td>' +
+        '<td>' + nPost + '</td>';
+      tr.onclick = () => abrirDetalleBusqueda(b);
+      tbody.appendChild(tr);
     });
   }
+
+  /* ---------- Vista DETALLE de una búsqueda ---------- */
+  let busqDetPostulantes = [];
+  let dpFiltrados = [];
+  const DP_CAMPOS = ['dpq', 'dpPuesto', 'dpLocalidad', 'dpIdioma', 'dpFormacion', 'dpViajar', 'dpExperiencia', 'dpCV', 'dpOrden'];
+
+  function volverALista() {
+    document.getElementById('busqVistaDetalle').classList.add('oculto');
+    document.getElementById('busqVistaLista').classList.remove('oculto');
+  }
+
+  function abrirDetalleBusqueda(b) {
+    busqDetPostulantes = postulantesDeBusqueda(b);
+    renderDetalleInfo(b);
+    poblarFiltrosDetalle();
+    DP_CAMPOS.forEach(id => { const el = document.getElementById(id); if (el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = ''; });
+    document.getElementById('dpOrden').value = 'reciente';
+    aplicarFiltrosDetalle();
+    document.getElementById('busqVistaLista').classList.add('oculto');
+    document.getElementById('busqVistaDetalle').classList.remove('oculto');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function renderDetalleInfo(b) {
+    const estado = (b.Estado || 'activa').toLowerCase();
+    const meta = [b.Area, b.Modalidad, b.Localidad, b.TipoContrato, b.Zona].filter(Boolean).map(esc).join(' · ');
+    const habil = String(b.Habilidades || '').split(',').map(s => s.trim()).filter(Boolean);
+    const benef = String(b.Beneficios || '').split(',').map(s => s.trim()).filter(Boolean);
+    const salario = (b.SalarioMin || b.SalarioMax)
+      ? ('$' + esc(b.SalarioMin || '') + (b.SalarioMax ? ' - $' + esc(b.SalarioMax) : '')).replace('$ - ', '') : '';
+    const idioma = (b.IdiomaRequerido && b.IdiomaRequerido !== 'Sin requisito de idioma')
+      ? esc(b.IdiomaRequerido) + (b.NivelIdioma ? ' — ' + esc(b.NivelIdioma) : '') : '';
+    const sec = (t, c) => c ? `<div class="seccion"><h3>${t}</h3><p style="white-space:pre-wrap;margin:0">${c}</p></div>` : '';
+    const tagSec = (t, arr) => arr.length ? `<div class="seccion"><h3>${t}</h3><div class="chips">${arr.map(x => `<span class="chip">${esc(x)}</span>`).join('')}</div></div>` : '';
+
+    document.getElementById('busqDetInfo').innerHTML = `<div class="card" style="padding:22px; margin-bottom:8px">
+      <div class="busq-card-top">
+        <h2 style="margin:0; font-size:1.4rem">${esc(b.Puesto)}</h2>
+        <span class="busq-estado busq-estado-${esc(estado)}">${esc(estadoLabelBusq[estado] || estado)}</span>
+      </div>
+      <div class="busq-meta" style="margin:6px 0 3px">${meta || '—'}</div>
+      <div class="busq-meta" style="margin:0 0 14px">Publicada: ${fecha(b.FechaCreacion)} · Cierre: ${b.FechaVencimiento ? fecha(b.FechaVencimiento) : 'sin fecha'}</div>
+      <div class="busq-acciones" id="busqDetAcc"></div>
+      ${sec('Descripción', esc(b.Descripcion))}
+      ${sec('Responsabilidades', esc(b.Responsabilidades))}
+      ${sec('Requisitos excluyentes', esc(b.RequisitosExcluyentes))}
+      ${sec('Requisitos deseables', esc(b.RequisitosDeseables))}
+      ${tagSec('Habilidades clave', habil)}
+      ${sec('Idioma requerido', idioma)}
+      ${sec('Salario', salario)}
+      ${sec('Horario y jornada', esc(b.Horario))}
+      ${tagSec('Beneficios', benef)}
+      ${sec('Reclutador responsable', esc(b.Reclutador))}
+      ${sec('Pregunta de filtrado 1', esc(b.Pregunta1))}
+      ${sec('Pregunta de filtrado 2', esc(b.Pregunta2))}
+    </div>`;
+
+    const acc = document.getElementById('busqDetAcc');
+    acc.appendChild(botonBusq('Editar', 'btn-sec', () => { volverALista(); abrirFormBusqueda(b); }));
+    if (estado === 'borrador') acc.appendChild(botonBusq('Publicar', 'btn-sec', () => cambiarEstadoDetalle(b.ID, 'activa')));
+    if (estado === 'activa') acc.appendChild(botonBusq('Pausar', 'btn-sec', () => cambiarEstadoDetalle(b.ID, 'pausada')));
+    if (estado === 'pausada') acc.appendChild(botonBusq('Reactivar', 'btn-sec', () => cambiarEstadoDetalle(b.ID, 'activa')));
+    if (estado !== 'cerrada') acc.appendChild(botonBusq('Cerrar', 'btn-sec', () => cambiarEstadoDetalle(b.ID, 'cerrada')));
+    acc.appendChild(botonBusq('Eliminar', 'btn-sec', () => eliminarBusquedaDetalle(b)));
+  }
+
+  async function cambiarEstadoDetalle(id, nuevo) {
+    await estadoBusqueda(id, nuevo);   // llama a la API y recarga la lista
+    const b = (busquedas || []).find(x => String(x.ID) === String(id));
+    if (b) abrirDetalleBusqueda(b); else volverALista();
+  }
+
+  async function eliminarBusquedaDetalle(b) {
+    if (!confirm('¿Eliminar la búsqueda "' + (b.Puesto || '') + '"? Esta acción no se puede deshacer.')) return;
+    try {
+      const r = await apiCall({ action: 'eliminarBusqueda', token: token, id: b.ID });
+      if (!r.ok) throw new Error(r.error);
+      await cargarBusquedas();
+      volverALista();
+    } catch (ex) { alert('No se pudo eliminar: ' + ex.message); }
+  }
+
+  function poblarFiltrosDetalle() {
+    const s = new Set();
+    busqDetPostulantes.forEach(r => parseArr(r.Idiomas).forEach(x => { if (x.idioma) s.add(String(x.idioma).trim()); }));
+    const sel = document.getElementById('dpIdioma');
+    sel.innerHTML = '<option value="">Todos</option>' +
+      Array.from(s).sort((a, b) => a.localeCompare(b, 'es')).map(v => `<option>${esc(v)}</option>`).join('');
+  }
+
+  function aplicarFiltrosDetalle() {
+    const v = (id) => document.getElementById(id).value;
+    const out = filtrarPostulantes(busqDetPostulantes, {
+      q: norm(v('dpq').trim()), puesto: norm(v('dpPuesto').trim()), loc: norm(v('dpLocalidad').trim()),
+      idi: v('dpIdioma').toLowerCase(), form: v('dpFormacion'), viajar: v('dpViajar'),
+      exp: v('dpExperiencia'), cv: v('dpCV'), orden: v('dpOrden')
+    });
+    dpFiltrados = out;
+    const tbody = document.getElementById('dpTbody');
+    const tabla = document.getElementById('dpTabla');
+    const vacio = document.getElementById('dpVacio');
+    tbody.innerHTML = '';
+    if (!out.length) {
+      tabla.classList.add('oculto'); vacio.classList.remove('oculto');
+    } else {
+      vacio.classList.add('oculto'); tabla.classList.remove('oculto');
+      out.forEach(r => {
+        const idiomas = parseArr(r.Idiomas).map(x => x.idioma).filter(Boolean).join(', ');
+        const tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td><strong>' + esc(r.Nombre) + ' ' + esc(r.Apellido) + '</strong></td>' +
+          '<td>' + (r.PuestoDeseado ? '<span class="badge">' + esc(r.PuestoDeseado) + '</span>' : '—') + '</td>' +
+          '<td>' + esc(r.Email) + '</td>' +
+          '<td>' + (esc(r.Telefono) || '—') + '</td>' +
+          '<td>' + (esc(r.Provincia) || '—') + '</td>' +
+          '<td>' + (esc(idiomas) || '—') + '</td>' +
+          '<td>' + fecha(r.FechaRegistro) + '</td>';
+        tr.onclick = () => abrirDetalle(r);
+        tbody.appendChild(tr);
+      });
+    }
+    const total = busqDetPostulantes.length;
+    document.getElementById('dpResumen').textContent =
+      out.length === total ? `${total} postulante(s)` : `${out.length} de ${total} postulante(s)`;
+  }
+
+  // Wiring de la vista detalle
+  document.getElementById('btnVolverBusq').onclick = volverALista;
+  document.getElementById('busqBuscarLista').addEventListener('input', pintarBusquedas);
+  DP_CAMPOS.forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', aplicarFiltrosDetalle);
+    el.addEventListener('change', aplicarFiltrosDetalle);
+  });
+  document.getElementById('btnDpLimpiar').onclick = () => {
+    DP_CAMPOS.forEach(id => { const el = document.getElementById(id); if (el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = ''; });
+    document.getElementById('dpOrden').value = 'reciente';
+    aplicarFiltrosDetalle();
+  };
+  document.getElementById('btnDpExportar').onclick = () =>
+    exportarCSV(dpFiltrados.length ? dpFiltrados : busqDetPostulantes, 'postulantes_busqueda');
 
   function abrirFormBusqueda(b) {
     initSelectoresBusqueda();
