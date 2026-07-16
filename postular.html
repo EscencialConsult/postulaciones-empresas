@@ -761,16 +761,16 @@
   }
 
   function validarFirmas() {
-    if (!firmaConsent || firmaConsent.isEmpty() || !firmaConsent.hasMinStrokes(3)) {
-      mostrarErrorFirma('consentimiento', 'Por favor, dibujá tu firma de consentimiento con al menos 3 trazos.');
+    if (!firmaConsent || firmaConsent.isEmpty()) {
+      mostrarErrorFirma('consentimiento', 'Por favor, dibujá tu firma de consentimiento.');
       return false;
     }
     if (!document.getElementById('check-consentimiento').checked) {
       mostrarErrorFirma('consentimiento', 'Por favor, aceptá la Política de Privacidad.');
       return false;
     }
-    if (!firmaConf || firmaConf.isEmpty() || !firmaConf.hasMinStrokes(3)) {
-      mostrarErrorFirma('conformidad', 'Por favor, dibujá tu firma de conformidad con al menos 3 trazos.');
+    if (!firmaConf || firmaConf.isEmpty()) {
+      mostrarErrorFirma('conformidad', 'Por favor, dibujá tu firma de conformidad.');
       return false;
     }
     if (!document.getElementById('check-conformidad').checked) {

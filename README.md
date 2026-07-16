@@ -50,8 +50,11 @@ Se crea un usuario de ejemplo en la pestaña `Usuarios`:
 
 ### 3.1) Verificación manual de empresas
 El registro de empresas solicita selfie del representante y fotos del frente y dorso del DNI.
-Las imágenes se guardan en Drive y la empresa queda con verificación `pendiente` hasta que
-administración revise la documentación desde `admin.html`.
+Las imágenes se guardan en Drive y la empresa queda pendiente para revisión desde
+`admin.html`. Administración puede comparar manualmente la firma visible en el DNI con
+la firma legal registrada y aprobar o rechazar la cuenta.
+Antes de enviarlas al backend, el navegador redimensiona y comprime las capturas para
+reducir el espacio ocupado en Drive: selfie hasta 900 px y DNI hasta 1200 px.
 
 ### 4) Publicar como Aplicación Web
 1. Arriba a la derecha: **Implementar → Nueva implementación**.

@@ -163,7 +163,7 @@ function setup() {
 
   var post = obtenerHoja(ss, HOJA_POSTULANTES, COLUMNAS_POSTULANTES);
   var usu  = obtenerHoja(ss, HOJA_USUARIOS, COLUMNAS_USUARIOS);
-  obtenerHoja(ss, HOJA_BUSQUEDAS, COLUMNAS_BUSQUEDAS);
+  var busq = obtenerHoja(ss, HOJA_BUSQUEDAS, COLUMNAS_BUSQUEDAS);
 
   // Crea un usuario de ejemplo (empresa) si la hoja está vacía.
   if (usu.getLastRow() < 2) {
@@ -181,7 +181,11 @@ function setup() {
     Logger.log('Usuario admin creado -> usuario: admin / contraseña: admin123 (CAMBIAR).');
   }
 
-  Logger.log('Setup completo. Hojas listas: %s, %s', HOJA_POSTULANTES, HOJA_USUARIOS);
+  aplicarEstiloHoja(post, '#12b981');
+  aplicarEstiloHoja(usu, '#d1436f');
+  aplicarEstiloHoja(busq, '#6be1e3');
+
+  Logger.log('Setup completo. Hojas listas: %s, %s, %s', HOJA_POSTULANTES, HOJA_USUARIOS, HOJA_BUSQUEDAS);
 }
 
 /**
@@ -217,6 +221,65 @@ function asegurarColumnas(hoja, columnas) {
     hoja.getRange(1, encabezados.length + 1, 1, faltantes.length).setValues([faltantes]);
     hoja.getRange(1, 1, 1, encabezados.length + faltantes.length).setFontWeight('bold');
   }
+}
+
+/**
+ * Aplica formato legible a cada hoja creada por setup().
+ * Es seguro volver a ejecutarla: actualiza estilos, filtros y anchos sin borrar datos.
+ */
+function aplicarEstiloHoja(hoja, color) {
+  if (!hoja) return;
+
+  var lastRow = Math.max(hoja.getLastRow(), 1);
+  var lastCol = Math.max(hoja.getLastColumn(), 1);
+
+  hoja.setFrozenRows(1);
+  hoja.setTabColor(color);
+
+  var header = hoja.getRange(1, 1, 1, lastCol);
+  header
+    .setBackground(color)
+    .setFontColor('#ffffff')
+    .setFontWeight('bold')
+    .setHorizontalAlignment('center')
+    .setVerticalAlignment('middle')
+    .setWrap(true);
+
+  hoja.getRange(1, 1, lastRow, lastCol)
+    .setVerticalAlignment('middle')
+    .setWrap(true);
+
+  hoja.setRowHeight(1, 42);
+
+  for (var c = 1; c <= lastCol; c++) {
+    hoja.autoResizeColumn(c);
+    var ancho = hoja.getColumnWidth(c);
+    hoja.setColumnWidth(c, Math.min(Math.max(ancho, 120), 260));
+  }
+
+  ajustarColumnaSiExiste(hoja, 'PerfilProfesional', 360);
+  ajustarColumnaSiExiste(hoja, 'DescripcionPerfil', 360);
+  ajustarColumnaSiExiste(hoja, 'Descripcion', 360);
+  ajustarColumnaSiExiste(hoja, 'Formacion', 320);
+  ajustarColumnaSiExiste(hoja, 'Experiencias', 320);
+  ajustarColumnaSiExiste(hoja, 'Idiomas', 280);
+  ajustarColumnaSiExiste(hoja, 'CVUrl', 280);
+  ajustarColumnaSiExiste(hoja, 'SelfieUrl', 280);
+  ajustarColumnaSiExiste(hoja, 'DniFrenteUrl', 280);
+  ajustarColumnaSiExiste(hoja, 'DniDorsoUrl', 280);
+  ajustarColumnaSiExiste(hoja, 'FirmaLegalUrl', 280);
+
+  var filtro = hoja.getFilter();
+  if (filtro) filtro.remove();
+  hoja.getRange(1, 1, lastRow, lastCol).createFilter();
+}
+
+function ajustarColumnaSiExiste(hoja, nombreColumna, ancho) {
+  var lastCol = hoja.getLastColumn();
+  if (!lastCol) return;
+  var encabezados = hoja.getRange(1, 1, 1, lastCol).getValues()[0];
+  var idx = encabezados.indexOf(nombreColumna);
+  if (idx !== -1) hoja.setColumnWidth(idx + 1, ancho);
 }
 
 /* -------------------------------------------------------------------
@@ -374,8 +437,15 @@ function verificarIdentidadDNI(d) {
   if (!d.selfieBase64) return { ok: false, error: 'Falta la selfie del representante.' };
   if (!d.dniFrenteBase64) return { ok: false, error: 'Falta la foto del frente del DNI.' };
   if (!d.dniDorsoBase64) return { ok: false, error: 'Falta la foto del dorso del DNI.' };
-  return { ok: true, estado: 'pendiente' };
+  if (!d.firmaLegalBase64) return { ok: false, error: 'Falta la firma legal del representante.' };
+  return {
+    ok: true,
+    estado: 'pendiente',
+    confianza: 'revision_manual',
+    observacion: 'Comparar manualmente la firma registrada con la firma visible en el DNI.'
+  };
 }
+
 function registrarEmpresa(d) {
   var empresa  = limpiar(d.empresa);
   var password = String(d.password || '');
@@ -427,7 +497,8 @@ function registrarEmpresa(d) {
     dni: dni,
     selfieBase64: d.selfieBase64,
     dniFrenteBase64: d.dniFrenteBase64,
-    dniDorsoBase64: d.dniDorsoBase64
+    dniDorsoBase64: d.dniDorsoBase64,
+    firmaLegalBase64: d.firmaLegalBase64
   });
   if (!verificacion.ok) return verificacion;
 
@@ -440,18 +511,22 @@ function registrarEmpresa(d) {
   var firmaLegal = guardarArchivoFirma(d.firmaLegalBase64, 'empresa_legal_' + usuario + '.png');
   if (firmaLegal.error) return { ok: false, error: firmaLegal.error };
 
-  // La empresa queda PENDIENTE de aprobación por el administrador (sin token de acceso).
+  var estadoVerificacion = verificacion.estado || 'pendiente';
+  var estadoCuenta = estadoVerificacion === 'aprobado' ? 'aprobado' : 'pendiente';
+  var detalleVerificacion = [verificacion.confianza, verificacion.observacion].filter(Boolean).join(' - ');
+
+  // La firma del DNI y la firma registrada quedan para revisión manual del administrador.
   hoja.appendRow([
-    usuario, password, empresa, '', '', email, new Date(), 'empresa', 'pendiente',
+    usuario, password, empresa, '', '', email, new Date(), 'empresa', estadoCuenta,
     cuit, rubro, nombre, apellido, telefono,
     dni,
-    'pendiente',
+    estadoVerificacion,
     new Date(),
-    '',
+    detalleVerificacion,
     'Si',
     new Date(),
     selfieGuardada.url,
-    '',
+    [nombre, apellido].filter(Boolean).join(' '),
     '', '', '', '',
     frenteGuardado.url,
     dorsoGuardado.url,
@@ -460,9 +535,10 @@ function registrarEmpresa(d) {
   ]);
 
   return {
-    ok: true, pendiente: true,
-    verificacion: 'pendiente',
-    mensaje: 'Tu cuenta fue creada y quedó pendiente de aprobación. Revisaremos la selfie y las fotos del DNI.'
+    ok: true,
+    pendiente: estadoCuenta !== 'aprobado',
+    verificacion: estadoVerificacion,
+    mensaje: 'Tu cuenta fue creada y quedó pendiente de revisión. Administración comparará la firma del DNI con la firma registrada.'
   };
 }
 

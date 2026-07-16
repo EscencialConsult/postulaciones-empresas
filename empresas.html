@@ -27,6 +27,8 @@
   .captura-card h3 { font-size: .9rem; margin: 0 0 4px; }
   .captura-card p { color: var(--muted); font-size: .8rem; margin: 0 0 10px; }
   .captura-card .firma-controles { flex-wrap: wrap; gap: 8px; }
+  .captura-card[data-captura^="dni"] .verificacion-video,
+  .captura-card[data-captura^="dni"] .verificacion-preview { aspect-ratio: 16 / 10; object-fit: contain; }
   .login h1 { font-size: 1.5rem; margin: 14px 0 4px; }
   .login > p { color: var(--muted); margin: 0 0 24px; font-size: .92rem; }
   .err { color: var(--error); font-size: .85rem; margin-top: 10px; display: none; }
@@ -163,6 +165,14 @@
     .registro-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .registro-grid { grid-template-columns: 1fr; }
     .capturas-grid { grid-template-columns: 1fr; }
+    .verificacion-box { padding: 14px 12px; }
+    .captura-card { padding: 12px; }
+    .captura-card .firma-controles { flex-direction: column; align-items: stretch; }
+    .captura-card .firma-controles .btn { width: 100%; min-height: 42px; }
+    .captura-card[data-captura="selfie"] .verificacion-video,
+    .captura-card[data-captura="selfie"] .verificacion-preview { aspect-ratio: 3 / 4; }
+    .captura-card[data-captura^="dni"] .verificacion-video,
+    .captura-card[data-captura^="dni"] .verificacion-preview { aspect-ratio: 4 / 3; }
     .registro-nav { flex-direction: column-reverse; }
     .registro-nav .btn { width: 100%; min-width: 0; }
     .topbar .inner { padding: 12px 16px; }
@@ -268,7 +278,7 @@
       <h2>Verificación y legales</h2>
       <div class="verificacion-box">
         <h2>Verificación de identidad</h2>
-        <p>Tomá una selfie y fotos claras del frente y dorso del DNI del representante. La cuenta quedará pendiente hasta que administración revise la documentación.</p>
+        <p>Tomá una selfie y fotos claras del frente y dorso del DNI del representante. Cada foto queda aceptada al capturarla; administración revisará la documentación y comparará la firma registrada con la del DNI.</p>
         <div class="capturas-grid">
           <div class="captura-card" data-captura="selfie">
             <h3>Selfie</h3>
@@ -716,6 +726,28 @@
 
   const capturasVerificacion = { selfie: '', dniFrente: '', dniDorso: '' };
   const streamsCaptura = {};
+  let capturaActiva = '';
+  const compresionCapturas = {
+    selfie: { maxLado: 900, calidad: 0.7 },
+    dniFrente: { maxLado: 1200, calidad: 0.76 },
+    dniDorso: { maxLado: 1200, calidad: 0.76 }
+  };
+  const parametrosValidacionImagen = {
+    anchoMin: 160,
+    altoMin: 120,
+    brilloMin: 0,
+    brilloMax: 255,
+    contrasteMin: 0,
+    nitidezMin: 0,
+    selfie: {
+      requerirDetectorRostro: false,
+      rostrosMin: 1,
+      rostrosMax: 1,
+      areaRostroMin: 0.01,
+      areaRostroMax: 0.9,
+      desplazamientoCentroMax: 0.5
+    }
+  };
 
   function detenerCamara(tipo) {
     if (tipo) {
@@ -726,6 +758,8 @@
       return;
     }
     Object.keys(streamsCaptura).forEach(detenerCamara);
+    capturaActiva = '';
+    actualizarBloqueoCapturas();
   }
 
   function setEstadoCaptura(tipo, mensaje, clase) {
@@ -734,10 +768,23 @@
     el.className = 'firma-estado ' + (clase || '');
   }
 
+  function actualizarBloqueoCapturas() {
+    document.querySelectorAll('[data-captura-start]').forEach(btn => {
+      const tipo = btn.dataset.capturaStart;
+      btn.disabled = Boolean(capturaActiva && capturaActiva !== tipo);
+    });
+  }
+
   async function iniciarCaptura(tipo) {
     const video = document.getElementById('video-' + tipo);
     const preview = document.getElementById('preview-' + tipo);
+    if (capturaActiva && capturaActiva !== tipo) {
+      setEstadoCaptura(tipo, 'Terminá o reintentá la captura abierta antes de usar otra cámara.', 'firma-error');
+      return;
+    }
     try {
+      capturaActiva = tipo;
+      actualizarBloqueoCapturas();
       detenerCamara(tipo);
       streamsCaptura[tipo] = await navigator.mediaDevices.getUserMedia({ video: { facingMode: tipo === 'selfie' ? 'user' : 'environment' }, audio: false });
       video.srcObject = streamsCaptura[tipo];
@@ -748,26 +795,156 @@
       document.querySelector(`[data-captura-retry="${tipo}"]`).classList.add('oculto');
       setEstadoCaptura(tipo, 'Cámara lista. Tomá una foto clara.', 'firma-vacia');
     } catch (ex) {
+      capturaActiva = '';
+      actualizarBloqueoCapturas();
       setEstadoCaptura(tipo, 'No se pudo abrir la cámara. Revisá permisos del navegador.', 'firma-vacia');
     }
   }
 
-  function tomarCaptura(tipo) {
+  function calcularMetricasImagen(canvas) {
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const paso = Math.max(1, Math.floor(Math.min(canvas.width, canvas.height) / 160));
+    const grises = [];
+    let suma = 0;
+    let total = 0;
+
+    for (let y = 0; y < canvas.height; y += paso) {
+      const fila = [];
+      const data = ctx.getImageData(0, y, canvas.width, 1).data;
+      for (let x = 0; x < canvas.width; x += paso) {
+        const i = x * 4;
+        const gris = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        fila.push(gris);
+        suma += gris;
+        total++;
+      }
+      grises.push(fila);
+    }
+
+    const brillo = suma / Math.max(total, 1);
+    let varianza = 0;
+    let nitidez = 0;
+    let paresNitidez = 0;
+
+    grises.forEach((fila, y) => {
+      fila.forEach((gris, x) => {
+        varianza += Math.pow(gris - brillo, 2);
+        if (x > 0) {
+          nitidez += Math.abs(gris - fila[x - 1]);
+          paresNitidez++;
+        }
+        if (y > 0 && grises[y - 1][x] != null) {
+          nitidez += Math.abs(gris - grises[y - 1][x]);
+          paresNitidez++;
+        }
+      });
+    });
+
+    return {
+      brillo,
+      contraste: Math.sqrt(varianza / Math.max(total, 1)),
+      nitidez: nitidez / Math.max(paresNitidez, 1)
+    };
+  }
+
+  async function validarRostroSelfie(canvas) {
+    const cfg = parametrosValidacionImagen.selfie;
+    if (!('FaceDetector' in window)) {
+      return cfg.requerirDetectorRostro
+        ? 'No se pudo validar que sea una persona. Usá Chrome o Edge actualizado para tomar la selfie.'
+        : '';
+    }
+
+    try {
+      const detector = new FaceDetector({ fastMode: true, maxDetectedFaces: cfg.rostrosMax + 1 });
+      const rostros = await detector.detect(canvas);
+      if (rostros.length < cfg.rostrosMin) {
+        return cfg.requerirDetectorRostro ? 'No detectamos un rostro. Tomá una selfie frontal con buena luz.' : '';
+      }
+      if (!cfg.requerirDetectorRostro) return '';
+      if (rostros.length > cfg.rostrosMax) return 'Debe aparecer una sola persona en la selfie.';
+
+      const box = rostros[0].boundingBox;
+      const area = (box.width * box.height) / (canvas.width * canvas.height);
+      if (area < cfg.areaRostroMin) return 'El rostro se ve muy lejos. Acercate un poco y repetí la selfie.';
+      if (area > cfg.areaRostroMax) return 'El rostro está demasiado cerca. Alejá un poco la cámara.';
+
+      const centroX = box.x + box.width / 2;
+      const centroY = box.y + box.height / 2;
+      const desplazamiento = Math.hypot((centroX - canvas.width / 2) / canvas.width, (centroY - canvas.height / 2) / canvas.height);
+      if (desplazamiento > cfg.desplazamientoCentroMax) return 'Centrate en la cámara y repetí la selfie.';
+      return '';
+    } catch (ex) {
+      return cfg.requerirDetectorRostro
+        ? 'No se pudo analizar el rostro. Reintentá con buena luz o usá Chrome/Edge actualizado.'
+        : '';
+    }
+  }
+
+  async function validarCaptura(tipo, canvas) {
+    const p = parametrosValidacionImagen;
+    if (canvas.width < p.anchoMin || canvas.height < p.altoMin) {
+      return 'La imagen tiene baja resolución. Acercá la cámara y volvé a tomarla.';
+    }
+
+    const metricas = calcularMetricasImagen(canvas);
+    if (metricas.brillo < p.brilloMin) return 'La foto está muy oscura. Buscá más luz y repetila.';
+    if (metricas.brillo > p.brilloMax) return 'La foto está demasiado iluminada. Evitá reflejos y repetila.';
+    if (metricas.contraste < p.contrasteMin) return 'La foto tiene poco contraste. Usá un fondo más claro y buena luz.';
+    if (metricas.nitidez < p.nitidezMin) return 'La foto parece borrosa. Mantené la cámara firme y repetila.';
+    if (tipo === 'selfie') return validarRostroSelfie(canvas);
+    return '';
+  }
+
+  function comprimirCaptura(tipo, canvasOrigen) {
+    const cfg = compresionCapturas[tipo] || { maxLado: 1000, calidad: 0.72 };
+    const escala = Math.min(1, cfg.maxLado / Math.max(canvasOrigen.width, canvasOrigen.height));
+    const canvasDestino = document.createElement('canvas');
+    canvasDestino.width = Math.max(1, Math.round(canvasOrigen.width * escala));
+    canvasDestino.height = Math.max(1, Math.round(canvasOrigen.height * escala));
+
+    const ctx = canvasDestino.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(canvasOrigen, 0, 0, canvasDestino.width, canvasDestino.height);
+
+    const dataUrl = canvasDestino.toDataURL('image/jpeg', cfg.calidad);
+    return {
+      dataUrl,
+      base64: dataUrl.split(',')[1] || '',
+      ancho: canvasDestino.width,
+      alto: canvasDestino.height
+    };
+  }
+
+  async function tomarCaptura(tipo) {
     const video = document.getElementById('video-' + tipo);
     const canvas = document.getElementById('canvas-' + tipo);
     const preview = document.getElementById('preview-' + tipo);
     if (!video.videoWidth) return;
+    setEstadoCaptura(tipo, 'Analizando foto...', 'firma-vacia');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-    capturasVerificacion[tipo] = canvas.toDataURL('image/jpeg', 0.84).split(',')[1] || '';
-    preview.src = 'data:image/jpeg;base64,' + capturasVerificacion[tipo];
+    const errorValidacion = await validarCaptura(tipo, canvas);
+    if (errorValidacion) {
+      capturasVerificacion[tipo] = '';
+      preview.src = '';
+      preview.classList.add('oculto');
+      setEstadoCaptura(tipo, errorValidacion, 'firma-error');
+      return;
+    }
+    const capturaComprimida = comprimirCaptura(tipo, canvas);
+    capturasVerificacion[tipo] = capturaComprimida.base64;
+    preview.src = capturaComprimida.dataUrl;
     preview.classList.remove('oculto');
     video.classList.add('oculto');
     document.querySelector(`[data-captura-shot="${tipo}"]`).classList.add('oculto');
     document.querySelector(`[data-captura-retry="${tipo}"]`).classList.remove('oculto');
     detenerCamara(tipo);
-    setEstadoCaptura(tipo, 'Foto capturada.', 'firma-ok');
+    capturaActiva = '';
+    actualizarBloqueoCapturas();
+    setEstadoCaptura(tipo, 'Foto capturada y aceptada.', 'firma-ok');
   }
 
   function resetCapturas() {
@@ -783,13 +960,22 @@
       setEstadoCaptura(tipo, 'Pendiente.', '');
     });
     detenerCamara();
+    capturaActiva = '';
+    actualizarBloqueoCapturas();
   }
 
   document.querySelectorAll('[data-captura-start]').forEach(btn => {
     btn.addEventListener('click', () => iniciarCaptura(btn.dataset.capturaStart));
   });
   document.querySelectorAll('[data-captura-shot]').forEach(btn => {
-    btn.addEventListener('click', () => tomarCaptura(btn.dataset.capturaShot));
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      try {
+        await tomarCaptura(btn.dataset.capturaShot);
+      } finally {
+        btn.disabled = false;
+      }
+    });
   });
   document.querySelectorAll('[data-captura-retry]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -812,8 +998,8 @@
 
   function validarFirmaEmpresaLegal() {
     initFirmaEmpresaLegal();
-    if (!firmaEmpresaLegal || firmaEmpresaLegal.isEmpty() || !firmaEmpresaLegal.hasMinStrokes(3)) {
-      setEstadoFirmaEmpresa('Por favor, dibujá la firma del representante con al menos 3 trazos.', 'firma-error');
+    if (!firmaEmpresaLegal || firmaEmpresaLegal.isEmpty()) {
+      setEstadoFirmaEmpresa('Por favor, dibujá la firma del representante.', 'firma-error');
       return false;
     }
     if (!document.getElementById('rAceptoTerminos').checked) {
@@ -897,14 +1083,14 @@
         aceptoTerminos: document.getElementById('rAceptoTerminos').checked
       });
       if (r.ok) {
-        // La cuenta queda pendiente de aprobación: volvemos al login con aviso.
+        // Volvemos al login con el resultado de la revisión documental.
         registroForm.reset();
         resetCapturas();
         resetFirmaEmpresaLegal();
         registroForm.classList.add('oculto');
         loginForm.classList.remove('oculto');
         const info = document.getElementById('loginInfo');
-        info.textContent = r.mensaje || 'Tu cuenta fue creada y quedó pendiente de aprobación.';
+        info.textContent = r.mensaje || 'Tu cuenta fue creada y quedó pendiente de revisión.';
         info.classList.remove('oculto');
       } else { throw new Error(r.error || 'No se pudo crear la cuenta.'); }
     } catch (ex) {
