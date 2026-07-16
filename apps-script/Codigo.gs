@@ -27,6 +27,7 @@
 var HOJA_POSTULANTES = 'Postulantes';
 var HOJA_USUARIOS    = 'Usuarios';
 var HOJA_BUSQUEDAS   = 'Busquedas';
+var HOJA_PERFILES    = 'Perfiles';
 
 // Carpeta de Google Drive donde se guardan los archivos de CV.
 var CARPETA_CV = 'CVs Postulantes';
@@ -86,6 +87,17 @@ var COLUMNAS_BUSQUEDAS = [
   'FechaVencimiento', 'Reclutador', 'Pregunta1', 'Pregunta2'
 ];
 
+// Columnas de la hoja Perfiles (cuenta del postulante; una fila por email).
+// El perfil se reutiliza al postularse a distintas búsquedas.
+var COLUMNAS_PERFILES = [
+  'Email', 'Password', 'Token', 'TokenExpira', 'FechaRegistro', 'FechaActualizacion',
+  'Nombre', 'Apellido', 'Telefono', 'PuestoDeseado',
+  'FechaNacimiento', 'Identificacion', 'Provincia', 'CodigoPostalCiudad', 'PerfilProfesional',
+  'Formacion', 'DescripcionPerfil', 'DispViajar', 'DispCambioResidencia', 'Idiomas',
+  'PrimerEmpleo', 'Experiencias', 'CVNombre', 'CVUrl',
+  'FirmaConsentimientoUrl', 'FirmaConformidadUrl'
+];
+
 // Duración del token de sesión (horas)
 var TOKEN_HORAS = 12;
 
@@ -126,6 +138,12 @@ function manejar(e) {
       case 'cambiarEstadoBusqueda': return json(cambiarEstadoBusqueda(datos));
       case 'eliminarBusqueda':      return json(eliminarBusqueda(datos));
       case 'busquedasPublicas':     return json(busquedasPublicas(datos));
+      // Cuenta del postulante (perfil reutilizable)
+      case 'registrarPostulante':  return json(registrarPostulante(datos));
+      case 'loginPostulante':      return json(loginPostulante(datos));
+      case 'miPerfil':             return json(miPerfil(datos));
+      case 'actualizarPerfil':     return json(actualizarPerfil(datos));
+      case 'postularConPerfil':    return json(postularConPerfil(datos));
       // Firmas
       case 'firmarPostulacion': return json(firmarPostulacion(datos));
       default:
@@ -173,6 +191,7 @@ function setup() {
   var post = obtenerHoja(ss, HOJA_POSTULANTES, COLUMNAS_POSTULANTES);
   var usu  = obtenerHoja(ss, HOJA_USUARIOS, COLUMNAS_USUARIOS);
   var busq = obtenerHoja(ss, HOJA_BUSQUEDAS, COLUMNAS_BUSQUEDAS);
+  var perf = obtenerHoja(ss, HOJA_PERFILES, COLUMNAS_PERFILES);
 
   // Crea un usuario de ejemplo (empresa) si la hoja está vacía.
   if (usu.getLastRow() < 2) {
@@ -193,6 +212,7 @@ function setup() {
   aplicarEstiloHoja(post, '#12b981');
   aplicarEstiloHoja(usu, '#d1436f');
   aplicarEstiloHoja(busq, '#6be1e3');
+  aplicarEstiloHoja(perf, '#8b5cf6');
 
   Logger.log('Setup completo. Hojas listas: %s, %s, %s', HOJA_POSTULANTES, HOJA_USUARIOS, HOJA_BUSQUEDAS);
 }
@@ -1175,5 +1195,171 @@ function busquedasPublicas(d) {
   }
   lista.reverse(); // más recientes primero
   return { ok: true, total: lista.length, busquedas: lista };
+}
+
+/* -------------------------------------------------------------------
+ *  CUENTA DEL POSTULANTE (perfil reutilizable)
+ * ----------------------------------------------------------------- */
+
+// Convierte una fila de Perfiles en objeto (sin password ni token).
+function perfilDesdeFila(fila) {
+  return {
+    email: fila[0],
+    fechaRegistro: (fila[4] instanceof Date) ? fila[4].toISOString() : fila[4],
+    fechaActualizacion: (fila[5] instanceof Date) ? fila[5].toISOString() : fila[5],
+    nombre: fila[6] || '', apellido: fila[7] || '', telefono: fila[8] || '',
+    puestoDeseado: fila[9] || '', fechaNacimiento: fila[10] || '', identificacion: fila[11] || '',
+    provincia: fila[12] || '', codigoPostalCiudad: fila[13] || '', perfilProfesional: fila[14] || '',
+    formacion: fila[15] || '[]', descripcionPerfil: fila[16] || '',
+    dispViajar: fila[17] || '', dispCambioResidencia: fila[18] || '', idiomas: fila[19] || '[]',
+    primerEmpleo: fila[20] || '', experiencias: fila[21] || '[]',
+    cvNombre: fila[22] || '', cvUrl: fila[23] || '',
+    firmaConsentimientoUrl: fila[24] || '', firmaConformidadUrl: fila[25] || ''
+  };
+}
+
+// Valida el token del perfil y devuelve { hoja, filaNum, fila, email } o null.
+function validarTokenPerfil(token) {
+  if (!token) return null;
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_PERFILES, COLUMNAS_PERFILES);
+  var valores = hoja.getDataRange().getValues();
+  var ahora = new Date().getTime();
+  for (var i = 1; i < valores.length; i++) {
+    if (String(valores[i][2]) === String(token)) {
+      var expira = Number(valores[i][3] || 0);
+      if (expira && expira < ahora) return null;
+      return { hoja: hoja, filaNum: i + 1, fila: valores[i], email: String(valores[i][0]) };
+    }
+  }
+  return null;
+}
+
+function registrarPostulante(d) {
+  var email = limpiar(d.email).toLowerCase();
+  var password = String(d.password || '');
+  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { ok: false, error: 'Ingresá un email válido.' };
+  if (password.length < 6) return { ok: false, error: 'La contraseña debe tener al menos 6 caracteres.' };
+  if (!limpiar(d.nombre) || !limpiar(d.apellido)) return { ok: false, error: 'Completá nombre y apellido.' };
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_PERFILES, COLUMNAS_PERFILES);
+  var valores = hoja.getDataRange().getValues();
+  for (var i = 1; i < valores.length; i++) {
+    if (String(valores[i][0]).trim().toLowerCase() === email) {
+      return { ok: false, error: 'Ya existe una cuenta con ese email. Iniciá sesión.' };
+    }
+  }
+
+  var cv = guardarArchivoCV(d.cvBase64, d.cvNombre, d.cvTipo);
+  if (cv.error) return { ok: false, error: cv.error };
+  var firmaConsent = guardarArchivoFirma(d.firmaConsentimientoBase64, 'consent_perfil_' + email + '.png');
+  var firmaConf = guardarArchivoFirma(d.firmaConformidadBase64, 'conf_perfil_' + email + '.png');
+
+  var ahora = new Date();
+  var token = Utilities.getUuid();
+  var expira = ahora.getTime() + TOKEN_HORAS * 3600 * 1000;
+
+  hoja.appendRow([
+    email, password, token, expira, ahora, ahora,
+    limpiar(d.nombre), limpiar(d.apellido), limpiar(d.telefono), limpiar(d.puestoDeseado),
+    limpiar(d.fechaNacimiento), limpiar(d.identificacion), limpiar(d.provincia), limpiar(d.codigoPostalCiudad), limpiar(d.perfilProfesional),
+    normalizarJSON(d.formacion), limpiar(d.descripcionPerfil), limpiar(d.dispViajar), limpiar(d.dispCambioResidencia), normalizarJSON(d.idiomas),
+    d.primerEmpleo ? 'Sí' : 'No', normalizarJSON(d.experiencias), cv.nombre, cv.url,
+    firmaConsent.url, firmaConf.url
+  ]);
+
+  var fila = hoja.getRange(hoja.getLastRow(), 1, 1, COLUMNAS_PERFILES.length).getValues()[0];
+  return { ok: true, token: token, perfil: perfilDesdeFila(fila), mensaje: 'Cuenta creada correctamente.' };
+}
+
+function loginPostulante(d) {
+  var email = limpiar(d.email).toLowerCase();
+  var password = String(d.password || '');
+  if (!email || !password) return { ok: false, error: 'Ingresá email y contraseña.' };
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_PERFILES, COLUMNAS_PERFILES);
+  var valores = hoja.getDataRange().getValues();
+  for (var i = 1; i < valores.length; i++) {
+    if (String(valores[i][0]).trim().toLowerCase() === email && String(valores[i][1]) === password) {
+      var token = Utilities.getUuid();
+      var expira = new Date().getTime() + TOKEN_HORAS * 3600 * 1000;
+      hoja.getRange(i + 1, 3).setValue(token);
+      hoja.getRange(i + 1, 4).setValue(expira);
+      var fila = hoja.getRange(i + 1, 1, 1, COLUMNAS_PERFILES.length).getValues()[0];
+      fila[2] = token; fila[3] = expira;
+      return { ok: true, token: token, perfil: perfilDesdeFila(fila) };
+    }
+  }
+  return { ok: false, error: 'Email o contraseña incorrectos.' };
+}
+
+function miPerfil(d) {
+  var s = validarTokenPerfil(d.token);
+  if (!s) return { ok: false, error: 'Sesión inválida o expirada.' };
+  return { ok: true, perfil: perfilDesdeFila(s.fila) };
+}
+
+function actualizarPerfil(d) {
+  var s = validarTokenPerfil(d.token);
+  if (!s) return { ok: false, error: 'Sesión inválida o expirada.' };
+  if (!limpiar(d.nombre) || !limpiar(d.apellido)) return { ok: false, error: 'Completá nombre y apellido.' };
+  var hoja = s.hoja, filaNum = s.filaNum;
+
+  var cvNombre = s.fila[22], cvUrl = s.fila[23];
+  if (d.cvBase64) {
+    var cv = guardarArchivoCV(d.cvBase64, d.cvNombre, d.cvTipo);
+    if (cv.error) return { ok: false, error: cv.error };
+    cvNombre = cv.nombre; cvUrl = cv.url;
+  }
+  var firmaConsentUrl = s.fila[24], firmaConfUrl = s.fila[25];
+  if (d.firmaConsentimientoBase64) { var fc = guardarArchivoFirma(d.firmaConsentimientoBase64, 'consent_perfil_' + s.email + '.png'); if (fc.url) firmaConsentUrl = fc.url; }
+  if (d.firmaConformidadBase64) { var ff = guardarArchivoFirma(d.firmaConformidadBase64, 'conf_perfil_' + s.email + '.png'); if (ff.url) firmaConfUrl = ff.url; }
+
+  if (d.nuevaPassword) {
+    if (String(d.nuevaPassword).length < 6) return { ok: false, error: 'La nueva contraseña debe tener al menos 6 caracteres.' };
+    hoja.getRange(filaNum, 2).setValue(String(d.nuevaPassword));
+  }
+
+  hoja.getRange(filaNum, 6).setValue(new Date()); // FechaActualizacion
+  // Columnas 7..26 (Nombre..FirmaConformidadUrl)
+  hoja.getRange(filaNum, 7, 1, 20).setValues([[
+    limpiar(d.nombre), limpiar(d.apellido), limpiar(d.telefono), limpiar(d.puestoDeseado),
+    limpiar(d.fechaNacimiento), limpiar(d.identificacion), limpiar(d.provincia), limpiar(d.codigoPostalCiudad), limpiar(d.perfilProfesional),
+    normalizarJSON(d.formacion), limpiar(d.descripcionPerfil), limpiar(d.dispViajar), limpiar(d.dispCambioResidencia), normalizarJSON(d.idiomas),
+    d.primerEmpleo ? 'Sí' : 'No', normalizarJSON(d.experiencias), cvNombre, cvUrl,
+    firmaConsentUrl, firmaConfUrl
+  ]]);
+
+  var fila = hoja.getRange(filaNum, 1, 1, COLUMNAS_PERFILES.length).getValues()[0];
+  return { ok: true, mensaje: 'Perfil actualizado.', perfil: perfilDesdeFila(fila) };
+}
+
+// Crea una postulación (fila en Postulantes) copiando el perfil del postulante
+// logueado, sin volver a cargar los datos. Guarda el vínculo con la búsqueda.
+function postularConPerfil(d) {
+  var s = validarTokenPerfil(d.token);
+  if (!s) return { ok: false, error: 'Sesión inválida o expirada.' };
+  var p = perfilDesdeFila(s.fila);
+  if (!p.nombre || !p.apellido || !p.email) return { ok: false, error: 'Tu perfil está incompleto. Completá tus datos antes de postularte.' };
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_POSTULANTES, COLUMNAS_POSTULANTES);
+  var id = Utilities.getUuid();
+  var ahora = new Date();
+
+  hoja.appendRow([
+    id, ahora,
+    p.nombre, p.apellido, p.email, p.telefono, (limpiar(d.puestoDeseado) || p.puestoDeseado),
+    p.fechaNacimiento, p.identificacion, p.provincia, p.codigoPostalCiudad, p.perfilProfesional,
+    p.formacion, p.descripcionPerfil, p.dispViajar, p.dispCambioResidencia, p.idiomas,
+    p.primerEmpleo, p.experiencias, p.cvNombre, p.cvUrl,
+    p.firmaConsentimientoUrl, (p.firmaConsentimientoUrl ? ahora : ''),
+    p.firmaConformidadUrl, (p.firmaConformidadUrl ? ahora : ''),
+    limpiar(d.busquedaId), limpiar(d.busquedaPuesto), normalizarJSON(d.respuestasBusqueda)
+  ]);
+
+  return { ok: true, id: id, mensaje: '¡Postulación enviada!' };
 }
 
