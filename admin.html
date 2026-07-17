@@ -685,14 +685,16 @@
 
     // Firmas
     html += `<div class="seccion"><h3>Firmas</h3>`;
-    if (r.FirmaConsentimientoUrl) {
-      html += `<div class="dato"><span class="k">Consentimiento</span><span><img src="${esc(r.FirmaConsentimientoUrl)}" class="firma-preview" alt="Firma consentimiento"> <small style="color:var(--ok)">✓ Firmado</small></span></div>`;
-    } else {
+    if (r.FirmaConsentimientoUrl || r.FirmaConformidadUrl) {
+      html += `<div class="evidencias-grid">
+        ${tarjetaEvidencia('Consentimiento firmado', r.FirmaConsentimientoUrl, 'firma')}
+        ${tarjetaEvidencia('Conformidad firmada', r.FirmaConformidadUrl, 'firma')}
+      </div>`;
+    }
+    if (!r.FirmaConsentimientoUrl) {
       html += `<div class="dato"><span class="k">Consentimiento</span><span style="color:var(--muted)">Pendiente</span></div>`;
     }
-    if (r.FirmaConformidadUrl) {
-      html += `<div class="dato"><span class="k">Conformidad</span><span><img src="${esc(r.FirmaConformidadUrl)}" class="firma-preview" alt="Firma conformidad"> <small style="color:var(--ok)">✓ Firmado</small></span></div>`;
-    } else {
+    if (!r.FirmaConformidadUrl) {
       html += `<div class="dato"><span class="k">Conformidad</span><span style="color:var(--muted)">Pendiente</span></div>`;
     }
     html += `</div>`;

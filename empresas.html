@@ -909,6 +909,7 @@
   let token = sessionStorage.getItem('token') || '';
   let empresa = sessionStorage.getItem('empresa') || '';
   let registros = [];
+  let postulaciones = [];
   let miEmpresaActual = null;
 
   const loginWrap = document.getElementById('loginWrap');
@@ -2303,8 +2304,12 @@
         if (/sesión/i.test(r.error || '')) { document.getElementById('btnSalir').click(); }
         throw new Error(r.error);
       }
-      registros = r.registros || [];
+      registros = Array.isArray(r.registros) ? r.registros : [];
       registros.forEach((reg, i) => { reg.__uid = i; });
+      postulaciones = Array.isArray(r.postulaciones)
+        ? r.postulaciones
+        : registros.filter(x => x && x.BusquedaID);
+      postulaciones.forEach((reg, i) => { reg.__uid = 'post-' + i; });
       seleccion.clear();
       poblarFiltrosATS();
       aplicarFiltrosATS();
@@ -2313,6 +2318,9 @@
       if (busquedas && busquedas.length) pintarBusquedas();
     } catch (ex) {
       document.getElementById('resumen').textContent = 'Error: ' + ex.message;
+      vacio.textContent = 'No se pudieron cargar los perfiles. ' + ex.message;
+      vacio.classList.remove('oculto');
+      tabla.classList.add('oculto');
     } finally {
       cargando.classList.add('oculto');
     }
@@ -2368,7 +2376,7 @@
     poblarSelectATS('fIdioma', opcionesUnicas(r => parseArr(r.Idiomas).map(x => x.idioma)), 'Todos');
     const bq = document.getElementById('fBusqueda');
     const actual = bq.value;
-    bq.innerHTML = '<option value="">Todas</option><option value="__none__">Espontáneas (sin búsqueda)</option>' +
+    bq.innerHTML = '<option value="">Todas</option><option value="__none__">Sin postulaciones</option>' +
       (busquedas || []).map(b => `<option value="${esc(b.ID)}">${esc(b.Puesto)}</option>`).join('');
     bq.value = actual;
   }
@@ -2389,7 +2397,7 @@
       if (f.exp === 'con' && r.PrimerEmpleo === 'Sí') return false;
       if (f.cv === 'si' && !r.CVUrl) return false;
       if (f.cv === 'no' && r.CVUrl) return false;
-      if (f.bid === '__none__' && r.BusquedaID) return false;
+      if (f.bid === '__none__' && Number(r.Aplicaciones || 0) > 0) return false;
       if (f.bid && f.bid !== '__none__' && String(r.BusquedaID || '') !== f.bid) return false;
       if (f.desde && dISO(r.FechaRegistro) < f.desde) return false;
       if (f.hasta && dISO(r.FechaRegistro) > f.hasta) return false;
@@ -2404,16 +2412,18 @@
 
   function aplicarFiltrosATS() {
     const v = (id) => document.getElementById(id).value;
-    const out = filtrarPostulantes(registros, {
+    const filtroBusqueda = v('fBusqueda');
+    const base = (filtroBusqueda && filtroBusqueda !== '__none__') ? postulaciones : registros;
+    const out = filtrarPostulantes(base, {
       q: norm(v('q').trim()), puesto: norm(v('fPuesto').trim()),
       prov: norm(v('fProvincia').trim()), loc: norm(v('fLocalidad').trim()),
       idi: v('fIdioma').toLowerCase(), form: v('fFormacion'), viajar: v('fViajar'),
-      resid: v('fResidencia'), exp: v('fExperiencia'), cv: v('fCV'), bid: v('fBusqueda'),
+      resid: v('fResidencia'), exp: v('fExperiencia'), cv: v('fCV'), bid: filtroBusqueda,
       desde: v('fDesde'), hasta: v('fHasta'), orden: v('fOrden')
     });
     registrosFiltrados = out;
     pintarTabla(out);
-    const total = (registros || []).length;
+    const total = (base || []).length;
     document.getElementById('resumen').textContent =
       out.length === total ? `${total} postulante(s)` : `${out.length} de ${total} postulante(s)`;
   }
@@ -2711,8 +2721,8 @@
     document.getElementById('statBusquedasActivas').textContent = activas;
 
     const misIds = new Set((busquedas || []).map(b => String(b.ID)));
-    const postulaciones = (registros || []).filter(r => r.BusquedaID && misIds.has(String(r.BusquedaID))).length;
-    document.getElementById('statPostulaciones').textContent = postulaciones;
+    const totalPostulacionesBusq = (postulaciones || []).filter(r => r.BusquedaID && misIds.has(String(r.BusquedaID))).length;
+    document.getElementById('statPostulaciones').textContent = totalPostulacionesBusq;
 
     const up = document.getElementById('dashUltimosPostulantes');
     const ult = (registros || []).slice(0, 5);
@@ -3130,6 +3140,7 @@
       }
       cerrarFormBusqueda();
       await cargarBusquedas();
+      avisarNotificacionesVacante(r.notificaciones);
     } catch (ex) {
       err.textContent = ex.message;
       err.style.display = 'block';
@@ -3144,15 +3155,23 @@
       const r = await apiCall({ action: 'cambiarEstadoBusqueda', token: token, id: id, estado: nuevo });
       if (!r.ok) throw new Error(r.error);
       await cargarBusquedas();
+      avisarNotificacionesVacante(r.notificaciones);
     } catch (ex) {
       alert('No se pudo actualizar la búsqueda: ' + ex.message);
     }
   }
 
+  function avisarNotificacionesVacante(notificaciones) {
+    const enviados = Number(notificaciones && notificaciones.enviados ? notificaciones.enviados : 0);
+    if (enviados > 0) {
+      alert('Se enviaron ' + enviados + ' email(s) a postulantes compatibles.');
+    }
+  }
+
   // Postulantes que aplicaron a una búsqueda concreta (filtra la base ya cargada).
   function postulantesDeBusqueda(b) {
-    if (!Array.isArray(registros) || !b) return [];
-    return registros.filter(r => r.BusquedaID && String(r.BusquedaID) === String(b.ID));
+    if (!Array.isArray(postulaciones) || !b) return [];
+    return postulaciones.filter(r => r.BusquedaID && String(r.BusquedaID) === String(b.ID));
   }
 
   // Modal con los postulantes de una búsqueda; cada uno abre su detalle completo.

@@ -114,19 +114,43 @@ a cualquier hosting estático gratuito:
 
 ## Roadmap: notificaciones de vacantes
 
-Plan guardado para implementar emails automáticos cuando una vacante coincida con
-el perfil de un postulante:
+### Emails automáticos
 
-1. Crear la hoja `NotificacionesVacantes` para registrar fecha, búsqueda, postulante,
-   puntaje, motivos, estado y error.
-2. Agregar una función de coincidencia entre postulante y vacante con puntaje por
-   puesto, ubicación, habilidades, formación, idioma y experiencia relacionada.
-3. Enviar emails automáticamente cuando una empresa publique una búsqueda activa.
-4. Evitar duplicados y limitar cantidad de emails por postulante por día.
-5. Agregar preferencia del postulante para recibir o no oportunidades por email.
-6. Mostrar en el panel cantidad de candidatos compatibles y emails enviados.
-7. Agregar acción manual para notificar candidatos compatibles si una búsqueda se
-   activa después de estar en borrador.
+El backend envía emails con `MailApp` en estos eventos:
+
+- Registro de empresa recibido: se avisa a la empresa que la cuenta quedó pendiente.
+- Postulación exitosa: se confirma al postulante que su registro fue guardado.
+- Cuenta de empresa aprobada: se avisa cuando administración cambia la cuenta a `aprobado`.
+- Cuenta de empresa rechazada: se avisa cuando administración cambia la cuenta a `rechazado`.
+- Verificación rechazada: se avisa cuando administración cambia la verificación a `rechazado`.
+- Match vacante/postulante: se avisa a postulantes compatibles cuando una búsqueda queda `activa`.
+
+Los correos usan una plantilla HTML con identidad visual de ONE Talent Hub, logo
+cargado desde `hubtalent.onelabs.pro/assets/logo-trim.png` y una versión de texto
+plano como respaldo para clientes de email que no rendericen HTML.
+
+### Notificaciones de vacantes
+
+Implementado en primera versión:
+
+1. Se crea la hoja `NotificacionesVacantes` para registrar fecha, búsqueda,
+   postulante, puntaje, motivos, estado y error.
+2. Se calcula una coincidencia por reglas entre postulante y vacante usando puesto,
+   ubicación, habilidades, formación, idioma y experiencia relacionada.
+3. Se envían emails automáticamente cuando una empresa crea, actualiza o activa una
+   búsqueda en estado `activa`.
+4. Se evitan duplicados por búsqueda/postulante y se limita la cantidad diaria de
+   emails por postulante.
+
+> Esta función usa `MailApp`, por lo que Apps Script puede pedir una autorización
+> adicional para enviar emails desde la cuenta que ejecuta la aplicación web.
+
+Pendiente para una segunda etapa:
+
+1. Agregar preferencia del postulante para recibir o no oportunidades por email.
+2. Mostrar en el panel cantidad de candidatos compatibles y emails enviados.
+3. Agregar acción manual para notificar candidatos compatibles.
+4. Mejorar sinónimos y reglas de equivalencia entre puestos relacionados.
 
 ---
 

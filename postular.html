@@ -79,11 +79,52 @@
   .navegacion { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 24px; }
 
   /* Éxito */
-  .final { text-align: center; padding: 48px 24px; }
-  .final .icono {
-    width: 74px; height: 74px; border-radius: 50%; background: var(--grad);
-    color: #fff; font-size: 38px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;
+  .final { text-align: center; padding: 0; overflow: hidden; }
+  .final-hero {
+    padding: 34px 28px 26px;
+    background:
+      radial-gradient(circle at 18% 20%, rgba(225,123,215,.14), transparent 34%),
+      radial-gradient(circle at 84% 16%, rgba(120,211,219,.18), transparent 32%),
+      linear-gradient(180deg, #fff, #fbfaff);
   }
+  .final .icono {
+    width: 78px; height: 78px; border-radius: 50%; background: var(--grad);
+    color: #fff; font-size: 40px; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px;
+    box-shadow: 0 16px 34px rgba(120, 211, 219, .28);
+  }
+  .final h2 { margin: 0 0 10px; font-size: 1.7rem; }
+  .final .sub { max-width: 540px; margin: 0 auto; line-height: 1.55; }
+  .final-body { padding: 24px 28px 30px; }
+  .final-resumen {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;
+    margin-bottom: 22px; text-align: left;
+  }
+  .final-step {
+    border: 1px solid var(--borde); border-radius: 12px; background: #fff; padding: 14px;
+    min-height: 104px;
+  }
+  .final-step strong { display: block; color: var(--dark); margin-bottom: 6px; font-size: .94rem; }
+  .final-step span { display: block; color: var(--muted); font-size: .84rem; line-height: 1.4; }
+  .final-acciones { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+  .final-nota { margin: 18px auto 0; color: var(--muted); font-size: .84rem; }
+  .panel-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-end; margin-bottom: 18px; }
+  .panel-head .intro { margin: 0; }
+  .panel-head .intro p { margin-bottom: 0; }
+  .vacantes-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
+  .vacantes-toolbar input { flex: 1; min-width: 220px; margin: 0; }
+  .vacantes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .vacante-card { padding: 18px; display: flex; flex-direction: column; gap: 10px; min-height: 230px; }
+  .vacante-card h3 { margin: 0; font-size: 1.12rem; line-height: 1.25; }
+  .vacante-empresa { margin: 0; color: var(--acento); font-weight: 800; font-size: .9rem; }
+  .vacante-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+  .vacante-chip { background: #f2eef8; color: var(--dark); border-radius: 999px; padding: 4px 10px; font-size: .78rem; font-weight: 700; }
+  .vacante-desc { margin: 0; color: var(--muted); font-size: .88rem; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .vacante-actions { margin-top: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+  .estado-vacantes { color: var(--muted); padding: 22px; text-align: center; }
+  .detalle-vacante { display: grid; gap: 14px; }
+  .detalle-vacante h3 { margin: 0; font-size: 1.35rem; }
+  .detalle-vacante p { margin: 0; color: var(--muted); line-height: 1.5; white-space: pre-wrap; }
+  .detalle-sec h4 { margin: 0 0 4px; color: var(--muted); font-size: .76rem; letter-spacing: .04em; text-transform: uppercase; }
   .aviso { background: rgba(209,67,111,.08); color: var(--error); padding: 12px 14px; border-radius: 10px; font-size: .9rem; margin-bottom: 16px; display: none; }
 
   /* ---------- Responsive ---------- */
@@ -96,7 +137,12 @@
     .navegacion { gap: 10px; }
     .navegacion .btn { flex: 1; padding: 12px 14px; }
     .pasos-explicacion { grid-template-columns: 1fr; }
-    .final { padding: 36px 16px; }
+    .final-hero { padding: 30px 18px 22px; }
+    .final-body { padding: 20px 16px 24px; }
+    .final-resumen { grid-template-columns: 1fr; }
+    .final-acciones .btn { width: 100%; }
+    .panel-head { align-items: stretch; flex-direction: column; }
+    .panel-head .btn, .vacantes-toolbar .btn { width: 100%; }
   }
   @media (max-width: 400px) {
     .fila { flex-direction: column; gap: 0; }
@@ -117,8 +163,9 @@
     <span style="font-size:.9rem;color:var(--muted)">Sesión: <strong id="cuentaEmail" style="color:var(--dark)"></strong></span>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-sec" id="navPostulaciones" type="button">Mis postulaciones</button>
+      <button class="btn btn-sec" id="btnVacantesPost" type="button">Vacantes</button>
       <button class="btn btn-sec" id="navDatos" type="button">Mis datos</button>
-      <a class="btn btn-sec" href="index.html">Explorar búsquedas</a>
+      <a class="btn btn-sec" href="index.html">Explorar busquedas</a>
       <button class="btn btn-sec" id="btnSalirPost" type="button">Salir</button>
     </div>
   </div>
@@ -130,7 +177,7 @@
       <div class="intro" style="margin-bottom:14px">
         <span class="pill"><span class="dot"></span>Tu actividad</span>
         <h1>Mis postulaciones</h1>
-        <p>Estas son las búsquedas a las que te postulaste.</p>
+        <p>Estas son las busquedas a las que te postulaste.</p>
       </div>
       <div id="misPostulacionesLista"></div>
     </div>
@@ -139,12 +186,32 @@
       <div class="intro" style="margin-bottom:14px">
         <span class="pill"><span class="dot"></span>Tu perfil</span>
         <h1>Mis datos</h1>
-        <p>Esta es la información de tu perfil en la plataforma.</p>
+        <p>Esta es la informacion de tu perfil en la plataforma.</p>
       </div>
       <div class="card tarjeta" id="misDatosCont"></div>
       <div style="margin-top:14px">
         <button class="btn btn-prim" id="btnEditarDatos" type="button">Editar mis datos</button>
       </div>
+    </div>
+  </div>
+
+  <!-- PANEL: vacantes disponibles para postulantes logueados -->
+  <div id="vacantesWrap" class="oculto">
+    <div class="panel-head">
+      <div class="intro">
+        <span class="pill"><span class="dot"></span>Vacantes disponibles</span>
+        <h1>Oportunidades para postularte</h1>
+        <p>Revisa las busquedas activas y postulate usando el perfil que ya tenes cargado.</p>
+      </div>
+      <button class="btn btn-sec" type="button" id="btnActualizarPerfilDesdeVacantes">Actualizar perfil</button>
+    </div>
+    <div class="card tarjeta">
+      <div class="vacantes-toolbar">
+        <input id="buscarVacantesPost" type="search" placeholder="Buscar por puesto, empresa, modalidad o localidad">
+        <button class="btn btn-sec" type="button" id="btnRecargarVacantes">Recargar</button>
+      </div>
+      <div class="estado-vacantes" id="estadoVacantesPost">Cargando vacantes...</div>
+      <div class="vacantes-grid" id="gridVacantesPost"></div>
     </div>
   </div>
 
@@ -395,10 +462,33 @@
 
   <!-- PANTALLA FINAL -->
   <div class="card tarjeta final oculto" id="pantallaFinal">
-    <div class="icono">✓</div>
-    <h2 id="finalTitulo">¡Listo!</h2>
-    <p class="sub" id="finalSub">Tu perfil quedó guardado.</p>
-    <button class="btn btn-prim" id="btnFinalVolver" type="button">Volver</button>
+    <div class="final-hero">
+      <div class="icono">✓</div>
+      <h2 id="finalTitulo">Listo</h2>
+      <p class="sub" id="finalSub">Tu perfil quedo guardado.</p>
+    </div>
+    <div class="final-body">
+      <div class="final-resumen" id="finalResumen">
+        <div class="final-step">
+          <strong>Perfil listo</strong>
+          <span>Ya podes usar tu cuenta para postularte sin volver a cargar tus datos.</span>
+        </div>
+        <div class="final-step">
+          <strong>Email enviado</strong>
+          <span>Te mandamos la confirmacion del registro a tu correo.</span>
+        </div>
+        <div class="final-step">
+          <strong>Oportunidades</strong>
+          <span>Cuando una vacante coincida con tu perfil, podremos avisarte por email.</span>
+        </div>
+      </div>
+      <div class="final-acciones">
+        <button class="btn btn-prim" type="button" id="finalVerVacantes">Ver oportunidades</button>
+        <button class="btn btn-sec" type="button" id="finalEditarPerfil">Editar mi perfil</button>
+        <button class="btn btn-sec" type="button" id="btnFinalVolver">Volver</button>
+      </div>
+      <p class="final-nota">Podes actualizar tu CV o tus datos cuando quieras desde Mis datos.</p>
+    </div>
   </div>
   </div>
   <!-- /wizardWrap -->
@@ -843,11 +933,17 @@
       if (modoWizard === 'registro') {
         guardarSesion(r.token, r.perfil);
         if (busquedaOrigenId) mostrarAplicar();
-        else mostrarExito('¡Cuenta creada!', 'Tu perfil quedó guardado. Ya podés postularte a las búsquedas.');
+        else mostrarExito(
+          '¡Cuenta creada!',
+          r.emailRegistroOk
+            ? 'Tu perfil quedó guardado y te enviamos un email de confirmación.'
+            : 'Tu perfil quedó guardado. No pudimos enviar el email de confirmación, pero tu cuenta ya está activa.',
+          r.emailRegistroOk ? 'cuenta' : 'cuentaSinEmail'
+        );
       } else {
         perfilActual = r.perfil || perfilActual;
         if (busquedaOrigenId) mostrarAplicar();
-        else mostrarPanel('datos');
+        else mostrarExito('Perfil actualizado', 'Tus cambios se guardaron correctamente.', 'perfil');
       }
     } catch (err) {
       aviso.textContent = 'Error: ' + err.message;
@@ -866,10 +962,16 @@
   const aplicarEl = document.getElementById('aplicarWrap');
   const wizardEl = document.getElementById('wizardWrap');
   const panelEl = document.getElementById('panelWrap');
+  const vacantesEl = document.getElementById('vacantesWrap');
   const cuentaBarEl = document.getElementById('cuentaBar');
+  const estadoVacantesEl = document.getElementById('estadoVacantesPost');
+  const gridVacantesEl = document.getElementById('gridVacantesPost');
+  const buscarVacantesEl = document.getElementById('buscarVacantesPost');
+  var vacantesPostulante = [];
 
   function mostrarSeccion(cual) {
     gateEl.classList.toggle('oculto', cual !== 'gate');
+    vacantesEl.classList.toggle('oculto', cual !== 'vacantes');
     aplicarEl.classList.toggle('oculto', cual !== 'aplicar');
     wizardEl.classList.toggle('oculto', cual !== 'wizard');
     panelEl.classList.toggle('oculto', cual !== 'panel');
@@ -1004,13 +1106,103 @@
     mostrarSeccion('wizard');
   }
 
+  function textoVacante(b) {
+    return [
+      b.Puesto, b.Empresa, b.Area, b.Modalidad, b.Localidad, b.Provincia,
+      b.TipoContrato, b.Descripcion, b.Responsabilidades, b.RequisitosExcluyentes,
+      b.RequisitosDeseables, b.Habilidades
+    ].join(' ').toLowerCase();
+  }
+
+  function pintarVacantesPostulante() {
+    const q = (buscarVacantesEl.value || '').trim().toLowerCase();
+    const lista = vacantesPostulante.filter(function (b) {
+      return !q || textoVacante(b).indexOf(q) !== -1;
+    });
+
+    if (!vacantesPostulante.length) {
+      estadoVacantesEl.style.display = 'block';
+      estadoVacantesEl.textContent = 'Todavía no hay vacantes activas disponibles.';
+      gridVacantesEl.innerHTML = '';
+      return;
+    }
+
+    if (!lista.length) {
+      estadoVacantesEl.style.display = 'block';
+      estadoVacantesEl.textContent = 'No encontramos vacantes con ese filtro.';
+      gridVacantesEl.innerHTML = '';
+      return;
+    }
+
+    estadoVacantesEl.style.display = 'none';
+    gridVacantesEl.innerHTML = lista.map(function (b, i) {
+      const meta = [b.Modalidad, b.Localidad, b.TipoContrato].filter(Boolean);
+      const desc = b.Descripcion || b.Responsabilidades || b.RequisitosExcluyentes || '';
+      return '<article class="card vacante-card">' +
+        (b.Area ? '<span class="vacante-chip">' + escHtml(b.Area) + '</span>' : '') +
+        '<h3>' + escHtml(b.Puesto || 'Vacante') + '</h3>' +
+        '<p class="vacante-empresa">' + escHtml(b.Empresa || 'Empresa') + '</p>' +
+        (meta.length ? '<div class="vacante-meta">' + meta.map(function (m) { return '<span class="vacante-chip">' + escHtml(m) + '</span>'; }).join('') + '</div>' : '') +
+        (desc ? '<p class="vacante-desc">' + escHtml(desc) + '</p>' : '') +
+        '<div class="vacante-actions">' +
+          '<button class="btn btn-prim" type="button" data-vacante-i="' + i + '">Ver y postularme</button>' +
+        '</div>' +
+      '</article>';
+    }).join('');
+
+    gridVacantesEl.querySelectorAll('[data-vacante-i]').forEach(function (btn) {
+      btn.onclick = function () {
+        const b = lista[Number(btn.dataset.vacanteI)];
+        busquedaAplicar = b;
+        busquedaOrigenId = String(b.ID || '');
+        puestoPrecargado = b.Puesto || puestoPrecargado;
+        mostrarAplicar();
+      };
+    });
+  }
+
+  async function cargarVacantesPostulante() {
+    estadoVacantesEl.style.display = 'block';
+    estadoVacantesEl.textContent = 'Cargando vacantes...';
+    gridVacantesEl.innerHTML = '';
+    try {
+      const r = await apiCall({ action: 'busquedasPublicas' });
+      if (!r || !r.ok) throw new Error((r && r.error) || 'No se pudieron cargar las vacantes.');
+      vacantesPostulante = Array.isArray(r.busquedas) ? r.busquedas : [];
+      pintarVacantesPostulante();
+    } catch (e) {
+      vacantesPostulante = [];
+      estadoVacantesEl.style.display = 'block';
+      estadoVacantesEl.textContent = 'No pudimos cargar las vacantes. Probá de nuevo en unos segundos.';
+    }
+  }
+
+  function mostrarVacantesPostulante() {
+    mostrarSeccion('vacantes');
+    if (!vacantesPostulante.length) cargarVacantesPostulante();
+    else pintarVacantesPostulante();
+  }
+
   function mostrarAplicar() {
     const b = busquedaAplicar;
     const info = document.getElementById('aplicarBusqInfo');
     if (b) {
-      info.innerHTML = '<div class="seccion"><h3>Te postulás a</h3>' +
-        '<p style="font-weight:800;font-size:1.15rem;margin:0">' + escHtml(b.Puesto || '') + '</p>' +
-        '<p style="color:var(--muted);margin:2px 0 0">' + [b.Empresa, b.Area, b.Modalidad, b.Localidad].filter(Boolean).map(escHtml).join(' · ') + '</p></div>';
+      const chips = [b.Area, b.Modalidad, b.Localidad, b.TipoContrato].filter(Boolean)
+        .map(function (x) { return '<span class="vacante-chip">' + escHtml(x) + '</span>'; }).join('');
+      const sec = function (titulo, valor) {
+        return valor ? '<div class="detalle-sec"><h4>' + titulo + '</h4><p>' + escHtml(valor) + '</p></div>' : '';
+      };
+      info.innerHTML = '<div class="seccion detalle-vacante">' +
+        '<div><span class="pill"><span class="dot"></span>Te postulás a</span></div>' +
+        '<div><h3>' + escHtml(b.Puesto || 'Vacante') + '</h3>' +
+        '<p class="vacante-empresa">' + escHtml(b.Empresa || 'Empresa') + '</p></div>' +
+        (chips ? '<div class="vacante-meta">' + chips + '</div>' : '') +
+        sec('Descripción', b.Descripcion) +
+        sec('Responsabilidades', b.Responsabilidades) +
+        sec('Requisitos excluyentes', b.RequisitosExcluyentes) +
+        sec('Requisitos deseables', b.RequisitosDeseables) +
+        sec('Habilidades', b.Habilidades) +
+        '</div>';
     } else {
       info.innerHTML = '<p class="sub" style="color:var(--muted)">Cargando la búsqueda…</p>';
     }
@@ -1031,7 +1223,38 @@
     mostrarSeccion('aplicar');
   }
 
-  function mostrarExito(titulo, sub) {
+  function mostrarExito(titulo, sub, tipo) {
+    const pasosFinales = {
+      cuenta: [
+        ['Perfil listo', 'Ya podés usar tu cuenta para postularte sin volver a cargar tus datos.'],
+        ['Email enviado', 'Te mandamos la confirmación del registro a tu correo.'],
+        ['Oportunidades', 'Cuando una vacante coincida con tu perfil, podremos avisarte por email.']
+      ],
+      cuentaSinEmail: [
+        ['Perfil listo', 'Ya podés usar tu cuenta para postularte sin volver a cargar tus datos.'],
+        ['Registro guardado', 'La cuenta quedó creada aunque el email no haya salido.'],
+        ['Oportunidades', 'Cuando una vacante coincida con tu perfil, podremos avisarte por email.']
+      ],
+      postulacion: [
+        ['Postulación enviada', 'La empresa ya puede revisar tu perfil y tus respuestas.'],
+        ['Email enviado', 'Te mandamos una confirmación con el código de registro.'],
+        ['Perfil reutilizable', 'Tu cuenta queda lista para próximas búsquedas.']
+      ],
+      postulacionSinEmail: [
+        ['Postulación enviada', 'La empresa ya puede revisar tu perfil y tus respuestas.'],
+        ['Registro guardado', 'La postulación quedó cargada aunque el email no haya salido.'],
+        ['Perfil reutilizable', 'Tu cuenta queda lista para próximas búsquedas.']
+      ],
+      perfil: [
+        ['Cambios guardados', 'Actualizamos tus datos y tu CV en la plataforma.'],
+        ['Perfil activo', 'Las empresas verán la versión más reciente de tu información.'],
+        ['Listo para postular', 'Podés volver a las oportunidades disponibles cuando quieras.']
+      ]
+    };
+    const resumen = pasosFinales[tipo || 'cuenta'] || pasosFinales.cuenta;
+    document.getElementById('finalResumen').innerHTML = resumen.map(function (item) {
+      return '<div class="final-step"><strong>' + escHtml(item[0]) + '</strong><span>' + escHtml(item[1]) + '</span></div>';
+    }).join('');
     document.getElementById('finalTitulo').textContent = titulo;
     document.getElementById('finalSub').textContent = sub;
     form.classList.add('oculto');
@@ -1062,8 +1285,14 @@
   };
   document.getElementById('navPostulaciones').onclick = () => mostrarPanel('postulaciones');
   document.getElementById('navDatos').onclick = () => mostrarPanel('datos');
+  document.getElementById('btnVacantesPost').onclick = () => mostrarVacantesPostulante();
   document.getElementById('btnEditarDatos').onclick = () => mostrarEditarPerfil();
+  document.getElementById('btnActualizarPerfilDesdeVacantes').onclick = () => mostrarEditarPerfil();
+  document.getElementById('btnRecargarVacantes').onclick = () => cargarVacantesPostulante();
+  buscarVacantesEl.addEventListener('input', pintarVacantesPostulante);
   document.getElementById('btnAplicarEditar').onclick = () => mostrarEditarPerfil();
+  document.getElementById('finalEditarPerfil').onclick = () => mostrarEditarPerfil();
+  document.getElementById('finalVerVacantes').onclick = () => mostrarVacantesPostulante();
   document.getElementById('btnFinalVolver').onclick = () => {
     if (perfilToken) volverAlPanel(); else location.reload();
   };
@@ -1084,8 +1313,23 @@
           return { pregunta: q.pregunta, respuesta: document.getElementById(q.inputId).value.trim() };
         }))
       });
-      if (!r.ok) throw new Error(r.error);
-      mostrarExito('¡Postulación enviada!', 'La empresa ya puede ver tu perfil para esta búsqueda.');
+      if (!r.ok) {
+        if (r.duplicada) {
+          av.textContent = r.error || 'Ya te postulaste a esta vacante.';
+          av.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'Confirmar postulación →';
+          return;
+        }
+        throw new Error(r.error);
+      }
+      mostrarExito(
+        '¡Postulación enviada!',
+        r.emailPostulacionOk
+          ? 'La empresa ya puede ver tu perfil para esta búsqueda. Te enviamos la confirmación por email.'
+          : 'La empresa ya puede ver tu perfil para esta búsqueda.',
+        r.emailPostulacionOk ? 'postulacion' : 'postulacionSinEmail'
+      );
     } catch (ex) {
       av.textContent = 'Error: ' + ex.message; av.style.display = 'block';
       btn.disabled = false; btn.textContent = 'Confirmar postulación →';
@@ -1156,7 +1400,12 @@
     if (perfilToken) {
       try {
         const r = await apiCall({ action: 'miPerfil', token: perfilToken });
-        if (r.ok) { guardarSesion(perfilToken, r.perfil); if (busquedaOrigenId) mostrarAplicar(); else mostrarPanel('postulaciones'); return; }
+        if (r && r.ok) {
+          guardarSesion(perfilToken, r.perfil);
+          if (busquedaOrigenId) mostrarAplicar();
+          else mostrarPanel('postulaciones');
+          return;
+        }
       } catch (e) {}
       sessionStorage.removeItem('perfilToken'); perfilToken = '';
     }

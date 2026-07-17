@@ -28,11 +28,16 @@ var HOJA_POSTULANTES = 'Postulantes';
 var HOJA_USUARIOS    = 'Usuarios';
 var HOJA_BUSQUEDAS   = 'Busquedas';
 var HOJA_PERFILES    = 'Perfiles';
+var HOJA_NOTIFICACIONES_VACANTES = 'NotificacionesVacantes';
 
 // Carpeta de Google Drive donde se guardan los archivos de CV.
 var CARPETA_CV = 'CVs Postulantes';
 // Tamaño máximo del CV (en MB).
 var CV_MAX_MB = 5;
+var URL_PLATAFORMA = 'https://hubtalent.onelabs.pro/';
+var URL_LOGO_EMAIL = 'https://hubtalent.onelabs.pro/assets/logo-trim.png';
+var MATCH_MINIMO_NOTIFICACION = 55;
+var MAX_NOTIFICACIONES_DIARIAS_POSTULANTE = 3;
 
 // URL pública del frontend (para armar los enlaces de recuperación de
 // contraseña que se envían por correo). Cambiala si usás un dominio propio.
@@ -108,6 +113,12 @@ var COLUMNAS_PERFILES = [
   'ResetToken', 'ResetExpira'
 ];
 
+var COLUMNAS_NOTIFICACIONES_VACANTES = [
+  'Fecha', 'BusquedaID', 'BusquedaPuesto', 'Empresa',
+  'EmailPostulante', 'NombrePostulante',
+  'Puntaje', 'Motivos', 'Estado', 'Error'
+];
+
 // Duración del token de sesión (horas)
 var TOKEN_HORAS = 12;
 
@@ -151,6 +162,7 @@ function manejar(e) {
       case 'cambiarEstadoBusqueda': return json(cambiarEstadoBusqueda(datos));
       case 'eliminarBusqueda':      return json(eliminarBusqueda(datos));
       case 'busquedasPublicas':     return json(busquedasPublicas(datos));
+      case 'probarMatchVacante':    return json(probarMatchVacante(datos));
       // Cuenta del postulante (perfil reutilizable)
       case 'registrarPostulante':  return json(registrarPostulante(datos));
       case 'loginPostulante':      return json(loginPostulante(datos));
@@ -206,6 +218,7 @@ function setup() {
   var usu  = obtenerHoja(ss, HOJA_USUARIOS, COLUMNAS_USUARIOS);
   var busq = obtenerHoja(ss, HOJA_BUSQUEDAS, COLUMNAS_BUSQUEDAS);
   var perf = obtenerHoja(ss, HOJA_PERFILES, COLUMNAS_PERFILES);
+  var notif = obtenerHoja(ss, HOJA_NOTIFICACIONES_VACANTES, COLUMNAS_NOTIFICACIONES_VACANTES);
 
   // Crea un usuario de ejemplo (empresa) si la hoja está vacía.
   if (usu.getLastRow() < 2) {
@@ -227,8 +240,9 @@ function setup() {
   aplicarEstiloHoja(usu, '#d1436f');
   aplicarEstiloHoja(busq, '#6be1e3');
   aplicarEstiloHoja(perf, '#8b5cf6');
+  aplicarEstiloHoja(notif, '#b23ca6');
 
-  Logger.log('Setup completo. Hojas listas: %s, %s, %s', HOJA_POSTULANTES, HOJA_USUARIOS, HOJA_BUSQUEDAS);
+  Logger.log('Setup completo. Hojas listas: %s, %s, %s, %s, %s', HOJA_POSTULANTES, HOJA_USUARIOS, HOJA_BUSQUEDAS, HOJA_PERFILES, HOJA_NOTIFICACIONES_VACANTES);
 }
 
 /**
@@ -340,6 +354,8 @@ function guardarPostulante(d) {
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var hoja = obtenerHoja(ss, HOJA_POSTULANTES, COLUMNAS_POSTULANTES);
+  var existente = buscarPostulacionExistente_(hoja, d.email, d.busquedaId);
+  if (existente) return errorPostulacionDuplicada_(existente);
 
   var id = Utilities.getUuid();
   var ahora = new Date();
@@ -391,8 +407,22 @@ function guardarPostulante(d) {
     normalizarJSON(d.respuestasBusqueda)
   ];
 
-  hoja.appendRow(fila);
-  return { ok: true, id: id, mensaje: '¡Postulación registrada correctamente!' };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    existente = buscarPostulacionExistente_(hoja, d.email, d.busquedaId);
+    if (existente) return errorPostulacionDuplicada_(existente);
+    hoja.appendRow(fila);
+  } finally {
+    lock.releaseLock();
+  }
+  var emailPostulacion = emailPostulacionExitosa_(d, id);
+  return {
+    ok: true,
+    id: id,
+    mensaje: '¡Postulación registrada correctamente!',
+    emailPostulacionOk: !!(emailPostulacion && emailPostulacion.ok)
+  };
 }
 
 /**
@@ -444,6 +474,352 @@ function normalizarJSON(valor) {
 function limpiar(v) {
   if (v == null) return '';
   return String(v).trim();
+}
+
+function normalizarEmail_(email) {
+  return limpiar(email).toLowerCase();
+}
+
+function buscarPostulacionExistente_(hoja, email, busquedaId) {
+  var bid = limpiar(busquedaId);
+  var em = normalizarEmail_(email);
+  if (!bid || !em) return null;
+
+  var valores = hoja.getDataRange().getValues();
+  var idxEmail = COLUMNAS_POSTULANTES.indexOf('Email');
+  var idxBusqueda = COLUMNAS_POSTULANTES.indexOf('BusquedaID');
+  var idxId = COLUMNAS_POSTULANTES.indexOf('ID');
+  for (var i = 1; i < valores.length; i++) {
+    if (
+      normalizarEmail_(valores[i][idxEmail]) === em &&
+      limpiar(valores[i][idxBusqueda]) === bid
+    ) {
+      return {
+        id: valores[i][idxId] || '',
+        fila: i + 1
+      };
+    }
+  }
+  return null;
+}
+
+function errorPostulacionDuplicada_(existente) {
+  return {
+    ok: false,
+    duplicada: true,
+    id: existente && existente.id ? existente.id : '',
+    error: 'Ya te postulaste a esta vacante. No hace falta enviarla de nuevo.'
+  };
+}
+
+function emailValido_(email) {
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(limpiar(email));
+}
+
+function escaparHtml_(v) {
+  return limpiar(v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function parrafoEmail_(texto) {
+  return '<p style="margin:0 0 14px;color:#514d62;font-size:15px;line-height:1.55;">' + escaparHtml_(texto) + '</p>';
+}
+
+function datoEmail_(label, valor) {
+  if (!limpiar(valor)) return '';
+  return '<tr>' +
+    '<td style="padding:9px 0;color:#7c788c;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;">' + escaparHtml_(label) + '</td>' +
+    '<td style="padding:9px 0;color:#1a181d;font-size:14px;font-weight:700;text-align:right;">' + escaparHtml_(valor) + '</td>' +
+  '</tr>';
+}
+
+function plantillaEmail_(opts) {
+  var titulo = escaparHtml_(opts.titulo || 'ONE Talent Hub');
+  var subtitulo = escaparHtml_(opts.subtitulo || '');
+  var contenido = opts.contenido || '';
+  var ctaTexto = escaparHtml_(opts.ctaTexto || 'Ingresar a la plataforma');
+  var ctaUrl = escaparHtml_(opts.ctaUrl || URL_PLATAFORMA);
+  var nota = opts.nota ? '<p style="margin:18px 0 0;color:#6f6a7e;font-size:12px;line-height:1.55;">' + escaparHtml_(opts.nota) + '</p>' : '';
+  var preheader = escaparHtml_(opts.preheader || subtitulo || titulo);
+
+  return '<!doctype html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#f4f1f8;font-family:Arial,Helvetica,sans-serif;color:#1a181d;">' +
+    '<div style="display:none;max-height:0;overflow:hidden;color:transparent;opacity:0;">' + preheader + '</div>' +
+    '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f1f8;padding:32px 14px;">' +
+      '<tr><td align="center">' +
+        '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#ffffff;border:1px solid #e4deec;border-radius:20px;overflow:hidden;box-shadow:0 18px 44px rgba(26,24,29,.10);">' +
+          '<tr><td style="padding:0;height:9px;background:linear-gradient(90deg,#b23ca6 0%,#8b7bd9 48%,#6be1e3 100%);"></td></tr>' +
+          '<tr><td style="padding:28px 30px 18px;background:#ffffff;">' +
+            '<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>' +
+              '<td style="vertical-align:middle;">' +
+                '<img src="' + escaparHtml_(URL_LOGO_EMAIL) + '" alt="ONE" width="104" style="display:block;max-width:104px;height:auto;border:0;outline:none;text-decoration:none;">' +
+              '</td>' +
+              '<td align="right" style="vertical-align:middle;color:#0f766e;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">Talent Hub</td>' +
+            '</tr></table>' +
+            '<div style="margin-top:24px;padding:18px 18px;border:1px solid #eee8f5;border-radius:14px;background:#fbfafd;">' +
+              '<div style="display:inline-block;margin-bottom:10px;padding:5px 10px;border-radius:999px;background:rgba(107,225,227,.18);color:#0f766e;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;">Notificación</div>' +
+              '<h1 style="margin:0 0 8px;font-size:26px;line-height:1.18;color:#1a181d;">' + titulo + '</h1>' +
+              (subtitulo ? '<p style="margin:0;color:#514d62;font-size:15px;line-height:1.5;">' + subtitulo + '</p>' : '') +
+            '</div>' +
+          '</td></tr>' +
+          '<tr><td style="padding:4px 30px 30px;">' +
+            contenido +
+            '<div style="margin-top:24px;">' +
+              '<a href="' + ctaUrl + '" style="display:inline-block;background:#b23ca6;color:#ffffff;text-decoration:none;font-weight:900;font-size:14px;padding:13px 20px;border-radius:12px;box-shadow:0 8px 18px rgba(178,60,166,.22);">' + ctaTexto + '</a>' +
+            '</div>' +
+            nota +
+          '</td></tr>' +
+          '<tr><td style="padding:18px 30px;background:#faf8fd;border-top:1px solid #eee8f5;color:#7c788c;font-size:12px;line-height:1.5;">' +
+            '<strong style="color:#1a181d;">ONE Talent Hub</strong><br>' +
+            'Plataforma de oportunidades laborales y gestión de postulantes.' +
+          '</td></tr>' +
+        '</table>' +
+        '<p style="max-width:640px;margin:14px 0 0;color:#8a8498;font-size:12px;line-height:1.45;">Este email fue enviado automáticamente. Si no esperabas este mensaje, podés ignorarlo.</p>' +
+      '</td></tr>' +
+    '</table>' +
+  '</body></html>';
+}
+
+function enviarEmailSeguro_(opciones, contexto) {
+  try {
+    if (!opciones || !emailValido_(opciones.to)) return { ok: false, error: 'Email inválido.' };
+    var payload = {
+      to: limpiar(opciones.to),
+      subject: limpiar(opciones.subject),
+      body: limpiar(opciones.body),
+      name: limpiar(opciones.name) || 'ONE Talent Hub'
+    };
+    if (opciones.htmlBody) payload.htmlBody = opciones.htmlBody;
+    MailApp.sendEmail(payload);
+    return { ok: true };
+  } catch (err) {
+    Logger.log('Error enviando email%s: %s', contexto ? ' (' + contexto + ')' : '', String(err && err.message ? err.message : err));
+    return { ok: false, error: String(err && err.message ? err.message : err) };
+  }
+}
+
+function nombreCompleto_(obj) {
+  return [obj && obj.nombre, obj && obj.apellido].filter(Boolean).join(' ') ||
+         [obj && obj.Nombre, obj && obj.Apellido].filter(Boolean).join(' ') ||
+         'Hola';
+}
+
+function emailRegistroEmpresa_(d) {
+  var nombre = nombreCompleto_(d);
+  var body = [
+    'Hola ' + nombre + ',',
+    '',
+    'Recibimos el registro de ' + limpiar(d.empresa) + ' en ONE Talent Hub.',
+    '',
+    'La cuenta quedó pendiente de revisión. Cuando administración la apruebe, te avisaremos por email.',
+    '',
+    'Podés ingresar a la plataforma desde:',
+    URL_PLATAFORMA,
+    '',
+    'Saludos,',
+    'ONE Talent Hub'
+  ].join('\n');
+  var html = plantillaEmail_({
+    titulo: 'Registro recibido',
+    subtitulo: 'Tu cuenta de empresa quedó pendiente de revisión.',
+    contenido:
+      parrafoEmail_('Hola ' + nombre + ',') +
+      parrafoEmail_('Recibimos el registro de ' + limpiar(d.empresa) + ' en ONE Talent Hub.') +
+      '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:16px 0;border-top:1px solid #eee8f5;border-bottom:1px solid #eee8f5;">' +
+        datoEmail_('Empresa', d.empresa) +
+        datoEmail_('Estado', 'Pendiente de revisión') +
+      '</table>' +
+      parrafoEmail_('Cuando administración apruebe la cuenta, te avisaremos por email.'),
+    ctaTexto: 'Ir a ONE Talent Hub',
+    nota: 'No hace falta que vuelvas a registrarte.'
+  });
+  return enviarEmailSeguro_({
+    to: d.email,
+    subject: 'Recibimos el registro de tu empresa',
+    body: body,
+    htmlBody: html
+  }, 'registro empresa');
+}
+
+function emailEmpresaAprobada_(empresa) {
+  var nombre = nombreCompleto_(empresa);
+  var body = [
+    'Hola ' + nombre + ',',
+    '',
+    'Tu cuenta de empresa en ONE Talent Hub fue aprobada.',
+    '',
+    'Ya podés ingresar al panel para revisar postulantes y publicar búsquedas:',
+    URL_PLATAFORMA,
+    '',
+    'Saludos,',
+    'ONE Talent Hub'
+  ].join('\n');
+  var html = plantillaEmail_({
+    titulo: 'Cuenta aprobada',
+    subtitulo: 'Ya podés ingresar al panel de empresas.',
+    contenido:
+      parrafoEmail_('Hola ' + nombre + ',') +
+      parrafoEmail_('Tu cuenta de empresa en ONE Talent Hub fue aprobada.') +
+      '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:16px 0;border-top:1px solid #eee8f5;border-bottom:1px solid #eee8f5;">' +
+        datoEmail_('Empresa', empresa.empresa || empresa.Empresa) +
+        datoEmail_('Estado', 'Aprobada') +
+      '</table>' +
+      parrafoEmail_('Ya podés revisar postulantes, publicar búsquedas y gestionar tus procesos desde el panel.'),
+    ctaTexto: 'Ingresar al panel'
+  });
+  return enviarEmailSeguro_({
+    to: empresa.email || empresa.usuario,
+    subject: 'Tu cuenta de empresa fue aprobada',
+    body: body,
+    htmlBody: html
+  }, 'empresa aprobada');
+}
+
+function emailEmpresaRechazada_(empresa) {
+  var nombre = nombreCompleto_(empresa);
+  var empresaNombre = empresa.empresa || empresa.Empresa || '';
+  var body = [
+    'Hola ' + nombre + ',',
+    '',
+    'Tu cuenta de empresa en ONE Talent Hub no fue aprobada por el momento.',
+    '',
+    'Empresa: ' + limpiar(empresaNombre),
+    '',
+    'Podés comunicarte con administración para revisar la información enviada.',
+    '',
+    'Saludos,',
+    'ONE Talent Hub'
+  ].join('\n');
+  var html = plantillaEmail_({
+    titulo: 'Cuenta no aprobada',
+    subtitulo: 'Necesitamos revisar la información de tu cuenta.',
+    contenido:
+      parrafoEmail_('Hola ' + nombre + ',') +
+      parrafoEmail_('Tu cuenta de empresa en ONE Talent Hub no fue aprobada por el momento.') +
+      '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:16px 0;border-top:1px solid #eee8f5;border-bottom:1px solid #eee8f5;">' +
+        datoEmail_('Empresa', empresaNombre) +
+        datoEmail_('Estado', 'No aprobada') +
+      '</table>' +
+      parrafoEmail_('Podés comunicarte con administración para revisar la información enviada.'),
+    ctaTexto: 'Ir a ONE Talent Hub',
+    nota: 'Este mensaje no elimina tu cuenta; solo informa el estado actual de revisión.'
+  });
+  return enviarEmailSeguro_({
+    to: empresa.email || empresa.usuario,
+    subject: 'Tu cuenta de empresa no fue aprobada',
+    body: body,
+    htmlBody: html
+  }, 'empresa rechazada');
+}
+
+function emailVerificacionRechazada_(empresa) {
+  var nombre = nombreCompleto_(empresa);
+  var body = [
+    'Hola ' + nombre + ',',
+    '',
+    'La verificación de identidad de tu cuenta no fue aprobada por el momento.',
+    '',
+    'Podés comunicarte con administración para revisar la selfie o la firma registrada.',
+    '',
+    'Saludos,',
+    'ONE Talent Hub'
+  ].join('\n');
+  var html = plantillaEmail_({
+    titulo: 'Verificación no aprobada',
+    subtitulo: 'Administración necesita revisar la evidencia enviada.',
+    contenido:
+      parrafoEmail_('Hola ' + nombre + ',') +
+      parrafoEmail_('La verificación de identidad de tu cuenta no fue aprobada por el momento.') +
+      '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:16px 0;border-top:1px solid #eee8f5;border-bottom:1px solid #eee8f5;">' +
+        datoEmail_('Empresa', empresa.empresa || empresa.Empresa) +
+        datoEmail_('Verificación', 'No aprobada') +
+      '</table>' +
+      parrafoEmail_('Podés comunicarte con administración para revisar la selfie o la firma registrada.'),
+    ctaTexto: 'Ir a ONE Talent Hub'
+  });
+  return enviarEmailSeguro_({
+    to: empresa.email || empresa.usuario,
+    subject: 'Tu verificación de identidad no fue aprobada',
+    body: body,
+    htmlBody: html
+  }, 'verificación rechazada');
+}
+
+function emailRegistroPostulante_(d) {
+  var nombre = nombreCompleto_(d);
+  var puesto = limpiar(d.puestoDeseado) || 'Perfil general';
+  var body = [
+    'Hola ' + nombre + ',',
+    '',
+    'Tu cuenta de postulante en ONE Talent Hub fue creada correctamente.',
+    '',
+    'Perfil/interés: ' + puesto,
+    '',
+    'Ya podés ingresar, actualizar tu CV y postularte a las oportunidades disponibles:',
+    URL_PLATAFORMA,
+    '',
+    'Saludos,',
+    'ONE Talent Hub'
+  ].join('\n');
+  var html = plantillaEmail_({
+    titulo: 'Cuenta creada',
+    subtitulo: 'Tu perfil de postulante ya está listo.',
+    contenido:
+      parrafoEmail_('Hola ' + nombre + ',') +
+      parrafoEmail_('Tu cuenta de postulante en ONE Talent Hub fue creada correctamente.') +
+      '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:16px 0;border-top:1px solid #eee8f5;border-bottom:1px solid #eee8f5;">' +
+        datoEmail_('Perfil/interés', puesto) +
+        datoEmail_('Email de acceso', d.email) +
+      '</table>' +
+      parrafoEmail_('Ya podés ingresar, actualizar tu CV y postularte a las oportunidades disponibles. Si una vacante coincide con tu perfil, podremos avisarte por email.'),
+    ctaTexto: 'Ver oportunidades',
+    nota: 'Guardá este email como constancia de tu registro.'
+  });
+  return enviarEmailSeguro_({
+    to: d.email,
+    subject: 'Tu cuenta de postulante fue creada',
+    body: body,
+    htmlBody: html
+  }, 'registro postulante');
+}
+
+function emailPostulacionExitosa_(d, id) {
+  var puesto = limpiar(d.busquedaPuesto) || limpiar(d.puestoDeseado) || 'tu postulación';
+  var body = [
+    'Hola ' + nombreCompleto_(d) + ',',
+    '',
+    'Completaste tu postulación correctamente.',
+    '',
+    'Puesto/interés: ' + puesto,
+    'Código de registro: ' + id,
+    '',
+    'La empresa ya puede revisar tu perfil. Si hay novedades o nuevas coincidencias, podremos avisarte por email.',
+    '',
+    'Saludos,',
+    'ONE Talent Hub'
+  ].join('\n');
+  var html = plantillaEmail_({
+    titulo: 'Postulación completada',
+    subtitulo: 'La empresa ya puede revisar tu perfil.',
+    contenido:
+      parrafoEmail_('Hola ' + nombreCompleto_(d) + ',') +
+      parrafoEmail_('Completaste tu postulación correctamente.') +
+      '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:16px 0;border-top:1px solid #eee8f5;border-bottom:1px solid #eee8f5;">' +
+        datoEmail_('Puesto/interés', puesto) +
+        datoEmail_('Código', id) +
+      '</table>' +
+      parrafoEmail_('La empresa ya puede revisar tu perfil. Si hay novedades o nuevas coincidencias, podremos avisarte por email.'),
+    ctaTexto: 'Ver oportunidades'
+  });
+  return enviarEmailSeguro_({
+    to: d.email,
+    subject: 'Postulación completada correctamente',
+    body: body,
+    htmlBody: html
+  }, 'postulación exitosa');
 }
 
 /* -------------------------------------------------------------------
@@ -579,6 +955,12 @@ function registrarEmpresa(d) {
     firmaLegal.url,
     new Date()
   ]);
+  emailRegistroEmpresa_({
+    empresa: empresa,
+    email: email,
+    nombre: nombre,
+    apellido: apellido
+  });
 
   return {
     ok: true,
@@ -915,28 +1297,8 @@ function listarPostulantes(d) {
   if (!sesion) return { ok: false, error: 'Sesión inválida o expirada. Vuelve a iniciar sesión.' };
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-
-  // 1) Postulaciones (hoja Postulantes): aplicaciones a búsquedas + generales.
-  var hoja = obtenerHoja(ss, HOJA_POSTULANTES, COLUMNAS_POSTULANTES);
-  var valores = hoja.getDataRange().getValues();
-  var registros = [];
-  for (var i = 1; i < valores.length; i++) {
-    registros.push(filaAObjeto(COLUMNAS_POSTULANTES, valores[i]));
-  }
-
-  // 2) Base de talento (hoja Perfiles): cada cuenta registrada aparece como
-  // postulante general, salvo que ya tenga una fila "general" en Postulantes.
-  var yaGeneral = {};
-  registros.forEach(function (r) {
-    if (!String(r.BusquedaID || '').trim()) yaGeneral[String(r.Email || '').trim().toLowerCase()] = true;
-  });
-  var hojaPerf = obtenerHoja(ss, HOJA_PERFILES, COLUMNAS_PERFILES);
-  var valPerf = hojaPerf.getDataRange().getValues();
-  for (var k = 1; k < valPerf.length; k++) {
-    var emailPerf = String(valPerf[k][0] || '').trim().toLowerCase();
-    if (!emailPerf || yaGeneral[emailPerf]) continue;
-    registros.push(perfilComoPostulante(valPerf[k]));
-  }
+  var registros = obtenerPostulantesConsolidados_(ss);
+  var postulaciones = obtenerPostulaciones_(ss);
 
   // Visibilidad (base abierta): los "generales" (sin BusquedaID) son visibles
   // para TODAS las empresas. Las postulaciones a una búsqueda (con BusquedaID)
@@ -944,6 +1306,10 @@ function listarPostulantes(d) {
   if (String(sesion.rol) !== 'admin') {
     var misBusquedas = busquedaIdsDeEmpresa(ss, sesion.usuario);
     registros = registros.filter(function (r) {
+      var bid = String(r.BusquedaID || '').trim();
+      return !bid || misBusquedas[bid];
+    });
+    postulaciones = postulaciones.filter(function (r) {
       var bid = String(r.BusquedaID || '').trim();
       return !bid || misBusquedas[bid];
     });
@@ -955,16 +1321,28 @@ function listarPostulantes(d) {
     registros = registros.filter(function (r) {
       return JSON.stringify(r).toLowerCase().indexOf(q) !== -1;
     });
+    postulaciones = postulaciones.filter(function (r) {
+      return JSON.stringify(r).toLowerCase().indexOf(q) !== -1;
+    });
   }
 
   // Filtros específicos opcionales.
   if (d.puesto)    registros = filtrarCampo(registros, 'PuestoDeseado', d.puesto);
   if (d.provincia) registros = filtrarCampo(registros, 'Provincia', d.provincia);
+  if (d.puesto)    postulaciones = filtrarCampo(postulaciones, 'PuestoDeseado', d.puesto);
+  if (d.provincia) postulaciones = filtrarCampo(postulaciones, 'Provincia', d.provincia);
 
-  // Más recientes primero (por fecha de registro).
-  registros.sort(function (a, b) { return new Date(b.FechaRegistro) - new Date(a.FechaRegistro); });
+  // Más recientes primero.
+  registros.sort(function (a, b) { return fechaValor_(b.FechaActualizacion || b.FechaRegistro) - fechaValor_(a.FechaActualizacion || a.FechaRegistro); });
+  postulaciones.sort(function (a, b) { return fechaValor_(b.FechaRegistro) - fechaValor_(a.FechaRegistro); });
 
-  return { ok: true, total: registros.length, registros: registros };
+  return {
+    ok: true,
+    total: registros.length,
+    totalPostulaciones: postulaciones.length,
+    registros: registros,
+    postulaciones: postulaciones
+  };
 }
 
 function filtrarCampo(registros, campo, valor) {
@@ -982,6 +1360,534 @@ function filaAObjeto(columnas, fila) {
     obj[columnas[i]] = valor;
   }
   return obj;
+}
+
+function normalizarTextoMatch(v) {
+  return limpiar(v)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function tokensMatch(v) {
+  var stop = {
+    de: true, del: true, la: true, el: true, los: true, las: true, y: true, en: true,
+    para: true, con: true, sin: true, por: true, un: true, una: true, al: true
+  };
+  var txt = normalizarTextoMatch(v);
+  if (!txt) return [];
+  var partes = txt.split(' ');
+  var out = [];
+  for (var i = 0; i < partes.length; i++) {
+    var t = partes[i];
+    if (t.length >= 3 && !stop[t] && out.indexOf(t) === -1) out.push(t);
+  }
+  return out;
+}
+
+function parseJSONSeguro(valor, fallback) {
+  if (!valor) return fallback || [];
+  if (typeof valor !== 'string') return valor;
+  try {
+    return JSON.parse(valor);
+  } catch (e) {
+    return fallback || [];
+  }
+}
+
+function textoDesdeJSON(valor) {
+  var data = parseJSONSeguro(valor, []);
+  if (!data) return '';
+  if (typeof data === 'string') return data;
+  if (!Array.isArray(data)) data = [data];
+  return data.map(function (item) {
+    if (!item) return '';
+    if (typeof item === 'string') return item;
+    var partes = [];
+    Object.keys(item).forEach(function (k) {
+      var v = item[k];
+      if (v != null && typeof v !== 'object') partes.push(v);
+    });
+    return partes.join(' ');
+  }).join(' ');
+}
+
+function recortarTexto_(texto, max) {
+  var t = limpiar(texto);
+  if (!t || t.length <= max) return t;
+  return t.slice(0, Math.max(0, max - 1)).replace(/\s+\S*$/, '') + '…';
+}
+
+function interseccionTokens(a, b) {
+  var setB = {};
+  b.forEach(function (x) { setB[x] = true; });
+  return a.filter(function (x) { return setB[x]; });
+}
+
+function sumarMotivoMatch_(motivos, texto, detalle) {
+  if (motivos.indexOf(texto) === -1) motivos.push(texto);
+  return detalle ? texto + ': ' + detalle : texto;
+}
+
+function nivelIdiomaValor_(nivel) {
+  var n = normalizarTextoMatch(nivel);
+  if (!n) return 0;
+  if (n.indexOf('nativo') !== -1 || n.indexOf('bilingue') !== -1) return 4;
+  if (n.indexOf('avanzado') !== -1) return 3;
+  if (n.indexOf('intermedio') !== -1) return 2;
+  if (n.indexOf('basico') !== -1) return 1;
+  return 0;
+}
+
+function extraerNivelIdiomaPostulante_(idiomas, idiomaBuscado) {
+  var buscado = normalizarTextoMatch(idiomaBuscado);
+  var data = parseJSONSeguro(idiomas, []);
+  if (!Array.isArray(data)) return '';
+  for (var i = 0; i < data.length; i++) {
+    var item = data[i] || {};
+    if (normalizarTextoMatch(item.idioma || item.Idioma).indexOf(buscado) !== -1) {
+      return item.nivel || item.Nivel || '';
+    }
+  }
+  return '';
+}
+
+function extraerAniosRequeridos_(vacante) {
+  var texto = normalizarTextoMatch([
+    vacante.RequisitosExcluyentes,
+    vacante.RequisitosDeseables,
+    vacante.Descripcion
+  ].join(' '));
+  var m = texto.match(/(\d+)\s*(anios|anos|years)/);
+  return m ? Number(m[1]) : 0;
+}
+
+function calcularCoincidenciaVacante(postulante, vacante) {
+  var puntaje = 0;
+  var motivos = [];
+  var detalles = [];
+  var claves = [];
+
+  var tokensPuesto = interseccionTokens(
+    tokensMatch(postulante.PuestoDeseado),
+    tokensMatch([vacante.Puesto, vacante.Area].join(' '))
+  );
+  if (tokensPuesto.length) {
+    puntaje += Math.min(32, 18 + tokensPuesto.length * 7);
+    detalles.push(sumarMotivoMatch_(motivos, 'Puesto relacionado', tokensPuesto.slice(0, 4).join(', ')));
+    claves = claves.concat(tokensPuesto);
+  }
+
+  var provinciaPost = normalizarTextoMatch(postulante.Provincia);
+  var provinciaVac = normalizarTextoMatch(vacante.Provincia);
+  var localidadPost = normalizarTextoMatch(postulante.CodigoPostalCiudad);
+  var localidadVac = normalizarTextoMatch(vacante.Localidad);
+  var modalidadVac = normalizarTextoMatch(vacante.Modalidad);
+  if (modalidadVac.indexOf('remoto') !== -1) {
+    puntaje += 12;
+    detalles.push(sumarMotivoMatch_(motivos, 'Modalidad remota', 'apta para perfiles de distintas localidades'));
+  } else {
+    if (provinciaPost && provinciaVac && provinciaPost.indexOf(provinciaVac) !== -1) {
+      puntaje += 14;
+      detalles.push(sumarMotivoMatch_(motivos, 'Coincide provincia', vacante.Provincia));
+    }
+    if (localidadPost && localidadVac && localidadPost.indexOf(localidadVac) !== -1) {
+      puntaje += 8;
+      detalles.push(sumarMotivoMatch_(motivos, 'Coincide localidad', vacante.Localidad));
+    }
+  }
+
+  var habilidadesVac = tokensMatch([vacante.Habilidades, vacante.RequisitosExcluyentes, vacante.RequisitosDeseables].join(' '));
+  var textoPost = [
+    postulante.PuestoDeseado,
+    postulante.PerfilProfesional,
+    postulante.DescripcionPerfil,
+    textoDesdeJSON(postulante.Experiencias),
+    textoDesdeJSON(postulante.Formacion),
+    textoDesdeJSON(postulante.Idiomas)
+  ].join(' ');
+  var habilidadesMatch = interseccionTokens(tokensMatch(textoPost), habilidadesVac);
+  if (habilidadesMatch.length) {
+    puntaje += Math.min(24, habilidadesMatch.length * 6);
+    detalles.push(sumarMotivoMatch_(motivos, 'Coinciden habilidades o experiencia', habilidadesMatch.slice(0, 6).join(', ')));
+    claves = claves.concat(habilidadesMatch);
+  }
+
+  var tokensFormacion = interseccionTokens(
+    tokensMatch(textoDesdeJSON(postulante.Formacion)),
+    tokensMatch([vacante.RequisitosExcluyentes, vacante.RequisitosDeseables].join(' '))
+  );
+  if (tokensFormacion.length) {
+    puntaje += 10;
+    detalles.push(sumarMotivoMatch_(motivos, 'Formación relacionada', tokensFormacion.slice(0, 4).join(', ')));
+    claves = claves.concat(tokensFormacion);
+  }
+
+  var idiomaVac = normalizarTextoMatch(vacante.IdiomaRequerido);
+  var idiomasPost = normalizarTextoMatch(textoDesdeJSON(postulante.Idiomas));
+  if (idiomaVac && idiomaVac !== 'sin requisito de idioma' && idiomasPost.indexOf(idiomaVac) !== -1) {
+    var nivelPost = extraerNivelIdiomaPostulante_(postulante.Idiomas, vacante.IdiomaRequerido);
+    var nivelReq = vacante.NivelIdioma || '';
+    var valorPost = nivelIdiomaValor_(nivelPost);
+    var valorReq = nivelIdiomaValor_(nivelReq);
+    if (!valorReq || valorPost >= valorReq) {
+      puntaje += 10;
+      detalles.push(sumarMotivoMatch_(motivos, 'Coincide idioma', [vacante.IdiomaRequerido, nivelPost].filter(Boolean).join(' ')));
+    } else {
+      puntaje += 4;
+      detalles.push(sumarMotivoMatch_(motivos, 'Idioma relacionado', [vacante.IdiomaRequerido, 'nivel del perfil: ' + nivelPost].filter(Boolean).join(' ')));
+    }
+  }
+
+  var expTexto = normalizarTextoMatch(textoDesdeJSON(postulante.Experiencias));
+  var primerEmpleo = normalizarTextoMatch(postulante.PrimerEmpleo).indexOf('si') !== -1;
+  var aniosReq = extraerAniosRequeridos_(vacante);
+  if (aniosReq > 0 && primerEmpleo) {
+    puntaje -= Math.min(18, aniosReq * 4);
+    detalles.push(sumarMotivoMatch_(motivos, 'Revisar experiencia requerida', 'la vacante pide ' + aniosReq + ' año(s) y el perfil indica primer empleo'));
+  } else if (expTexto) {
+    puntaje += 6;
+    detalles.push(sumarMotivoMatch_(motivos, 'Tiene experiencia cargada', 'tu perfil incluye antecedentes laborales'));
+  }
+
+  var clavesUnicas = [];
+  claves.forEach(function (k) {
+    if (k && clavesUnicas.indexOf(k) === -1) clavesUnicas.push(k);
+  });
+
+  return {
+    puntaje: Math.max(0, Math.min(100, puntaje)),
+    motivos: motivos,
+    detalles: detalles,
+    claves: clavesUnicas.slice(0, 8)
+  };
+}
+
+function yaSeNotificoVacante(mapa, busquedaId, email) {
+  return !!mapa[String(busquedaId) + '|' + String(email).toLowerCase()];
+}
+
+function urlPostulacionVacante_(vacante) {
+  return URL_PLATAFORMA.replace(/\/?$/, '/') +
+    'postular.html?busqueda=' + encodeURIComponent(limpiar(vacante.ID)) +
+    '&puesto=' + encodeURIComponent(limpiar(vacante.Puesto));
+}
+
+function listaEmail_(items) {
+  if (!items || !items.length) return '';
+  return '<ul style="margin:12px 0 0;padding:0;list-style:none;">' +
+    items.map(function (item) {
+      return '<li style="margin:0 0 8px;padding:10px 12px;border-radius:12px;background:#fbfafd;border:1px solid #eee8f5;color:#514d62;font-size:14px;line-height:1.45;">' +
+        escaparHtml_(item) +
+      '</li>';
+    }).join('') +
+  '</ul>';
+}
+
+function etiquetaMatch_(puntaje) {
+  if (puntaje >= 82) return 'Coincidencia alta';
+  if (puntaje >= 68) return 'Muy buen match';
+  return 'Posible match';
+}
+
+function enviarEmailVacante(postulante, vacante, match) {
+  var nombre = [postulante.Nombre, postulante.Apellido].filter(Boolean).join(' ') || 'Hola';
+  var motivos = match.detalles && match.detalles.length
+    ? match.detalles
+    : (match.motivos && match.motivos.length ? match.motivos : ['Tu perfil tiene datos relacionados con la búsqueda.']);
+  var ubicacion = [vacante.Localidad, vacante.Provincia].filter(Boolean).join(', ');
+  var url = urlPostulacionVacante_(vacante);
+  var etiqueta = etiquetaMatch_(match.puntaje);
+  var resumen = recortarTexto_(vacante.Descripcion || vacante.Responsabilidades || vacante.RequisitosExcluyentes, 220);
+  var cuerpo = [
+    'Hola ' + nombre + ',',
+    '',
+    'Encontramos una vacante que puede coincidir con tu perfil.',
+    '',
+    'Puesto: ' + limpiar(vacante.Puesto),
+    'Empresa: ' + limpiar(vacante.Empresa),
+    'Ubicación: ' + ubicacion,
+    'Modalidad: ' + limpiar(vacante.Modalidad),
+    'Coincidencia: ' + etiqueta + ' (' + match.puntaje + '/100)',
+    resumen ? 'Resumen: ' + resumen : '',
+    '',
+    'Por qué te la recomendamos:',
+    '- ' + motivos.join('\n- '),
+    '',
+    'Revisá la oportunidad y postulate desde:',
+    url,
+    '',
+    'Saludos,',
+    'ONE Talent Hub'
+  ].filter(function (x) { return x !== ''; }).join('\n');
+  var html = plantillaEmail_({
+    titulo: 'Vacante recomendada para vos',
+    subtitulo: etiqueta + ': encontramos una búsqueda alineada a tu perfil.',
+    contenido:
+      parrafoEmail_('Hola ' + nombre + ',') +
+      parrafoEmail_('Encontramos una vacante que puede coincidir con tu perfil. Revisá los detalles y, si te interesa, podés postularte con tu CV ya cargado.') +
+      '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:16px 0;border-top:1px solid #eee8f5;border-bottom:1px solid #eee8f5;">' +
+        datoEmail_('Puesto', vacante.Puesto) +
+        datoEmail_('Empresa', vacante.Empresa) +
+        datoEmail_('Ubicación', ubicacion) +
+        datoEmail_('Modalidad', vacante.Modalidad) +
+        datoEmail_('Coincidencia', etiqueta + ' · ' + match.puntaje + '/100') +
+      '</table>' +
+      (resumen ? parrafoEmail_('Resumen: ' + resumen) : '') +
+      '<p style="margin:16px 0 0;color:#1a181d;font-size:15px;font-weight:800;">Por qué te la recomendamos</p>' +
+      listaEmail_(motivos) +
+      (match.claves && match.claves.length ? parrafoEmail_('Coincidencias detectadas: ' + match.claves.join(', ')) : ''),
+    ctaTexto: 'Ver vacante y postularme',
+    ctaUrl: url,
+    nota: 'Te enviamos esta recomendación porque tu perfil cargado tiene coincidencias con una búsqueda activa.'
+  });
+
+  var enviado = enviarEmailSeguro_({
+    to: limpiar(postulante.Email),
+    subject: etiqueta + ': ' + limpiar(vacante.Puesto),
+    body: cuerpo,
+    htmlBody: html
+  }, 'match vacante');
+  if (!enviado.ok) throw new Error(enviado.error || 'No se pudo enviar el email.');
+}
+
+function perfilComoPostulante_(perfil) {
+  return {
+    ID: 'perfil:' + normalizarEmail_(perfil.Email),
+    FuenteRegistro: 'perfil',
+    Aplicaciones: 0,
+    Nombre: perfil.Nombre || '',
+    Apellido: perfil.Apellido || '',
+    Email: perfil.Email || '',
+    Telefono: perfil.Telefono || '',
+    PuestoDeseado: perfil.PuestoDeseado || '',
+    FechaNacimiento: perfil.FechaNacimiento || '',
+    Identificacion: perfil.Identificacion || '',
+    Provincia: perfil.Provincia || '',
+    CodigoPostalCiudad: perfil.CodigoPostalCiudad || '',
+    PerfilProfesional: perfil.PerfilProfesional || '',
+    Formacion: perfil.Formacion || '[]',
+    DescripcionPerfil: perfil.DescripcionPerfil || '',
+    DispViajar: perfil.DispViajar || '',
+    DispCambioResidencia: perfil.DispCambioResidencia || '',
+    Idiomas: perfil.Idiomas || '[]',
+    PrimerEmpleo: perfil.PrimerEmpleo || '',
+    Experiencias: perfil.Experiencias || '[]',
+    CVNombre: perfil.CVNombre || '',
+    CVUrl: perfil.CVUrl || '',
+    FirmaConsentimientoUrl: perfil.FirmaConsentimientoUrl || '',
+    FechaFirmaConsentimiento: perfil.FirmaConsentimientoUrl ? (perfil.FechaActualizacion || perfil.FechaRegistro || '') : '',
+    FirmaConformidadUrl: perfil.FirmaConformidadUrl || '',
+    FechaFirmaConformidad: perfil.FirmaConformidadUrl ? (perfil.FechaActualizacion || perfil.FechaRegistro || '') : '',
+    BusquedaID: '',
+    BusquedaPuesto: '',
+    RespuestasBusqueda: '',
+    FechaRegistro: perfil.FechaRegistro || '',
+    FechaActualizacion: perfil.FechaActualizacion || ''
+  };
+}
+
+function fechaValor_(valor) {
+  if (valor instanceof Date) return valor.getTime();
+  if (typeof valor === 'number') return valor;
+  var t = Date.parse(valor);
+  if (isNaN(t) && typeof valor === 'string') {
+    var m = valor.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+    if (m) {
+      t = new Date(Number(m[3]), Number(m[1]) - 1, Number(m[2]), Number(m[4] || 0), Number(m[5] || 0), Number(m[6] || 0)).getTime();
+    }
+  }
+  return isNaN(t) ? 0 : t;
+}
+
+function obtenerPostulantesConsolidados_(ss) {
+  var mapa = {};
+  var hojaPerf = obtenerHoja(ss, HOJA_PERFILES, COLUMNAS_PERFILES);
+  var filasPerf = hojaPerf.getDataRange().getValues();
+  for (var p = 1; p < filasPerf.length; p++) {
+    var perfil = filaAObjeto(COLUMNAS_PERFILES, filasPerf[p]);
+    var emailPerfil = normalizarEmail_(perfil.Email);
+    if (emailPerfil && emailValido_(emailPerfil)) {
+      var candidatoPerfil = perfilComoPostulante_(perfil);
+      candidatoPerfil._fuente = 'Perfiles';
+      candidatoPerfil._fechaPerfil = fechaValor_(perfil.FechaActualizacion || perfil.FechaRegistro);
+      mapa[emailPerfil] = candidatoPerfil;
+    }
+  }
+
+  var hojaPost = obtenerHoja(ss, HOJA_POSTULANTES, COLUMNAS_POSTULANTES);
+  var filasPost = hojaPost.getDataRange().getValues();
+  for (var i = 1; i < filasPost.length; i++) {
+    var postulante = filaAObjeto(COLUMNAS_POSTULANTES, filasPost[i]);
+    var email = normalizarEmail_(postulante.Email);
+    if (!email || !emailValido_(email)) continue;
+    var fechaPost = fechaValor_(postulante.FechaRegistro);
+    if (!mapa[email]) {
+      postulante._fuente = 'Postulantes';
+      postulante._fechaPerfil = fechaPost;
+      postulante.FuenteRegistro = 'postulacion';
+      postulante.Aplicaciones = 1;
+      mapa[email] = postulante;
+    } else {
+      mapa[email].Aplicaciones = Number(mapa[email].Aplicaciones || 0) + 1;
+      if (postulante.BusquedaID) {
+        mapa[email].BusquedaID = postulante.BusquedaID;
+        mapa[email].BusquedaPuesto = postulante.BusquedaPuesto;
+        mapa[email].RespuestasBusqueda = postulante.RespuestasBusqueda;
+      }
+      if (fechaPost > (mapa[email]._ultimaAplicacionFecha || 0)) {
+        mapa[email]._ultimaAplicacionFecha = fechaPost;
+        mapa[email].UltimaPostulacionFecha = postulante.FechaRegistro;
+        mapa[email].UltimaBusquedaID = postulante.BusquedaID || '';
+        mapa[email].UltimaBusquedaPuesto = postulante.BusquedaPuesto || '';
+        if (!mapa[email].CVUrl && postulante.CVUrl) mapa[email].CVUrl = postulante.CVUrl;
+        if (!mapa[email].FirmaConsentimientoUrl && postulante.FirmaConsentimientoUrl) mapa[email].FirmaConsentimientoUrl = postulante.FirmaConsentimientoUrl;
+        if (!mapa[email].FirmaConformidadUrl && postulante.FirmaConformidadUrl) mapa[email].FirmaConformidadUrl = postulante.FirmaConformidadUrl;
+      }
+    }
+  }
+
+  var salida = [];
+  Object.keys(mapa).forEach(function (email) { salida.push(mapa[email]); });
+  return salida;
+}
+
+function obtenerCandidatosParaNotificar_(ss) {
+  return obtenerPostulantesConsolidados_(ss);
+}
+
+function obtenerPostulaciones_(ss) {
+  var hoja = obtenerHoja(ss, HOJA_POSTULANTES, COLUMNAS_POSTULANTES);
+  var valores = hoja.getDataRange().getValues();
+  var salida = [];
+  for (var i = 1; i < valores.length; i++) {
+    var postulacion = filaAObjeto(COLUMNAS_POSTULANTES, valores[i]);
+    postulacion.FuenteRegistro = 'postulacion';
+    postulacion.Aplicaciones = 1;
+    salida.push(postulacion);
+  }
+  return salida;
+}
+
+function probarMatchVacante(d) {
+  var email = normalizarEmail_(d.email);
+  var busquedaId = limpiar(d.busquedaId);
+  if (!email || !busquedaId) return { ok: false, error: 'Indicá email y busquedaId.' };
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var candidatos = obtenerCandidatosParaNotificar_(ss);
+  var candidato = null;
+  for (var i = 0; i < candidatos.length; i++) {
+    if (normalizarEmail_(candidatos[i].Email) === email) {
+      candidato = candidatos[i];
+      break;
+    }
+  }
+  if (!candidato) return { ok: false, error: 'No encontré un perfil/postulante con ese email.' };
+
+  var hojaBusq = obtenerHoja(ss, HOJA_BUSQUEDAS, COLUMNAS_BUSQUEDAS);
+  var filasBusq = hojaBusq.getDataRange().getValues();
+  var vacante = null;
+  for (var b = 1; b < filasBusq.length; b++) {
+    if (limpiar(filasBusq[b][0]) === busquedaId) {
+      vacante = filaAObjeto(COLUMNAS_BUSQUEDAS, filasBusq[b]);
+      break;
+    }
+  }
+  if (!vacante) return { ok: false, error: 'No encontré la vacante indicada.' };
+
+  var match = calcularCoincidenciaVacante(candidato, vacante);
+  return {
+    ok: true,
+    email: email,
+    busquedaId: busquedaId,
+    puesto: vacante.Puesto,
+    puntaje: match.puntaje,
+    etiqueta: etiquetaMatch_(match.puntaje),
+    superaMinimo: match.puntaje >= MATCH_MINIMO_NOTIFICACION,
+    motivos: match.motivos,
+    detalles: match.detalles,
+    claves: match.claves,
+    yaPostulado: !!buscarPostulacionExistente_(obtenerHoja(ss, HOJA_POSTULANTES, COLUMNAS_POSTULANTES), email, busquedaId)
+  };
+}
+
+function notificarPostulantesCompatibles(vacante) {
+  if (normalizarTextoMatch(vacante.Estado) !== 'activa') return { enviados: 0, candidatos: 0 };
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hojaPost = obtenerHoja(ss, HOJA_POSTULANTES, COLUMNAS_POSTULANTES);
+  var hojaNotif = obtenerHoja(ss, HOJA_NOTIFICACIONES_VACANTES, COLUMNAS_NOTIFICACIONES_VACANTES);
+  var filasNotif = hojaNotif.getDataRange().getValues();
+  var candidatosDisponibles = obtenerCandidatosParaNotificar_(ss);
+  var hoy = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+
+  var notificados = {};
+  var conteoDia = {};
+  for (var n = 1; n < filasNotif.length; n++) {
+    var filaN = filaAObjeto(COLUMNAS_NOTIFICACIONES_VACANTES, filasNotif[n]);
+    var emailN = String(filaN.EmailPostulante || '').toLowerCase();
+    if (filaN.BusquedaID && emailN && String(filaN.Estado || '').toLowerCase() === 'enviado') {
+      notificados[String(filaN.BusquedaID) + '|' + emailN] = true;
+    }
+    if (emailN && filaN.Fecha) {
+      var fechaN = filasNotif[n][0] instanceof Date
+        ? Utilities.formatDate(filasNotif[n][0], Session.getScriptTimeZone(), 'yyyy-MM-dd')
+        : String(filaN.Fecha).slice(0, 10);
+      if (fechaN === hoy && String(filaN.Estado || '').toLowerCase() === 'enviado') {
+        conteoDia[emailN] = (conteoDia[emailN] || 0) + 1;
+      }
+    }
+  }
+
+  var registros = [];
+  var enviados = 0;
+  var candidatos = 0;
+  for (var i = 0; i < candidatosDisponibles.length; i++) {
+    var postulante = candidatosDisponibles[i];
+    var email = normalizarEmail_(postulante.Email);
+    if (!email || !emailValido_(email)) continue;
+    if (yaSeNotificoVacante(notificados, vacante.ID, email)) continue;
+    if (buscarPostulacionExistente_(hojaPost, email, vacante.ID)) continue;
+    if ((conteoDia[email] || 0) >= MAX_NOTIFICACIONES_DIARIAS_POSTULANTE) continue;
+
+    var match = calcularCoincidenciaVacante(postulante, vacante);
+    if (match.puntaje < MATCH_MINIMO_NOTIFICACION) continue;
+    candidatos++;
+
+    var estado = 'enviado';
+    var error = '';
+    try {
+      enviarEmailVacante(postulante, vacante, match);
+      enviados++;
+      conteoDia[email] = (conteoDia[email] || 0) + 1;
+      notificados[String(vacante.ID) + '|' + email] = true;
+    } catch (e) {
+      estado = 'error';
+      error = String(e && e.message ? e.message : e);
+    }
+
+    registros.push([
+      new Date(),
+      vacante.ID,
+      vacante.Puesto,
+      vacante.Empresa,
+      email,
+      [postulante.Nombre, postulante.Apellido].filter(Boolean).join(' '),
+      match.puntaje,
+      (match.detalles && match.detalles.length ? match.detalles : match.motivos).join(' | '),
+      estado,
+      error
+    ]);
+  }
+
+  if (registros.length) {
+    hojaNotif.getRange(hojaNotif.getLastRow() + 1, 1, registros.length, COLUMNAS_NOTIFICACIONES_VACANTES.length).setValues(registros);
+  }
+  return { enviados: enviados, candidatos: candidatos };
 }
 
 /* -------------------------------------------------------------------
@@ -1056,11 +1962,18 @@ function aprobarEmpresa(d) {
       if (String(valores[i][7] || 'empresa').toLowerCase() === 'admin') {
         return { ok: false, error: 'No se puede modificar una cuenta de administrador.' };
       }
+      var estadoAnterior = String(valores[i][8] || '').toLowerCase();
       hoja.getRange(i + 1, 9).setValue(nuevo);   // columna Estado
       // Si se rechaza o se deja pendiente, invalida su sesión activa.
       if (nuevo !== 'aprobado') {
         hoja.getRange(i + 1, 4).setValue('');    // Token
         hoja.getRange(i + 1, 5).setValue('');    // TokenExpira
+      }
+      if (nuevo === 'aprobado' && estadoAnterior !== 'aprobado') {
+        emailEmpresaAprobada_(empresaDesdeFila(hoja.getRange(i + 1, 1, 1, COLUMNAS_USUARIOS.length).getValues()[0]));
+      }
+      if (nuevo === 'rechazado' && estadoAnterior !== 'rechazado') {
+        emailEmpresaRechazada_(empresaDesdeFila(hoja.getRange(i + 1, 1, 1, COLUMNAS_USUARIOS.length).getValues()[0]));
       }
       return { ok: true, estado: nuevo };
     }
@@ -1155,8 +2068,12 @@ function cambiarEstadoVerificacion(d) {
 
   for (var i = 1; i < valores.length; i++) {
     if (String(valores[i][0]).trim().toLowerCase() === usuario) {
+      var estadoAnterior = String(valores[i][15] || 'pendiente').toLowerCase();
       hoja.getRange(i + 1, 16).setValue(nuevo);
       hoja.getRange(i + 1, 17).setValue(new Date());
+      if (nuevo === 'rechazado' && estadoAnterior !== 'rechazado') {
+        emailVerificacionRechazada_(empresaDesdeFila(hoja.getRange(i + 1, 1, 1, COLUMNAS_USUARIOS.length).getValues()[0]));
+      }
       return { ok: true, estadoVerificacion: nuevo };
     }
   }
@@ -1265,8 +2182,10 @@ function crearBusqueda(d) {
 
   var fila = [id, ahora, ahora, hab.sesion.usuario, hab.fila[2]].concat(valoresBusqueda(d, titulo, estado));
   hoja.appendRow(fila);
+  var busqueda = filaAObjeto(COLUMNAS_BUSQUEDAS, fila);
+  var notificaciones = notificarPostulantesCompatibles(busqueda);
 
-  return { ok: true, id: id, mensaje: 'Búsqueda guardada correctamente.' };
+  return { ok: true, id: id, mensaje: 'Búsqueda guardada correctamente.', notificaciones: notificaciones };
 }
 
 function listarMisBusquedas(d) {
@@ -1340,7 +2259,9 @@ function actualizarBusqueda(d) {
       // Columnas 6..32 (Puesto..Pregunta2)
       hoja.getRange(filaNum, 6, 1, 27).setValues([valoresBusqueda(d, titulo, estado)]);
       var actualizada = hoja.getRange(filaNum, 1, 1, COLUMNAS_BUSQUEDAS.length).getValues()[0];
-      return { ok: true, mensaje: 'Búsqueda actualizada.', busqueda: filaAObjeto(COLUMNAS_BUSQUEDAS, actualizada) };
+      var busquedaActualizada = filaAObjeto(COLUMNAS_BUSQUEDAS, actualizada);
+      var notificaciones = notificarPostulantesCompatibles(busquedaActualizada);
+      return { ok: true, mensaje: 'Búsqueda actualizada.', busqueda: busquedaActualizada, notificaciones: notificaciones };
     }
   }
   return { ok: false, error: 'Búsqueda no encontrada.' };
@@ -1368,7 +2289,11 @@ function cambiarEstadoBusqueda(d) {
       }
       hoja.getRange(i + 1, 13).setValue(nuevo);        // Estado
       hoja.getRange(i + 1, 3).setValue(new Date());    // FechaActualizacion
-      return { ok: true, estado: nuevo };
+      var actualizada = hoja.getRange(i + 1, 1, 1, COLUMNAS_BUSQUEDAS.length).getValues()[0];
+      var notificaciones = nuevo === 'activa'
+        ? notificarPostulantesCompatibles(filaAObjeto(COLUMNAS_BUSQUEDAS, actualizada))
+        : { enviados: 0, candidatos: 0 };
+      return { ok: true, estado: nuevo, notificaciones: notificaciones };
     }
   }
   return { ok: false, error: 'Búsqueda no encontrada.' };
@@ -1504,7 +2429,14 @@ function registrarPostulante(d) {
   ]);
 
   var fila = hoja.getRange(hoja.getLastRow(), 1, 1, COLUMNAS_PERFILES.length).getValues()[0];
-  return { ok: true, token: token, perfil: perfilDesdeFila(fila), mensaje: 'Cuenta creada correctamente.' };
+  var emailRegistro = emailRegistroPostulante_(d);
+  return {
+    ok: true,
+    token: token,
+    perfil: perfilDesdeFila(fila),
+    mensaje: 'Cuenta creada correctamente.',
+    emailRegistroOk: !!(emailRegistro && emailRegistro.ok)
+  };
 }
 
 function loginPostulante(d) {
@@ -1580,10 +2512,13 @@ function postularConPerfil(d) {
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var hoja = obtenerHoja(ss, HOJA_POSTULANTES, COLUMNAS_POSTULANTES);
+  var existente = buscarPostulacionExistente_(hoja, p.email, d.busquedaId);
+  if (existente) return errorPostulacionDuplicada_(existente);
+
   var id = Utilities.getUuid();
   var ahora = new Date();
 
-  hoja.appendRow([
+  var fila = [
     id, ahora,
     p.nombre, p.apellido, p.email, p.telefono, (limpiar(d.puestoDeseado) || p.puestoDeseado),
     p.fechaNacimiento, p.identificacion, p.provincia, p.codigoPostalCiudad, p.perfilProfesional,
@@ -1592,9 +2527,27 @@ function postularConPerfil(d) {
     p.firmaConsentimientoUrl, (p.firmaConsentimientoUrl ? ahora : ''),
     p.firmaConformidadUrl, (p.firmaConformidadUrl ? ahora : ''),
     limpiar(d.busquedaId), limpiar(d.busquedaPuesto), normalizarJSON(d.respuestasBusqueda)
-  ]);
+  ];
 
-  return { ok: true, id: id, mensaje: '¡Postulación enviada!' };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    existente = buscarPostulacionExistente_(hoja, p.email, d.busquedaId);
+    if (existente) return errorPostulacionDuplicada_(existente);
+    hoja.appendRow(fila);
+  } finally {
+    lock.releaseLock();
+  }
+
+  var emailPostulacion = emailPostulacionExitosa_({
+    nombre: p.nombre,
+    apellido: p.apellido,
+    email: p.email,
+    puestoDeseado: p.puestoDeseado,
+    busquedaPuesto: d.busquedaPuesto
+  }, id);
+
+  return { ok: true, id: id, mensaje: '¡Postulación enviada!', emailPostulacionOk: !!(emailPostulacion && emailPostulacion.ok) };
 }
 
 // Devuelve las búsquedas a las que se postuló el postulante logueado.
