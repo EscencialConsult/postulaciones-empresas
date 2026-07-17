@@ -52,6 +52,14 @@
   .verif-rechazado { background: rgba(209,67,111,.16); color: #b0234f; }
   .verif-pendiente, .verif-no_verificado { background: rgba(228,199,106,.22); color: #92700a; }
 
+  /* Estado de búsqueda */
+  .eb { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: .78rem; font-weight: 700; text-transform: capitalize; }
+  .eb-activa { background: rgba(18,185,129,.16); color: #0f766e; }
+  .eb-borrador { background: rgba(148,163,184,.22); color: #475569; }
+  .eb-pausada { background: rgba(228,199,106,.22); color: #92700a; }
+  .eb-cerrada { background: rgba(148,163,184,.30); color: #334155; }
+  .eb-eliminada { background: rgba(209,67,111,.16); color: #b0234f; }
+
   .btn-mini { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--borde); background: #fff; cursor: pointer; font-weight: 700; font-size: .82rem; color: var(--dark); }
   .btn-aprobar { border-color: transparent; background: linear-gradient(135deg,#6be1e3,#12b981); color: #04352a; }
   .btn-rechazar { color: var(--error); border-color: rgba(209,67,111,.4); }
@@ -144,6 +152,7 @@
 
     <div class="tabs">
       <button class="tab activo" data-tab="postulantes">Postulantes</button>
+      <button class="tab" data-tab="busquedas">Búsquedas</button>
       <button class="tab" data-tab="empresas">Empresas <span id="badgePend"></span></button>
     </div>
 
@@ -165,6 +174,43 @@
           <tbody id="tbodyPost"></tbody>
         </table>
         <div class="vacio oculto" id="vacioPost">No hay postulantes.</div>
+      </div>
+    </section>
+
+    <!-- TAB BÚSQUEDAS -->
+    <section id="tabBusquedas" class="oculto">
+      <!-- Vista lista -->
+      <div id="admBusqLista">
+        <div class="barra-busqueda">
+          <input id="qBusq" placeholder="Buscar por empresa, puesto, provincia…">
+        </div>
+        <div class="resumen" id="resumenBusq"></div>
+        <div class="card tabla-wrap">
+          <div class="cargando" id="cargandoBusq">Cargando búsquedas…</div>
+          <table id="tablaBusq" class="oculto">
+            <thead><tr>
+              <th>Empresa</th><th>Puesto</th><th>Provincia</th><th>Estado</th><th>Publicada</th><th>Postulantes</th>
+            </tr></thead>
+            <tbody id="tbodyBusq"></tbody>
+          </table>
+          <div class="vacio oculto" id="vacioBusq">No hay búsquedas publicadas.</div>
+        </div>
+      </div>
+      <!-- Vista detalle -->
+      <div id="admBusqDetalle" class="oculto">
+        <button class="btn btn-sec" id="btnVolverBusq" style="margin-bottom:16px">← Volver a búsquedas</button>
+        <div id="admBusqInfo"></div>
+        <h3 style="margin:22px 0 10px">Postulantes de esta búsqueda</h3>
+        <div class="resumen" id="resumenBusqPost"></div>
+        <div class="card tabla-wrap">
+          <table id="tablaBusqPost" class="oculto">
+            <thead><tr>
+              <th>Nombre</th><th>Puesto deseado</th><th>Email</th><th>Teléfono</th><th>Provincia</th><th>Registro</th>
+            </tr></thead>
+            <tbody id="tbodyBusqPost"></tbody>
+          </table>
+          <div class="vacio oculto" id="vacioBusqPost">No hay postulantes en esta búsqueda.</div>
+        </div>
       </div>
     </section>
 
@@ -199,6 +245,7 @@
   let token = sessionStorage.getItem('admtoken') || '';
   let postulantes = [];
   let empresas = [];
+  let busquedas = [];
 
   const loginWrap = document.getElementById('loginWrap');
   const panelWrap = document.getElementById('panelWrap');
@@ -233,11 +280,12 @@
     panelWrap.classList.add('oculto'); loginWrap.classList.remove('oculto');
   };
 
-  function entrarPanel() {
+  async function entrarPanel() {
     loginWrap.classList.add('oculto');
     panelWrap.classList.remove('oculto');
-    cargarPostulantes();
+    await cargarPostulantes();   // primero: las búsquedas cuentan sus postulantes desde acá
     cargarEmpresas();
+    cargarBusquedasAdmin();
   }
 
   /* ---------- TABS ---------- */
@@ -247,6 +295,7 @@
       t.classList.add('activo');
       const tab = t.dataset.tab;
       document.getElementById('tabPostulantes').classList.toggle('oculto', tab !== 'postulantes');
+      document.getElementById('tabBusquedas').classList.toggle('oculto', tab !== 'busquedas');
       document.getElementById('tabEmpresas').classList.toggle('oculto', tab !== 'empresas');
     };
   });
@@ -469,6 +518,118 @@
       cargarEmpresas();
     } catch (ex) { alert('Error: ' + ex.message); }
   }
+
+  /* ---------- BÚSQUEDAS (SuperAdmin) ---------- */
+  // Snapshot propio de postulantes (todos), para contar/listar por búsqueda sin
+  // depender del buscador de la pestaña Postulantes.
+  let busqPostulantes = [];
+
+  async function cargarBusquedasAdmin() {
+    const cargando = document.getElementById('cargandoBusq');
+    const tabla = document.getElementById('tablaBusq');
+    const vacio = document.getElementById('vacioBusq');
+    cargando.classList.remove('oculto'); tabla.classList.add('oculto'); vacio.classList.add('oculto');
+    try {
+      const [rb, rp] = await Promise.all([
+        apiCall({ action: 'listarBusquedasAdmin', token: token }),
+        apiCall({ action: 'listar', token: token })   // sin q: todos los postulantes
+      ]);
+      if (!rb.ok) { if (sesionExpirada(rb.error)) return; throw new Error(rb.error); }
+      busquedas = rb.busquedas || [];
+      busqPostulantes = rp.ok ? (rp.registros || []) : [];
+      pintarBusquedas(busquedas);
+    } catch (ex) {
+      document.getElementById('resumenBusq').textContent = 'Error: ' + ex.message;
+    } finally { cargando.classList.add('oculto'); }
+  }
+
+  function postulantesDeBusqueda(b) {
+    return busqPostulantes.filter(r => r.BusquedaID && String(r.BusquedaID) === String(b.ID));
+  }
+
+  function badgeEstadoBusq(estado) {
+    const e = String(estado || 'activa').toLowerCase();
+    return `<span class="eb eb-${esc(e)}">${esc(e)}</span>`;
+  }
+
+  function pintarBusquedas(lista) {
+    const tbody = document.getElementById('tbodyBusq');
+    const tabla = document.getElementById('tablaBusq');
+    const vacio = document.getElementById('vacioBusq');
+    tbody.innerHTML = '';
+    document.getElementById('resumenBusq').textContent = `${lista.length} búsqueda(s)`;
+    if (!lista.length) { vacio.classList.remove('oculto'); tabla.classList.add('oculto'); return; }
+    vacio.classList.add('oculto'); tabla.classList.remove('oculto');
+    lista.forEach(b => {
+      const nPost = postulantesDeBusqueda(b).length;
+      const tr = document.createElement('tr');
+      tr.className = 'fila-click';
+      tr.innerHTML = `
+        <td><strong>${esc(b.Empresa) || '—'}</strong></td>
+        <td>${esc(b.Puesto) || '—'}</td>
+        <td>${esc(b.Provincia) || '—'}</td>
+        <td>${badgeEstadoBusq(b.Estado)}</td>
+        <td>${fecha(b.FechaCreacion)}</td>
+        <td>${nPost}</td>`;
+      tr.onclick = () => abrirBusquedaAdmin(b);
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Búsqueda en vivo (empresa, puesto, provincia, estado, usuario)
+  document.getElementById('qBusq').addEventListener('input', function () {
+    const q = this.value.trim().toLowerCase();
+    if (!q) { pintarBusquedas(busquedas); return; }
+    pintarBusquedas(busquedas.filter(b =>
+      [b.Empresa, b.Puesto, b.Provincia, b.Localidad, b.Estado, b.UsuarioEmpresa]
+        .map(x => String(x || '').toLowerCase()).join(' ').indexOf(q) !== -1));
+  });
+
+  function abrirBusquedaAdmin(b) {
+    document.getElementById('admBusqInfo').innerHTML = `
+      <div class="seccion"><h3>Datos de la búsqueda</h3>
+        ${dato('Empresa', b.Empresa)}${dato('Usuario', b.UsuarioEmpresa)}
+        ${dato('Puesto', b.Puesto)}
+        ${dato('Provincia', b.Provincia)}${dato('Localidad', b.Localidad)}
+        ${dato('Modalidad', b.Modalidad)}${dato('Vacantes', b.Vacantes)}
+        <div class="dato"><span class="k">Estado</span><span>${badgeEstadoBusq(b.Estado)}</span></div>
+        ${dato('Publicada', fecha(b.FechaCreacion))}${dato('Actualizada', fecha(b.FechaActualizacion))}
+      </div>`;
+
+    const lista = postulantesDeBusqueda(b);
+    const tbody = document.getElementById('tbodyBusqPost');
+    const tabla = document.getElementById('tablaBusqPost');
+    const vacio = document.getElementById('vacioBusqPost');
+    tbody.innerHTML = '';
+    document.getElementById('resumenBusqPost').textContent = `${lista.length} postulante(s)`;
+    if (!lista.length) {
+      vacio.classList.remove('oculto'); tabla.classList.add('oculto');
+    } else {
+      vacio.classList.add('oculto'); tabla.classList.remove('oculto');
+      lista.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.className = 'fila-click';
+        tr.innerHTML = `
+          <td><strong>${esc(r.Nombre)} ${esc(r.Apellido)}</strong></td>
+          <td>${r.PuestoDeseado ? `<span class="badge">${esc(r.PuestoDeseado)}</span>` : '—'}</td>
+          <td>${esc(r.Email)}</td>
+          <td>${esc(r.Telefono) || '—'}</td>
+          <td>${esc(r.Provincia) || '—'}</td>
+          <td>${fecha(r.FechaRegistro)}</td>`;
+        tr.onclick = () => abrirDetalle(r);
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('admBusqLista').classList.add('oculto');
+    document.getElementById('admBusqDetalle').classList.remove('oculto');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  document.getElementById('btnVolverBusq').onclick = () => {
+    document.getElementById('admBusqDetalle').classList.add('oculto');
+    document.getElementById('admBusqLista').classList.remove('oculto');
+  };
 
   /* ---------- DETALLE POSTULANTE ---------- */
   function abrirDetalle(r) {

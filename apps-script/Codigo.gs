@@ -134,6 +134,7 @@ function manejar(e) {
       // Búsquedas (avisos de empleo)
       case 'crearBusqueda':         return json(crearBusqueda(datos));
       case 'listarMisBusquedas':    return json(listarMisBusquedas(datos));
+      case 'listarBusquedasAdmin':  return json(listarBusquedasAdmin(datos));
       case 'actualizarBusqueda':    return json(actualizarBusqueda(datos));
       case 'cambiarEstadoBusqueda': return json(cambiarEstadoBusqueda(datos));
       case 'eliminarBusqueda':      return json(eliminarBusqueda(datos));
@@ -727,6 +728,23 @@ function actualizarMiEmpresa(d) {
  *  LISTAR / BUSCAR
  * ----------------------------------------------------------------- */
 
+// Devuelve un mapa { BusquedaID: true } con las búsquedas publicadas por una
+// empresa (identificada por su usuario). Se usa para decidir qué postulantes
+// puede ver esa empresa.
+function busquedaIdsDeEmpresa(ss, usuario) {
+  var hoja = obtenerHoja(ss, HOJA_BUSQUEDAS, COLUMNAS_BUSQUEDAS);
+  var valores = hoja.getDataRange().getValues();
+  var u = String(usuario || '').trim().toLowerCase();
+  var ids = {};
+  for (var i = 1; i < valores.length; i++) {
+    // Columna 3 = UsuarioEmpresa (dueño), columna 0 = ID de la búsqueda.
+    if (String(valores[i][3]).trim().toLowerCase() === u) {
+      ids[String(valores[i][0]).trim()] = true;
+    }
+  }
+  return ids;
+}
+
 function listarPostulantes(d) {
   var sesion = validarToken(d.token);
   if (!sesion) return { ok: false, error: 'Sesión inválida o expirada. Vuelve a iniciar sesión.' };
@@ -738,6 +756,18 @@ function listarPostulantes(d) {
   var registros = [];
   for (var i = 1; i < valores.length; i++) {
     registros.push(filaAObjeto(COLUMNAS_POSTULANTES, valores[i]));
+  }
+
+  // Visibilidad (opción C): el SuperAdmin ve todo; una empresa ve solo a los
+  // postulantes "generales" (sin BusquedaID) más los que se postularon a SUS
+  // propias búsquedas. Los que se postularon a la búsqueda de otra empresa
+  // quedan reservados para esa empresa.
+  if (String(sesion.rol) !== 'admin') {
+    var misBusquedas = busquedaIdsDeEmpresa(ss, sesion.usuario);
+    registros = registros.filter(function (r) {
+      var bid = String(r.BusquedaID || '').trim();
+      return !bid || misBusquedas[bid];
+    });
   }
 
   // Búsqueda por texto libre.
@@ -1072,9 +1102,31 @@ function listarMisBusquedas(d) {
 
   var lista = [];
   for (var i = 1; i < valores.length; i++) {
-    if (String(valores[i][3]).trim().toLowerCase() === usuario) {
+    // Se omiten las eliminadas: siguen archivadas para el SuperAdmin, no para la empresa.
+    if (String(valores[i][3]).trim().toLowerCase() === usuario &&
+        String(valores[i][12] || '').toLowerCase() !== 'eliminada') {
       lista.push(filaAObjeto(COLUMNAS_BUSQUEDAS, valores[i]));
     }
+  }
+  lista.reverse(); // más recientes primero
+  return { ok: true, total: lista.length, busquedas: lista };
+}
+
+/**
+ * Lista TODAS las búsquedas de todas las empresas para el panel de SuperAdmin,
+ * incluidas las que la empresa marcó como eliminadas (quedan archivadas acá).
+ * Incluye el nombre y el usuario de la empresa que la publicó.
+ */
+function listarBusquedasAdmin(d) {
+  if (!requireAdmin(d.token)) return { ok: false, error: 'Acceso exclusivo del administrador.' };
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_BUSQUEDAS, COLUMNAS_BUSQUEDAS);
+  var valores = hoja.getDataRange().getValues();
+
+  var lista = [];
+  for (var i = 1; i < valores.length; i++) {
+    lista.push(filaAObjeto(COLUMNAS_BUSQUEDAS, valores[i]));
   }
   lista.reverse(); // más recientes primero
   return { ok: true, total: lista.length, busquedas: lista };
@@ -1160,7 +1212,10 @@ function eliminarBusqueda(d) {
       if (String(valores[i][3]).trim().toLowerCase() !== usuario) {
         return { ok: false, error: 'No podés eliminar esta búsqueda.' };
       }
-      hoja.deleteRow(i + 1);
+      // Borrado "suave": la búsqueda desaparece para la empresa y del sitio
+      // público, pero la fila se conserva para el panel de SuperAdmin.
+      hoja.getRange(i + 1, 13).setValue('eliminada');   // Estado
+      hoja.getRange(i + 1, 3).setValue(new Date());     // FechaActualizacion
       return { ok: true, mensaje: 'Búsqueda eliminada.' };
     }
   }
