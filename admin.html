@@ -200,7 +200,10 @@
       <div id="admBusqDetalle" class="oculto">
         <button class="btn btn-sec" id="btnVolverBusq" style="margin-bottom:16px">← Volver a búsquedas</button>
         <div id="admBusqInfo"></div>
-        <h3 style="margin:22px 0 10px">Postulantes de esta búsqueda</h3>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:22px 0 10px">
+          <h3 style="margin:0">Postulantes de esta búsqueda</h3>
+          <button class="btn btn-sec" id="btnExportarBusqPost">⬇ Exportar CSV</button>
+        </div>
         <div class="resumen" id="resumenBusqPost"></div>
         <div class="card tabla-wrap">
           <table id="tablaBusqPost" class="oculto">
@@ -523,6 +526,7 @@
   // Snapshot propio de postulantes (todos), para contar/listar por búsqueda sin
   // depender del buscador de la pestaña Postulantes.
   let busqPostulantes = [];
+  let busqAbierta = null;   // búsqueda cuyo detalle se está viendo (para exportar)
 
   async function cargarBusquedasAdmin() {
     const cargando = document.getElementById('cargandoBusq');
@@ -586,6 +590,7 @@
   });
 
   function abrirBusquedaAdmin(b) {
+    busqAbierta = b;
     document.getElementById('admBusqInfo').innerHTML = `
       <div class="seccion"><h3>Datos de la búsqueda</h3>
         ${dato('Empresa', b.Empresa)}${dato('Usuario', b.UsuarioEmpresa)}
@@ -629,6 +634,13 @@
   document.getElementById('btnVolverBusq').onclick = () => {
     document.getElementById('admBusqDetalle').classList.add('oculto');
     document.getElementById('admBusqLista').classList.remove('oculto');
+  };
+
+  document.getElementById('btnExportarBusqPost').onclick = () => {
+    if (!busqAbierta) return;
+    const slug = String(busqAbierta.Empresa || busqAbierta.Puesto || 'busqueda')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
+    exportarPostulantesCSV(postulantesDeBusqueda(busqAbierta), 'postulantes_' + (slug || 'busqueda'));
   };
 
   /* ---------- DETALLE POSTULANTE ---------- */
@@ -692,13 +704,14 @@
   document.getElementById('overlay').onclick = (e) => { if (e.target.id === 'overlay') cerrarModal(); };
 
   /* ---------- EXPORTAR CSV ---------- */
-  document.getElementById('btnExportar').onclick = () => {
-    if (!postulantes.length) { alert('No hay datos para exportar.'); return; }
+  // Exporta una lista de postulantes a CSV (reutilizable en varias vistas).
+  function exportarPostulantesCSV(lista, nombreBase) {
+    if (!lista || !lista.length) { alert('No hay datos para exportar.'); return; }
     const cols = ['Nombre','Apellido','Email','Telefono','PuestoDeseado','FechaNacimiento',
       'Identificacion','Provincia','CodigoPostalCiudad','PerfilProfesional','DescripcionPerfil',
       'DispViajar','DispCambioResidencia','PrimerEmpleo','CVUrl'];
     const cab = cols.concat(['Formacion','Idiomas','Experiencias','FechaRegistro']);
-    const filas = postulantes.map(r => {
+    const filas = lista.map(r => {
       const base = cols.map(c => csvCampo(r[c]));
       base.push(csvCampo(parseArr(r.Formacion).map(f => `${f.nivel} en ${f.centro} (${f.estado}, ${f.desde}-${f.hasta})`).join(' | ')));
       base.push(csvCampo(parseArr(r.Idiomas).map(x => `${x.idioma}: ${x.nivel}`).join(' | ')));
@@ -710,9 +723,11 @@
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'postulantes_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.download = (nombreBase || 'postulantes') + '_' + new Date().toISOString().slice(0,10) + '.csv';
     a.click();
-  };
+  }
+
+  document.getElementById('btnExportar').onclick = () => exportarPostulantesCSV(postulantes, 'postulantes');
 
   document.getElementById('btnExportarEmp').onclick = () => {
     if (!empresas.length) { alert('No hay datos para exportar.'); return; }
