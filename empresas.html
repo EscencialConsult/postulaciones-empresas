@@ -113,6 +113,20 @@
   tbody tr:last-child td { border-bottom: none; }
   tbody tr:hover { background: #faf7fd; }
 
+  /* Selección de filas para exportar */
+  .col-sel { width: 1%; padding-right: 0 !important; }
+  td.col-sel { padding-right: 0 !important; }
+  .col-sel input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--acento); vertical-align: middle; }
+  .sel-head { position: relative; display: inline-flex; align-items: center; gap: 2px; }
+  .sel-caret { background: none; border: none; cursor: pointer; color: var(--muted); font-size: .7rem; padding: 2px; line-height: 1; }
+  .sel-caret:hover { color: var(--dark); }
+  .sel-menu { position: absolute; top: 100%; left: 0; margin-top: 4px; background: #fff; border: 1px solid var(--borde); border-radius: 10px; box-shadow: 0 12px 28px rgba(26,24,29,.16); z-index: 20; min-width: 170px; overflow: hidden; }
+  .sel-menu button { display: block; width: 100%; text-align: left; background: none; border: none; padding: 10px 14px; font-size: .86rem; color: var(--dark); cursor: pointer; text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .sel-menu button:hover { background: #faf7fd; }
+  tr.fila-sel { background: #fbf3fb; }
+  tr.fila-sel:hover { background: #f7ebf6; }
+  .sel-info { color: var(--acento); font-weight: 700; font-size: .9rem; margin-left: 4px; }
+
   .cargando, .vacio { text-align: center; padding: 48px; color: var(--muted); }
 
   /* Modal detalle */
@@ -572,6 +586,7 @@
             <input id="q" placeholder="Buscar por nombre, email, skill, puesto…">
           </div>
           <div class="ats-top-actions">
+            <span class="sel-info" id="selInfo"></span>
             <button class="btn btn-sec" id="btnLimpiarFiltros" type="button">Limpiar filtros</button>
             <button class="btn btn-sec" id="btnExportar" type="button">⬇ Exportar CSV</button>
           </div>
@@ -615,8 +630,18 @@
         <div class="cargando" id="cargando">Cargando perfiles…</div>
         <table id="tabla" class="oculto">
           <thead><tr>
+            <th class="col-sel">
+              <span class="sel-head">
+                <input type="checkbox" id="selAll" title="Seleccionar / deseleccionar la lista">
+                <button type="button" class="sel-caret" id="selMenuBtn" title="Opciones de selección">▾</button>
+                <span class="sel-menu oculto" id="selMenu">
+                  <button type="button" data-sel="todo">Seleccionar todo</button>
+                  <button type="button" data-sel="ninguno">Deseleccionar todo</button>
+                </span>
+              </span>
+            </th>
             <th>Nombre</th><th>Puesto deseado</th><th>Email</th><th>Teléfono</th>
-            <th>Provincia</th><th>Idiomas</th><th>Registro</th>
+            <th>Provincia</th>
           </tr></thead>
           <tbody id="tbody"></tbody>
         </table>
@@ -783,6 +808,7 @@
           <div class="ats-top">
             <div class="ats-search"><input id="dpq" placeholder="Buscar por nombre, email, skill…"></div>
             <div class="ats-top-actions">
+              <span class="sel-info" id="dpSelInfo"></span>
               <button class="btn btn-sec" id="btnDpLimpiar" type="button">Limpiar filtros</button>
               <button class="btn btn-sec" id="btnDpExportar" type="button">⬇ Exportar CSV</button>
             </div>
@@ -811,8 +837,18 @@
         <div class="card tabla-wrap">
           <table id="dpTabla" class="oculto">
             <thead><tr>
+              <th class="col-sel">
+                <span class="sel-head">
+                  <input type="checkbox" id="dpSelAll" title="Seleccionar / deseleccionar la lista">
+                  <button type="button" class="sel-caret" id="dpSelMenuBtn" title="Opciones de selección">▾</button>
+                  <span class="sel-menu oculto" id="dpSelMenu">
+                    <button type="button" data-sel="todo">Seleccionar todo</button>
+                    <button type="button" data-sel="ninguno">Deseleccionar todo</button>
+                  </span>
+                </span>
+              </th>
               <th>Nombre</th><th>Puesto deseado</th><th>Email</th><th>Teléfono</th>
-              <th>Provincia</th><th>Idiomas</th><th>Registro</th>
+              <th>Provincia</th>
             </tr></thead>
             <tbody id="dpTbody"></tbody>
           </table>
@@ -2246,6 +2282,7 @@
 
   /* ---------- CARGAR (trae toda la base; se filtra en el cliente) ---------- */
   let registrosFiltrados = [];
+  const seleccion = new Set();   // __uid de los postulantes marcados para exportar
 
   async function cargar() {
     const cargando = document.getElementById('cargando');
@@ -2261,6 +2298,8 @@
         throw new Error(r.error);
       }
       registros = r.registros || [];
+      registros.forEach((reg, i) => { reg.__uid = i; });
+      seleccion.clear();
       poblarFiltrosATS();
       aplicarFiltrosATS();
       renderDashboard();
@@ -2390,21 +2429,73 @@
     if (!lista.length) { vacio.classList.remove('oculto'); tabla.classList.add('oculto'); return; }
     vacio.classList.add('oculto'); tabla.classList.remove('oculto');
 
-    lista.forEach((r, i) => {
-      const idiomas = parseArr(r.Idiomas).map(x => x.idioma).filter(Boolean).join(', ');
+    lista.forEach((r) => {
+      const marcado = seleccion.has(r.__uid);
       const tr = document.createElement('tr');
+      if (marcado) tr.classList.add('fila-sel');
       tr.innerHTML = `
+        <td class="col-sel"><input type="checkbox" class="chk-fila" ${marcado ? 'checked' : ''} title="Seleccionar postulante"></td>
         <td><strong>${esc(r.Nombre)} ${esc(r.Apellido)}</strong></td>
         <td>${r.PuestoDeseado ? `<span class="badge">${esc(r.PuestoDeseado)}</span>` : '—'}</td>
         <td>${esc(r.Email)}</td>
         <td>${esc(r.Telefono) || '—'}</td>
-        <td>${esc(r.Provincia) || '—'}</td>
-        <td>${esc(idiomas) || '—'}</td>
-        <td>${fecha(r.FechaRegistro)}</td>`;
+        <td>${esc(r.Provincia) || '—'}</td>`;
+      const chk = tr.querySelector('.chk-fila');
+      chk.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (chk.checked) seleccion.add(r.__uid); else seleccion.delete(r.__uid);
+        tr.classList.toggle('fila-sel', chk.checked);
+        actualizarSeleccion();
+      });
       tr.onclick = () => abrirDetalle(r);
       tbody.appendChild(tr);
     });
+    actualizarSeleccion();
   }
+
+  /* ---------- SELECCIÓN PARA EXPORTAR ---------- */
+  // Postulantes marcados, respetando el orden del filtro actual.
+  function postulantesSeleccionados() {
+    return registrosFiltrados.filter(r => seleccion.has(r.__uid));
+  }
+
+  // Refleja el estado de la selección en el checkbox general, la info y el botón de exportar.
+  function actualizarSeleccion() {
+    const visibles = registrosFiltrados;
+    const marcadosVisibles = visibles.filter(r => seleccion.has(r.__uid)).length;
+    const selAll = document.getElementById('selAll');
+    if (selAll) {
+      selAll.checked = visibles.length > 0 && marcadosVisibles === visibles.length;
+      selAll.indeterminate = marcadosVisibles > 0 && marcadosVisibles < visibles.length;
+    }
+    const info = document.getElementById('selInfo');
+    if (info) info.textContent = seleccion.size ? `${seleccion.size} seleccionado(s)` : '';
+    const btn = document.getElementById('btnExportar');
+    if (btn) btn.textContent = seleccion.size ? `⬇ Exportar seleccionados (${seleccion.size})` : '⬇ Exportar CSV';
+  }
+
+  // Marca o desmarca todos los postulantes del filtro actual.
+  function seleccionarTodo(marcar) {
+    registrosFiltrados.forEach(r => { if (marcar) seleccion.add(r.__uid); else seleccion.delete(r.__uid); });
+    pintarTabla(registrosFiltrados);
+  }
+
+  document.getElementById('selAll').addEventListener('click', function (e) {
+    e.stopPropagation();
+    seleccionarTodo(this.checked);
+  });
+  (function () {
+    const btnMenu = document.getElementById('selMenuBtn');
+    const menu = document.getElementById('selMenu');
+    btnMenu.addEventListener('click', (e) => { e.stopPropagation(); menu.classList.toggle('oculto'); });
+    menu.querySelectorAll('button[data-sel]').forEach(b =>
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        seleccionarTodo(b.dataset.sel === 'todo');
+        menu.classList.add('oculto');
+      }));
+    document.addEventListener('click', () => menu.classList.add('oculto'));
+  })();
 
   /* ---------- DETALLE ---------- */
   function abrirDetalle(r) {
@@ -2503,8 +2594,11 @@
     a.click();
   }
 
-  document.getElementById('btnExportar').onclick = () =>
+  document.getElementById('btnExportar').onclick = () => {
+    const sel = postulantesSeleccionados();
+    if (sel.length) { exportarCSV(sel, 'postulantes_seleccionados'); return; }
     exportarCSV((registrosFiltrados && registrosFiltrados.length) ? registrosFiltrados : registros, 'postulantes');
+  };
 
   /* ---------- Helpers ---------- */
   function parseArr(v) {
@@ -2693,6 +2787,7 @@
   /* ---------- Vista DETALLE de una búsqueda ---------- */
   let busqDetPostulantes = [];
   let dpFiltrados = [];
+  const dpSeleccion = new Set();   // __uid marcados para exportar en la vista de búsqueda
   const DP_CAMPOS = ['dpq', 'dpPuesto', 'dpLocalidad', 'dpIdioma', 'dpFormacion', 'dpViajar', 'dpExperiencia', 'dpCV', 'dpOrden'];
 
   function volverALista() {
@@ -2702,6 +2797,7 @@
 
   function abrirDetalleBusqueda(b) {
     busqDetPostulantes = postulantesDeBusqueda(b);
+    dpSeleccion.clear();
     renderDetalleInfo(b);
     poblarFiltrosDetalle();
     DP_CAMPOS.forEach(id => { const el = document.getElementById(id); if (el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = ''; });
@@ -2796,16 +2892,23 @@
     } else {
       vacio.classList.add('oculto'); tabla.classList.remove('oculto');
       out.forEach(r => {
-        const idiomas = parseArr(r.Idiomas).map(x => x.idioma).filter(Boolean).join(', ');
+        const marcado = dpSeleccion.has(r.__uid);
         const tr = document.createElement('tr');
+        if (marcado) tr.classList.add('fila-sel');
         tr.innerHTML =
+          '<td class="col-sel"><input type="checkbox" class="chk-fila" ' + (marcado ? 'checked' : '') + ' title="Seleccionar postulante"></td>' +
           '<td><strong>' + esc(r.Nombre) + ' ' + esc(r.Apellido) + '</strong></td>' +
           '<td>' + (r.PuestoDeseado ? '<span class="badge">' + esc(r.PuestoDeseado) + '</span>' : '—') + '</td>' +
           '<td>' + esc(r.Email) + '</td>' +
           '<td>' + (esc(r.Telefono) || '—') + '</td>' +
-          '<td>' + (esc(r.Provincia) || '—') + '</td>' +
-          '<td>' + (esc(idiomas) || '—') + '</td>' +
-          '<td>' + fecha(r.FechaRegistro) + '</td>';
+          '<td>' + (esc(r.Provincia) || '—') + '</td>';
+        const chk = tr.querySelector('.chk-fila');
+        chk.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (chk.checked) dpSeleccion.add(r.__uid); else dpSeleccion.delete(r.__uid);
+          tr.classList.toggle('fila-sel', chk.checked);
+          dpActualizarSeleccion();
+        });
         tr.onclick = () => abrirDetalle(r);
         tbody.appendChild(tr);
       });
@@ -2813,7 +2916,48 @@
     const total = busqDetPostulantes.length;
     document.getElementById('dpResumen').textContent =
       out.length === total ? `${total} postulante(s)` : `${out.length} de ${total} postulante(s)`;
+    dpActualizarSeleccion();
   }
+
+  /* ---------- SELECCIÓN PARA EXPORTAR (vista búsqueda) ---------- */
+  function dpPostulantesSeleccionados() {
+    return dpFiltrados.filter(r => dpSeleccion.has(r.__uid));
+  }
+
+  function dpActualizarSeleccion() {
+    const marcadosVisibles = dpFiltrados.filter(r => dpSeleccion.has(r.__uid)).length;
+    const selAll = document.getElementById('dpSelAll');
+    if (selAll) {
+      selAll.checked = dpFiltrados.length > 0 && marcadosVisibles === dpFiltrados.length;
+      selAll.indeterminate = marcadosVisibles > 0 && marcadosVisibles < dpFiltrados.length;
+    }
+    const info = document.getElementById('dpSelInfo');
+    if (info) info.textContent = dpSeleccion.size ? `${dpSeleccion.size} seleccionado(s)` : '';
+    const btn = document.getElementById('btnDpExportar');
+    if (btn) btn.textContent = dpSeleccion.size ? `⬇ Exportar seleccionados (${dpSeleccion.size})` : '⬇ Exportar CSV';
+  }
+
+  function dpSeleccionarTodo(marcar) {
+    dpFiltrados.forEach(r => { if (marcar) dpSeleccion.add(r.__uid); else dpSeleccion.delete(r.__uid); });
+    aplicarFiltrosDetalle();
+  }
+
+  document.getElementById('dpSelAll').addEventListener('click', function (e) {
+    e.stopPropagation();
+    dpSeleccionarTodo(this.checked);
+  });
+  (function () {
+    const btnMenu = document.getElementById('dpSelMenuBtn');
+    const menu = document.getElementById('dpSelMenu');
+    btnMenu.addEventListener('click', (e) => { e.stopPropagation(); menu.classList.toggle('oculto'); });
+    menu.querySelectorAll('button[data-sel]').forEach(b =>
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dpSeleccionarTodo(b.dataset.sel === 'todo');
+        menu.classList.add('oculto');
+      }));
+    document.addEventListener('click', () => menu.classList.add('oculto'));
+  })();
 
   // Wiring de la vista detalle
   document.getElementById('btnVolverBusq').onclick = volverALista;
@@ -2828,8 +2972,11 @@
     document.getElementById('dpOrden').value = 'reciente';
     aplicarFiltrosDetalle();
   };
-  document.getElementById('btnDpExportar').onclick = () =>
+  document.getElementById('btnDpExportar').onclick = () => {
+    const sel = dpPostulantesSeleccionados();
+    if (sel.length) { exportarCSV(sel, 'postulantes_busqueda_seleccionados'); return; }
     exportarCSV(dpFiltrados.length ? dpFiltrados : busqDetPostulantes, 'postulantes_busqueda');
+  };
 
   function abrirFormBusqueda(b) {
     initSelectoresBusqueda();
