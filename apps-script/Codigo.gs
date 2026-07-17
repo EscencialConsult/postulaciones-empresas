@@ -888,23 +888,59 @@ function busquedaIdsDeEmpresa(ss, usuario) {
   return ids;
 }
 
+// Convierte una fila de la hoja Perfiles (cuenta registrada) al mismo formato
+// que un postulante de la hoja Postulantes, como "general" (sin BusquedaID).
+// Así la base de talento y las postulaciones se muestran en un único listado.
+function perfilComoPostulante(fila) {
+  return {
+    ID: 'perfil:' + String(fila[0] || ''),
+    FechaRegistro: (fila[4] instanceof Date) ? fila[4].toISOString() : fila[4],
+    Nombre: fila[6] || '', Apellido: fila[7] || '', Email: fila[0] || '',
+    Telefono: fila[8] || '', PuestoDeseado: fila[9] || '',
+    FechaNacimiento: fila[10] || '', Identificacion: fila[11] || '',
+    Provincia: fila[12] || '', CodigoPostalCiudad: fila[13] || '',
+    PerfilProfesional: fila[14] || '', Formacion: fila[15] || '[]',
+    DescripcionPerfil: fila[16] || '', DispViajar: fila[17] || '',
+    DispCambioResidencia: fila[18] || '', Idiomas: fila[19] || '[]',
+    PrimerEmpleo: fila[20] || '', Experiencias: fila[21] || '[]',
+    CVNombre: fila[22] || '', CVUrl: fila[23] || '',
+    FirmaConsentimientoUrl: fila[24] || '', FechaFirmaConsentimiento: '',
+    FirmaConformidadUrl: fila[25] || '', FechaFirmaConformidad: '',
+    BusquedaID: '', BusquedaPuesto: '', RespuestasBusqueda: '[]'
+  };
+}
+
 function listarPostulantes(d) {
   var sesion = validarToken(d.token);
   if (!sesion) return { ok: false, error: 'Sesión inválida o expirada. Vuelve a iniciar sesión.' };
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // 1) Postulaciones (hoja Postulantes): aplicaciones a búsquedas + generales.
   var hoja = obtenerHoja(ss, HOJA_POSTULANTES, COLUMNAS_POSTULANTES);
   var valores = hoja.getDataRange().getValues();
-
   var registros = [];
   for (var i = 1; i < valores.length; i++) {
     registros.push(filaAObjeto(COLUMNAS_POSTULANTES, valores[i]));
   }
 
-  // Visibilidad (opción C): el SuperAdmin ve todo; una empresa ve solo a los
-  // postulantes "generales" (sin BusquedaID) más los que se postularon a SUS
-  // propias búsquedas. Los que se postularon a la búsqueda de otra empresa
-  // quedan reservados para esa empresa.
+  // 2) Base de talento (hoja Perfiles): cada cuenta registrada aparece como
+  // postulante general, salvo que ya tenga una fila "general" en Postulantes.
+  var yaGeneral = {};
+  registros.forEach(function (r) {
+    if (!String(r.BusquedaID || '').trim()) yaGeneral[String(r.Email || '').trim().toLowerCase()] = true;
+  });
+  var hojaPerf = obtenerHoja(ss, HOJA_PERFILES, COLUMNAS_PERFILES);
+  var valPerf = hojaPerf.getDataRange().getValues();
+  for (var k = 1; k < valPerf.length; k++) {
+    var emailPerf = String(valPerf[k][0] || '').trim().toLowerCase();
+    if (!emailPerf || yaGeneral[emailPerf]) continue;
+    registros.push(perfilComoPostulante(valPerf[k]));
+  }
+
+  // Visibilidad (base abierta): los "generales" (sin BusquedaID) son visibles
+  // para TODAS las empresas. Las postulaciones a una búsqueda (con BusquedaID)
+  // solo las ve la empresa dueña (junto con las respuestas). El SuperAdmin ve todo.
   if (String(sesion.rol) !== 'admin') {
     var misBusquedas = busquedaIdsDeEmpresa(ss, sesion.usuario);
     registros = registros.filter(function (r) {
@@ -925,8 +961,8 @@ function listarPostulantes(d) {
   if (d.puesto)    registros = filtrarCampo(registros, 'PuestoDeseado', d.puesto);
   if (d.provincia) registros = filtrarCampo(registros, 'Provincia', d.provincia);
 
-  // Más recientes primero.
-  registros.reverse();
+  // Más recientes primero (por fecha de registro).
+  registros.sort(function (a, b) { return new Date(b.FechaRegistro) - new Date(a.FechaRegistro); });
 
   return { ok: true, total: registros.length, registros: registros };
 }
