@@ -34,6 +34,12 @@ var CARPETA_CV = 'CVs Postulantes';
 // Tamaño máximo del CV (en MB).
 var CV_MAX_MB = 5;
 
+// URL pública del frontend (para armar los enlaces de recuperación de
+// contraseña que se envían por correo). Cambiala si usás un dominio propio.
+var URL_APP = 'https://one-hub-talent.netlify.app';
+// Duración del enlace de recuperación de contraseña (minutos).
+var RESET_MINUTOS = 60;
+
 // Columnas de la hoja Postulantes (el ORDEN define las columnas del Sheet).
 var COLUMNAS_POSTULANTES = [
   'ID', 'FechaRegistro',
@@ -67,7 +73,9 @@ var COLUMNAS_USUARIOS = [
   'SelfieUrl', 'NombreVerificado',
   'VerificacionLegacyId', 'VerificacionLegacyUrl', 'VerificacionLegacyEstado', 'VerificacionLegacyFecha',
   'DniFrenteUrl', 'DniDorsoUrl',
-  'FirmaLegalUrl', 'FechaFirmaLegal'
+  'FirmaLegalUrl', 'FechaFirmaLegal',
+  // Recuperación de contraseña (enlace temporal)
+  'ResetToken', 'ResetExpira'
 ];
 
 // Columnas de la hoja Busquedas (avisos de empleo publicados por empresas).
@@ -95,7 +103,9 @@ var COLUMNAS_PERFILES = [
   'FechaNacimiento', 'Identificacion', 'Provincia', 'CodigoPostalCiudad', 'PerfilProfesional',
   'Formacion', 'DescripcionPerfil', 'DispViajar', 'DispCambioResidencia', 'Idiomas',
   'PrimerEmpleo', 'Experiencias', 'CVNombre', 'CVUrl',
-  'FirmaConsentimientoUrl', 'FirmaConformidadUrl'
+  'FirmaConsentimientoUrl', 'FirmaConformidadUrl',
+  // Recuperación de contraseña (enlace temporal)
+  'ResetToken', 'ResetExpira'
 ];
 
 // Duración del token de sesión (horas)
@@ -124,6 +134,8 @@ function manejar(e) {
       case 'registrar': return json(registrarEmpresa(datos));
       case 'verificarIdentidad': return json(verificarIdentidadDNI(datos));
       case 'login':     return json(login(datos));
+      case 'recuperarPassword': return json(recuperarPassword(datos));
+      case 'resetearPassword':  return json(resetearPassword(datos));
       case 'miEmpresa': return json(miEmpresa(datos));
       case 'actualizarMiEmpresa': return json(actualizarMiEmpresa(datos));
       case 'listar':    return json(listarPostulantes(datos));
@@ -606,6 +618,136 @@ function login(d) {
     }
   }
   return { ok: false, error: 'Usuario o contraseña incorrectos.' };
+}
+
+/* -------------------------------------------------------------------
+ *  RECUPERACIÓN DE CONTRASEÑA (enlace temporal por correo)
+ * ----------------------------------------------------------------- */
+
+// Devuelve la columna (1-based) de un encabezado en la hoja, o -1.
+function columnaPorNombre(hoja, nombre) {
+  var lastCol = Math.max(hoja.getLastColumn(), 1);
+  var encabezados = hoja.getRange(1, 1, 1, lastCol).getValues()[0];
+  var idx = encabezados.indexOf(nombre);
+  return idx === -1 ? -1 : idx + 1;
+}
+
+// Envía el correo con el enlace para restablecer la contraseña.
+function enviarMailReset(email, token, tipo) {
+  var link = URL_APP + '/recuperar.html?token=' + encodeURIComponent(token) + '&tipo=' + tipo;
+  var asunto = 'Restablecé tu contraseña — ONE Talent Hub';
+  var cuerpo = 'Hola,\n\n' +
+    'Recibimos una solicitud para restablecer la contraseña de tu cuenta en ONE Talent Hub.\n\n' +
+    'Ingresá a este enlace para crear una nueva contraseña (válido por ' + RESET_MINUTOS + ' minutos):\n' +
+    link + '\n\n' +
+    'Si no solicitaste este cambio, ignorá este correo; tu contraseña seguirá siendo la misma.\n\n' +
+    'ONE Talent Hub';
+  var html = '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1a181d;line-height:1.55">' +
+    '<p>Hola,</p>' +
+    '<p>Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>ONE Talent Hub</strong>.</p>' +
+    '<p>Hacé clic en el botón para crear una nueva contraseña (el enlace es válido por ' + RESET_MINUTOS + ' minutos):</p>' +
+    '<p style="margin:22px 0"><a href="' + link + '" style="background:#b23ca6;color:#ffffff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">Restablecer contraseña</a></p>' +
+    '<p style="font-size:13px;color:#6b7280">O copiá y pegá este enlace en tu navegador:<br>' + link + '</p>' +
+    '<p style="font-size:13px;color:#6b7280">Si no solicitaste este cambio, ignorá este correo.</p>' +
+    '</div>';
+  MailApp.sendEmail({ to: email, subject: asunto, body: cuerpo, htmlBody: html });
+}
+
+// Paso 1: la persona pide recuperar su contraseña. Se genera un token temporal
+// y se envía el enlace por correo. Respuesta genérica: no revela si el email existe.
+function recuperarPassword(d) {
+  var tipo = limpiar(d.tipo).toLowerCase() === 'postulante' ? 'postulante' : 'empresa';
+  var email = limpiar(d.email).toLowerCase();
+  var generico = { ok: true, mensaje: 'Si el email está registrado, te enviamos un enlace para restablecer la contraseña. Revisá tu casilla (y la carpeta de spam).' };
+  if (!email) return { ok: false, error: 'Ingresá tu email.' };
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var token = Utilities.getUuid();
+  var expira = new Date().getTime() + RESET_MINUTOS * 60 * 1000;
+
+  if (tipo === 'empresa') {
+    var hoja = obtenerHoja(ss, HOJA_USUARIOS, COLUMNAS_USUARIOS);
+    var valores = hoja.getDataRange().getValues();
+    var cReset = columnaPorNombre(hoja, 'ResetToken');
+    var cExp = columnaPorNombre(hoja, 'ResetExpira');
+    for (var i = 1; i < valores.length; i++) {
+      // Columna 0 = Usuario (suele ser el email), columna 5 = Email.
+      if (String(valores[i][0]).trim().toLowerCase() === email ||
+          String(valores[i][5]).trim().toLowerCase() === email) {
+        // No se permite recuperar cuentas de administrador por este medio.
+        if (String(valores[i][7] || 'empresa').toLowerCase() === 'admin') return generico;
+        hoja.getRange(i + 1, cReset).setValue(token);
+        hoja.getRange(i + 1, cExp).setValue(expira);
+        enviarMailReset(String(valores[i][5] || email), token, 'empresa');
+        return generico;
+      }
+    }
+    return generico;
+  } else {
+    var hojaP = obtenerHoja(ss, HOJA_PERFILES, COLUMNAS_PERFILES);
+    var valP = hojaP.getDataRange().getValues();
+    var cResetP = columnaPorNombre(hojaP, 'ResetToken');
+    var cExpP = columnaPorNombre(hojaP, 'ResetExpira');
+    for (var j = 1; j < valP.length; j++) {
+      if (String(valP[j][0]).trim().toLowerCase() === email) { // columna 0 = Email
+        hojaP.getRange(j + 1, cResetP).setValue(token);
+        hojaP.getRange(j + 1, cExpP).setValue(expira);
+        enviarMailReset(email, token, 'postulante');
+        return generico;
+      }
+    }
+    return generico;
+  }
+}
+
+// Paso 2: con el token del enlace, se guarda la nueva contraseña.
+function resetearPassword(d) {
+  var tipo = limpiar(d.tipo).toLowerCase() === 'postulante' ? 'postulante' : 'empresa';
+  var token = limpiar(d.token);
+  var nueva = String(d.nuevaPassword || '');
+  if (!token) return { ok: false, error: 'Enlace inválido.' };
+  if (nueva.length < 6) return { ok: false, error: 'La contraseña debe tener al menos 6 caracteres.' };
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ahora = new Date().getTime();
+
+  if (tipo === 'empresa') {
+    var hoja = obtenerHoja(ss, HOJA_USUARIOS, COLUMNAS_USUARIOS);
+    var valores = hoja.getDataRange().getValues();
+    var cReset = columnaPorNombre(hoja, 'ResetToken');
+    var cExp = columnaPorNombre(hoja, 'ResetExpira');
+    for (var i = 1; i < valores.length; i++) {
+      if (String(valores[i][cReset - 1]) === token) {
+        var expira = Number(valores[i][cExp - 1] || 0);
+        if (!expira || expira < ahora) return { ok: false, error: 'El enlace expiró. Solicitá uno nuevo.' };
+        hoja.getRange(i + 1, 2).setValue(nueva);     // Password
+        hoja.getRange(i + 1, cReset).setValue('');   // limpia el token de reseteo
+        hoja.getRange(i + 1, cExp).setValue('');
+        hoja.getRange(i + 1, 4).setValue('');        // invalida la sesión activa (Token)
+        hoja.getRange(i + 1, 5).setValue('');        // TokenExpira
+        return { ok: true, mensaje: 'Contraseña actualizada. Ya podés iniciar sesión.' };
+      }
+    }
+    return { ok: false, error: 'El enlace no es válido o ya fue utilizado.' };
+  } else {
+    var hojaP = obtenerHoja(ss, HOJA_PERFILES, COLUMNAS_PERFILES);
+    var valP = hojaP.getDataRange().getValues();
+    var cResetP = columnaPorNombre(hojaP, 'ResetToken');
+    var cExpP = columnaPorNombre(hojaP, 'ResetExpira');
+    for (var j = 1; j < valP.length; j++) {
+      if (String(valP[j][cResetP - 1]) === token) {
+        var expiraP = Number(valP[j][cExpP - 1] || 0);
+        if (!expiraP || expiraP < ahora) return { ok: false, error: 'El enlace expiró. Solicitá uno nuevo.' };
+        hojaP.getRange(j + 1, 2).setValue(nueva);    // Password
+        hojaP.getRange(j + 1, cResetP).setValue('');
+        hojaP.getRange(j + 1, cExpP).setValue('');
+        hojaP.getRange(j + 1, 3).setValue('');       // invalida la sesión (Token)
+        hojaP.getRange(j + 1, 4).setValue('');       // TokenExpira
+        return { ok: true, mensaje: 'Contraseña actualizada. Ya podés iniciar sesión.' };
+      }
+    }
+    return { ok: false, error: 'El enlace no es válido o ya fue utilizado.' };
+  }
 }
 
 /**
