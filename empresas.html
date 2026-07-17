@@ -1251,6 +1251,82 @@
     });
   }
 
+  function camaraDisponible() {
+    return Boolean(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  }
+
+  function contextoSeguroCamara() {
+    return window.isSecureContext || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  }
+
+  function mensajeErrorCamara(error) {
+    const nombre = error && error.name ? error.name : '';
+    if (!contextoSeguroCamara()) return 'La cámara solo funciona en HTTPS. Abrí la página desde el dominio seguro.';
+    if (!camaraDisponible()) return 'Este navegador no permite abrir la cámara desde la web.';
+    if (nombre === 'NotAllowedError' || nombre === 'PermissionDeniedError') {
+      return 'Permiso de cámara bloqueado. Habilitalo en el navegador e intentá de nuevo.';
+    }
+    if (nombre === 'NotFoundError' || nombre === 'DevicesNotFoundError') {
+      return 'No se encontró una cámara disponible en este dispositivo.';
+    }
+    if (nombre === 'NotReadableError' || nombre === 'TrackStartError') {
+      return 'La cámara está siendo usada por otra app. Cerrala e intentá de nuevo.';
+    }
+    if (nombre === 'OverconstrainedError' || nombre === 'ConstraintNotSatisfiedError') {
+      return 'No se pudo usar esa cámara. Probá de nuevo.';
+    }
+    return 'No se abrió la cámara. Revisá los permisos e intentá de nuevo.';
+  }
+
+  async function obtenerStreamCamara(tipo) {
+    if (!contextoSeguroCamara() || !camaraDisponible()) {
+      throw new Error(mensajeErrorCamara());
+    }
+    const facingMode = tipo === 'selfie' ? 'user' : 'environment';
+    const intentos = [
+      { video: { facingMode: { ideal: facingMode }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+      { video: { facingMode: facingMode }, audio: false },
+      { video: true, audio: false }
+    ];
+    let ultimoError = null;
+    for (const constraints of intentos) {
+      try {
+        return await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (error) {
+        ultimoError = error;
+      }
+    }
+    throw ultimoError || new Error('No se pudo abrir la cámara.');
+  }
+
+  function esperarVideoListo(video) {
+    if (video.readyState >= 2 && video.videoWidth) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        limpiar();
+        reject(new Error('La cámara tardó demasiado en iniciar.'));
+      }, 6000);
+      function limpiar() {
+        clearTimeout(timeout);
+        video.removeEventListener('loadedmetadata', listo);
+        video.removeEventListener('canplay', listo);
+        video.removeEventListener('error', fallo);
+      }
+      function listo() {
+        if (!video.videoWidth) return;
+        limpiar();
+        resolve();
+      }
+      function fallo() {
+        limpiar();
+        reject(new Error('No se pudo mostrar la cámara.'));
+      }
+      video.addEventListener('loadedmetadata', listo);
+      video.addEventListener('canplay', listo);
+      video.addEventListener('error', fallo);
+    });
+  }
+
   async function iniciarCaptura(tipo) {
     const video = document.getElementById('video-' + tipo);
     const preview = document.getElementById('preview-' + tipo);
@@ -1262,18 +1338,23 @@
       capturaActiva = tipo;
       actualizarBloqueoCapturas();
       detenerCamara(tipo);
-      streamsCaptura[tipo] = await navigator.mediaDevices.getUserMedia({ video: { facingMode: tipo === 'selfie' ? 'user' : 'environment' }, audio: false });
+      streamsCaptura[tipo] = await obtenerStreamCamara(tipo);
+      video.setAttribute('playsinline', '');
+      video.muted = true;
       video.srcObject = streamsCaptura[tipo];
-      await video.play();
       video.classList.remove('oculto');
       preview.classList.add('oculto');
+      await video.play();
+      await esperarVideoListo(video);
       document.querySelector(`[data-captura-shot="${tipo}"]`).classList.remove('oculto');
       document.querySelector(`[data-captura-retry="${tipo}"]`).classList.add('oculto');
       setEstadoCaptura(tipo, 'Cámara lista. Sacá la foto.', 'firma-vacia');
     } catch (ex) {
+      detenerCamara(tipo);
+      video.classList.add('oculto');
       capturaActiva = '';
       actualizarBloqueoCapturas();
-      setEstadoCaptura(tipo, 'No se abrió la cámara. Revisá los permisos.', 'firma-vacia');
+      setEstadoCaptura(tipo, mensajeErrorCamara(ex), 'firma-error');
     }
   }
 
