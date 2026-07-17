@@ -2331,11 +2331,20 @@
     const dl = document.getElementById(id);
     if (dl) dl.innerHTML = valores.map(v => `<option value="${esc(v)}">`).join('');
   }
-  // Catálogos fijos (una sola vez): puestos y localidades.
-  // Provincia: solo Tucumán (es la única con localidades cargadas).
+  // Catálogos: puestos, provincias y localidades (Argentina).
   llenarDatalist('dlPuestos', typeof PUESTOS !== 'undefined' ? PUESTOS : []);
-  llenarDatalist('dlProvincias', ['Tucumán']);
-  llenarDatalist('dlLocalidades', typeof LOCALIDADES_TUCUMAN !== 'undefined' ? LOCALIDADES_TUCUMAN : []);
+  llenarDatalist('dlProvincias', typeof PROVINCIAS !== 'undefined' ? PROVINCIAS : []);
+  llenarDatalist('dlLocalidades', typeof todasLasLocalidades !== 'undefined' ? todasLasLocalidades() : []);
+  // Al elegir una provincia en el filtro, la localidad muestra solo las de esa
+  // provincia (si no hay provincia, se ofrecen todas).
+  (function () {
+    const fProv = document.getElementById('fProvincia');
+    if (!fProv) return;
+    fProv.addEventListener('input', function () {
+      const locs = localidadesDe(fProv.value);
+      llenarDatalist('dlLocalidades', locs.length ? locs : todasLasLocalidades());
+    });
+  })();
 
   function opcionesUnicas(getter) {
     const s = new Set();
@@ -2659,8 +2668,16 @@
   function initSelectoresBusqueda() {
     if (busquedasInit) return;
     busquedasInit = true;
+    // Provincia: se llena con todas las provincias; la localidad depende de ella.
+    const busqProvinciaEl = document.getElementById('busqProvincia');
+    if (busqProvinciaEl) {
+      busqProvinciaEl.innerHTML = PROVINCIAS.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
+      busqProvinciaEl.value = 'Tucumán';
+      busqProvinciaEl.addEventListener('change', () =>
+        selBusqLocalidad && selBusqLocalidad.setOpciones(localidadesDe(busqProvinciaEl.value), false));
+    }
     selBusqLocalidad = crearSelectorBuscable({
-      opciones: LOCALIDADES_TUCUMAN,
+      opciones: localidadesDe(busqProvinciaEl ? busqProvinciaEl.value : 'Tucumán'),
       inputId: 'busqLocalidadBuscar', listaId: 'busqLocalidadLista', hiddenId: 'busqLocalidad'
     });
     const hab = document.getElementById('busqHabInput');
@@ -3006,6 +3023,7 @@
     val('busqModalidad', b ? (b.Modalidad || '') : '');
     val('busqTipoContrato', b ? (b.TipoContrato || '') : '');
     val('busqProvincia', b ? (b.Provincia || 'Tucumán') : 'Tucumán');
+    selBusqLocalidad.setOpciones(localidadesDe(document.getElementById('busqProvincia').value), true);
     selBusqLocalidad.set(b ? (b.Localidad || '') : '');
     val('busqZona', b ? (b.Zona || '') : '');
     // 2. Descripción y requisitos

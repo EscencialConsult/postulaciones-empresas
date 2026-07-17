@@ -618,13 +618,27 @@
     });
   }
 
-  // Selector buscable de localidad de Tucumán (solo de la lista)
+  // Selector buscable de localidad (depende de la provincia elegida)
   var selLocalidadPost = crearSelectorBuscable({
-    opciones: LOCALIDADES_TUCUMAN,
+    opciones: localidadesDe('Tucumán'),
     inputId: 'localidadBuscar',
     listaId: 'localidadLista',
     hiddenId: 'codigoPostalCiudad'
   });
+
+  // Provincia -> localidades dependientes. Se llena el select con todas las
+  // provincias y, al cambiar, la localidad muestra solo las de esa provincia.
+  var provinciaSelPost = form.elements['provincia'];
+  if (provinciaSelPost) {
+    provinciaSelPost.innerHTML = PROVINCIAS.map(function (p) {
+      return '<option value="' + p + '">' + p + '</option>';
+    }).join('');
+    provinciaSelPost.value = 'Tucumán';
+    function actualizarLocalidadesPost(mantener) {
+      selLocalidadPost.setOpciones(localidadesDe(provinciaSelPost.value), mantener);
+    }
+    provinciaSelPost.addEventListener('change', function () { actualizarLocalidadesPost(false); });
+  }
 
   document.getElementById('addFormacion').onclick = () =>
     document.getElementById('formaciones').appendChild(bloqueFormacion());
@@ -993,7 +1007,11 @@
     setN('dispViajar', p.dispViajar);
     setN('dispCambioResidencia', p.dispCambioResidencia);
     if (selPuestoPost) selPuestoPost.set(p.puestoDeseado || '');
-    if (selLocalidadPost) selLocalidadPost.set(p.codigoPostalCiudad || '');
+    // Ajusta las localidades a la provincia cargada antes de fijar la localidad.
+    if (selLocalidadPost) {
+      selLocalidadPost.setOpciones(localidadesDe(F['provincia'] ? F['provincia'].value : 'Tucumán'), true);
+      selLocalidadPost.set(p.codigoPostalCiudad || '');
+    }
 
     const primer = String(p.primerEmpleo).toLowerCase() === 'sí';
     document.getElementById('primerEmpleo').checked = primer;
