@@ -112,12 +112,39 @@
 
 <div class="contenedor">
 
-  <!-- Barra de sesión (logueado) -->
+  <!-- Barra de sesión + navegación (logueado) -->
   <div id="cuentaBar" class="oculto card" style="padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-    <span style="font-size:.9rem;color:var(--muted)">Sesión iniciada: <strong id="cuentaEmail" style="color:var(--dark)"></strong></span>
+    <span style="font-size:.9rem;color:var(--muted)">Sesión: <strong id="cuentaEmail" style="color:var(--dark)"></strong></span>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-sec" id="btnMiPerfil" type="button">Mi perfil / CV</button>
+      <button class="btn btn-sec" id="navPostulaciones" type="button">Mis postulaciones</button>
+      <button class="btn btn-sec" id="navDatos" type="button">Mis datos</button>
+      <a class="btn btn-sec" href="index.html">Explorar búsquedas</a>
       <button class="btn btn-sec" id="btnSalirPost" type="button">Salir</button>
+    </div>
+  </div>
+
+  <!-- PANEL del postulante (Mis postulaciones / Mis datos) -->
+  <div id="panelWrap" class="oculto">
+    <!-- Mis postulaciones -->
+    <div id="vistaPostulaciones">
+      <div class="intro" style="margin-bottom:14px">
+        <span class="pill"><span class="dot"></span>Tu actividad</span>
+        <h1>Mis postulaciones</h1>
+        <p>Estas son las búsquedas a las que te postulaste.</p>
+      </div>
+      <div id="misPostulacionesLista"></div>
+    </div>
+    <!-- Mis datos -->
+    <div id="vistaDatos" class="oculto">
+      <div class="intro" style="margin-bottom:14px">
+        <span class="pill"><span class="dot"></span>Tu perfil</span>
+        <h1>Mis datos</h1>
+        <p>Esta es la información de tu perfil en la plataforma.</p>
+      </div>
+      <div class="card tarjeta" id="misDatosCont"></div>
+      <div style="margin-top:14px">
+        <button class="btn btn-prim" id="btnEditarDatos" type="button">Editar mis datos</button>
+      </div>
     </div>
   </div>
 
@@ -371,7 +398,7 @@
     <div class="icono">✓</div>
     <h2 id="finalTitulo">¡Listo!</h2>
     <p class="sub" id="finalSub">Tu perfil quedó guardado.</p>
-    <button class="btn btn-prim" onclick="location.reload()">Volver</button>
+    <button class="btn btn-prim" id="btnFinalVolver" type="button">Volver</button>
   </div>
   </div>
   <!-- /wizardWrap -->
@@ -830,7 +857,8 @@
         else mostrarExito('¡Cuenta creada!', 'Tu perfil quedó guardado. Ya podés postularte a las búsquedas.');
       } else {
         perfilActual = r.perfil || perfilActual;
-        mostrarExito('Perfil actualizado', 'Tus cambios se guardaron correctamente.');
+        if (busquedaOrigenId) mostrarAplicar();
+        else mostrarPanel('datos');
       }
     } catch (err) {
       aviso.textContent = 'Error: ' + err.message;
@@ -848,14 +876,108 @@
   const gateEl = document.getElementById('gateCuenta');
   const aplicarEl = document.getElementById('aplicarWrap');
   const wizardEl = document.getElementById('wizardWrap');
+  const panelEl = document.getElementById('panelWrap');
   const cuentaBarEl = document.getElementById('cuentaBar');
 
   function mostrarSeccion(cual) {
     gateEl.classList.toggle('oculto', cual !== 'gate');
     aplicarEl.classList.toggle('oculto', cual !== 'aplicar');
     wizardEl.classList.toggle('oculto', cual !== 'wizard');
+    panelEl.classList.toggle('oculto', cual !== 'panel');
     cuentaBarEl.classList.toggle('oculto', cual === 'gate' || !perfilToken);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /* ---------- Panel del postulante ---------- */
+  function fechaCorta(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d)) return String(iso).slice(0, 10);
+    return d.toLocaleDateString('es');
+  }
+  function estadoBusqLabel(estado) {
+    var e = String(estado || '').toLowerCase();
+    var m = { activa: 'Activa', pausada: 'Pausada', cerrada: 'Cerrada', eliminada: 'Dada de baja', borrador: 'Borrador' };
+    return m[e] || '';
+  }
+
+  // Muestra el panel y la pestaña indicada ('postulaciones' | 'datos').
+  function mostrarPanel(tab) {
+    document.getElementById('vistaPostulaciones').classList.toggle('oculto', tab === 'datos');
+    document.getElementById('vistaDatos').classList.toggle('oculto', tab !== 'datos');
+    mostrarSeccion('panel');
+    if (tab === 'datos') renderMisDatos();
+    else cargarMisPostulaciones();
+  }
+
+  async function cargarMisPostulaciones() {
+    const cont = document.getElementById('misPostulacionesLista');
+    cont.innerHTML = '<div class="card tarjeta"><p style="color:var(--muted);margin:0">Cargando…</p></div>';
+    try {
+      const r = await apiCall({ action: 'misPostulaciones', token: perfilToken });
+      if (!r.ok) throw new Error(r.error);
+      const lista = r.postulaciones || [];
+      if (!lista.length) {
+        cont.innerHTML = '<div class="card tarjeta" style="text-align:center">' +
+          '<p style="margin:0 0 12px">Todavía no te postulaste a ninguna búsqueda.</p>' +
+          '<a class="btn btn-prim" href="index.html">Explorar búsquedas</a></div>';
+        return;
+      }
+      cont.innerHTML = lista.map(function (p) {
+        const est = estadoBusqLabel(p.estado);
+        const meta = [p.empresa, est].filter(Boolean).map(escHtml).join(' · ');
+        return '<div class="card tarjeta" style="margin-bottom:12px">' +
+          '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">' +
+          '<div><p style="font-weight:800;font-size:1.08rem;margin:0">' + escHtml(p.puesto || 'Búsqueda') + '</p>' +
+          (meta ? '<p style="color:var(--muted);margin:3px 0 0;font-size:.9rem">' + meta + '</p>' : '') + '</div>' +
+          '<span style="color:var(--muted);font-size:.85rem;white-space:nowrap">Postulado el ' + escHtml(fechaCorta(p.fecha)) + '</span>' +
+          '</div></div>';
+      }).join('');
+    } catch (ex) {
+      cont.innerHTML = '<div class="card tarjeta"><p style="color:var(--error);margin:0">Error: ' + escHtml(ex.message) + '</p></div>';
+    }
+  }
+
+  function renderMisDatos() {
+    const p = perfilActual || {};
+    const cont = document.getElementById('misDatosCont');
+    function fila(k, v) {
+      if (!v) return '';
+      return '<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--borde);flex-wrap:wrap">' +
+        '<span style="min-width:170px;color:var(--muted);font-size:.9rem">' + k + '</span>' +
+        '<span style="font-weight:600">' + escHtml(v) + '</span></div>';
+    }
+    const nombre = [p.nombre, p.apellido].filter(Boolean).join(' ');
+    const idiomas = parseJSONarr(p.idiomas).map(function (x) {
+      return (x.idioma || '') + (x.nivel ? ' (' + x.nivel + ')' : '');
+    }).filter(Boolean).join(', ');
+    const primer = String(p.primerEmpleo).toLowerCase() === 'sí';
+    let html = '';
+    html += fila('Nombre y apellido', nombre);
+    html += fila('Email', p.email);
+    html += fila('Teléfono', p.telefono);
+    html += fila('Puesto deseado', p.puestoDeseado);
+    html += fila('Provincia', p.provincia);
+    html += fila('Ciudad / Localidad', p.codigoPostalCiudad);
+    html += fila('Identificación', p.identificacion);
+    html += fila('Fecha de nacimiento', p.fechaNacimiento ? fechaCorta(p.fechaNacimiento) : '');
+    html += fila('Perfil profesional', p.perfilProfesional);
+    html += fila('Idiomas', idiomas);
+    html += fila('Disp. a viajar', p.dispViajar);
+    html += fila('Cambio de residencia', p.dispCambioResidencia);
+    html += fila('Experiencia', primer ? 'Busca su primer empleo' : '');
+    if (p.cvUrl) {
+      html += '<div style="padding:14px 0 0"><a class="btn btn-sec" href="' + escHtml(p.cvUrl) +
+        '" target="_blank" rel="noopener">👁 Ver mi CV</a></div>';
+    }
+    cont.innerHTML = html || '<p style="color:var(--muted);margin:0">Tu perfil está incompleto. Tocá “Editar mis datos” para completarlo.</p>';
+  }
+
+  // Vuelve al panel dejando de lado el flujo de postulación (limpia la URL).
+  function volverAlPanel() {
+    busquedaOrigenId = ''; busquedaAplicar = null;
+    try { history.replaceState(null, '', location.pathname); } catch (e) {}
+    mostrarPanel('postulaciones');
   }
 
   function guardarSesion(token, perfil) {
@@ -940,7 +1062,7 @@
       const r = await apiCall({ action: 'loginPostulante', email: document.getElementById('lpEmail').value, password: document.getElementById('lpPassword').value });
       if (!r.ok) throw new Error(r.error);
       guardarSesion(r.token, r.perfil);
-      if (busquedaOrigenId) mostrarAplicar(); else mostrarEditarPerfil();
+      if (busquedaOrigenId) mostrarAplicar(); else mostrarPanel('postulaciones');
     } catch (ex) { err.textContent = ex.message; err.style.display = 'block'; }
     finally { btn.disabled = false; btn.textContent = 'Iniciar sesión'; }
   });
@@ -949,8 +1071,13 @@
     sessionStorage.removeItem('perfilToken'); perfilToken = ''; perfilActual = null;
     cuentaBarEl.classList.add('oculto'); mostrarGateCuenta();
   };
-  document.getElementById('btnMiPerfil').onclick = () => mostrarEditarPerfil();
+  document.getElementById('navPostulaciones').onclick = () => mostrarPanel('postulaciones');
+  document.getElementById('navDatos').onclick = () => mostrarPanel('datos');
+  document.getElementById('btnEditarDatos').onclick = () => mostrarEditarPerfil();
   document.getElementById('btnAplicarEditar').onclick = () => mostrarEditarPerfil();
+  document.getElementById('btnFinalVolver').onclick = () => {
+    if (perfilToken) volverAlPanel(); else location.reload();
+  };
 
   document.getElementById('btnConfirmarAplicar').onclick = async () => {
     const av = document.getElementById('aplicarAviso'); av.style.display = 'none';
@@ -1048,7 +1175,7 @@
     if (perfilToken) {
       try {
         const r = await apiCall({ action: 'miPerfil', token: perfilToken });
-        if (r.ok) { guardarSesion(perfilToken, r.perfil); if (busquedaOrigenId) mostrarAplicar(); else mostrarEditarPerfil(); return; }
+        if (r.ok) { guardarSesion(perfilToken, r.perfil); if (busquedaOrigenId) mostrarAplicar(); else mostrarPanel('postulaciones'); return; }
       } catch (e) {}
       sessionStorage.removeItem('perfilToken'); perfilToken = '';
     }

@@ -157,6 +157,7 @@ function manejar(e) {
       case 'miPerfil':             return json(miPerfil(datos));
       case 'actualizarPerfil':     return json(actualizarPerfil(datos));
       case 'postularConPerfil':    return json(postularConPerfil(datos));
+      case 'misPostulaciones':     return json(misPostulaciones(datos));
       // Firmas
       case 'firmarPostulacion': return json(firmarPostulacion(datos));
       default:
@@ -1558,5 +1559,49 @@ function postularConPerfil(d) {
   ]);
 
   return { ok: true, id: id, mensaje: '¡Postulación enviada!' };
+}
+
+// Devuelve las búsquedas a las que se postuló el postulante logueado.
+// Cruza sus filas en Postulantes (por email) con la hoja de Búsquedas para
+// sumar el nombre de la empresa y el estado actual de cada búsqueda.
+function misPostulaciones(d) {
+  var s = validarTokenPerfil(d.token);
+  if (!s) return { ok: false, error: 'Sesión inválida o expirada.' };
+  var email = String(s.email || '').trim().toLowerCase();
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // Mapa de búsquedas: ID -> { empresa, estado, puesto }.
+  var hb = obtenerHoja(ss, HOJA_BUSQUEDAS, COLUMNAS_BUSQUEDAS);
+  var vb = hb.getDataRange().getValues();
+  var mapa = {};
+  for (var i = 1; i < vb.length; i++) {
+    mapa[String(vb[i][0]).trim()] = { empresa: vb[i][4], estado: vb[i][12], puesto: vb[i][5] };
+  }
+
+  var hp = obtenerHoja(ss, HOJA_POSTULANTES, COLUMNAS_POSTULANTES);
+  var vp = hp.getDataRange().getValues();
+  var cEmail = COLUMNAS_POSTULANTES.indexOf('Email');
+  var cFecha = COLUMNAS_POSTULANTES.indexOf('FechaRegistro');
+  var cBid = COLUMNAS_POSTULANTES.indexOf('BusquedaID');
+  var cBpuesto = COLUMNAS_POSTULANTES.indexOf('BusquedaPuesto');
+
+  var lista = [];
+  for (var j = 1; j < vp.length; j++) {
+    if (String(vp[j][cEmail]).trim().toLowerCase() !== email) continue;
+    var bid = String(vp[j][cBid] || '').trim();
+    if (!bid) continue; // solo postulaciones vinculadas a una búsqueda
+    var info = mapa[bid] || {};
+    var f = vp[j][cFecha];
+    lista.push({
+      busquedaId: bid,
+      puesto: vp[j][cBpuesto] || info.puesto || '',
+      empresa: info.empresa || '',
+      estado: info.estado || '',
+      fecha: (f instanceof Date) ? f.toISOString() : f
+    });
+  }
+  lista.sort(function (a, b) { return new Date(b.fecha) - new Date(a.fecha); });
+  return { ok: true, total: lista.length, postulaciones: lista };
 }
 
