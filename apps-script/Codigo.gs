@@ -36,7 +36,7 @@ var CV_MAX_MB = 5;
 
 // URL pública del frontend (para armar los enlaces de recuperación de
 // contraseña que se envían por correo). Cambiala si usás un dominio propio.
-var URL_APP = 'https://one-hub-talent.netlify.app';
+var URL_APP = 'https://hubtalent.onelabs.pro';
 // Duración del enlace de recuperación de contraseña (minutos).
 var RESET_MINUTOS = 60;
 

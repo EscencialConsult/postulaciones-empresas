@@ -471,62 +471,52 @@
 
   /* ---------- Bloques repetibles ---------- */
 
-  // Formación fija (Primaria / Secundaria): no se puede quitar. El campo
-  // "Hasta" solo se pide/mostra cuando el nivel está marcado como completado.
-  function bloqueFormacionFija(nivel) {
-    const div = document.createElement('div');
-    div.className = 'bloque';
-    div.innerHTML = `
-      <div class="bloque-cab"><strong>${nivel}</strong></div>
-      <input type="hidden" data-c="nivel" value="${nivel}">
-      <div class="campo"><label>Centro educativo <span class="req">*</span></label>
-        <input data-c="centro" required><div class="error-msg">Requerido</div></div>
-      <div class="check" style="margin:2px 0 14px">
-        <input type="checkbox" data-c="completada" id="comp-${nivel}">
-        <label for="comp-${nivel}">Completada (si no la terminaste, dejala sin marcar)</label>
-      </div>
-      <div class="campo oculto" data-hasta><label>Fecha de finalización (mes/año) <span class="req">*</span></label>
-        <input data-c="hasta" type="month" required><div class="error-msg">Requerido</div></div>`;
-    const chk = div.querySelector('[data-c="completada"]');
-    const hastaWrap = div.querySelector('[data-hasta]');
-    const sync = () => hastaWrap.classList.toggle('oculto', !chk.checked);
-    chk.addEventListener('change', sync);
-    sync();
-    return div;
-  }
-
-  // Formación agregable: solo niveles superiores (sin Primaria/Secundaria).
+  // Formación: bloque único y repetible. El nivel se elige de una lista (incluye
+  // Primaria y Secundaria). Si está "Cursando actualmente" no se pide la fecha de Fin.
+  let formacionSeq = 0;
   function bloqueFormacion() {
+    const n = ++formacionSeq;
     const div = document.createElement('div');
     div.className = 'bloque';
     div.innerHTML = `
       <div class="bloque-cab"><strong>Formación</strong>
         <button type="button" class="btn-quitar">Quitar</button></div>
-      <div class="fila">
-        <div class="campo"><label>Nivel de estudios <span class="req">*</span></label>
-          <select data-c="nivel" required>
-            <option value="">Seleccionar…</option>
-            <option>Terciario / Técnico</option><option>Universitario</option>
-            <option>Posgrado / Máster</option><option>Doctorado</option>
-          </select><div class="error-msg">Requerido</div></div>
-        <div class="campo"><label>Estado <span class="req">*</span></label>
-          <select data-c="estado" required><option value="">Seleccionar…</option>
-            <option>Cursando</option><option>Finalizado</option></select>
-          <div class="error-msg">Requerido</div></div>
-      </div>
-      <div class="campo"><label>Centro educativo <span class="req">*</span></label>
+      <div class="campo"><label>Nivel de estudios <span class="req">*</span></label>
+        <select data-c="nivel" required>
+          <option value="">Seleccionar…</option>
+          <option>Primaria</option><option>Secundaria</option>
+          <option>Terciario / Técnico</option><option>Universitario</option>
+          <option>Posgrado / Máster</option><option>Doctorado</option>
+        </select><div class="error-msg">Requerido</div></div>
+      <div class="campo"><label>Institución <span class="req">*</span></label>
         <input data-c="centro" required><div class="error-msg">Requerido</div></div>
+      <div class="check" style="margin:2px 0 12px">
+        <input type="checkbox" class="chk-cursando" id="curs-${n}">
+        <label for="curs-${n}">Cursando actualmente</label>
+      </div>
+      <input type="hidden" data-c="estado" value="Finalizado">
       <div class="fila">
-        <div class="campo"><label>Desde (mes/año) <span class="req">*</span></label>
+        <div class="campo"><label>Inicio (mes/año) <span class="req">*</span></label>
           <input data-c="desde" type="month" required><div class="error-msg">Requerido</div></div>
-        <div class="campo oculto" data-hasta><label>Hasta (mes/año) <span class="req">*</span></label>
+        <div class="campo" data-hasta><label>Fin (mes/año) <span class="req">*</span></label>
           <input data-c="hasta" type="month" required><div class="error-msg">Requerido</div></div>
       </div>`;
+    const chk = div.querySelector('.chk-cursando');
     const estado = div.querySelector('[data-c="estado"]');
     const hastaWrap = div.querySelector('[data-hasta]');
-    estado.addEventListener('change', () =>
-      hastaWrap.classList.toggle('oculto', estado.value !== 'Finalizado'));
-    div.querySelector('.btn-quitar').onclick = () => div.remove();
+    const hasta = div.querySelector('[data-c="hasta"]');
+    const sync = () => {
+      const cursando = chk.checked;
+      estado.value = cursando ? 'Cursando' : 'Finalizado';
+      hastaWrap.classList.toggle('oculto', cursando);
+      if (cursando) hasta.value = '';
+    };
+    chk.addEventListener('change', sync);
+    sync();
+    // Siempre queda al menos una formación cargada.
+    div.querySelector('.btn-quitar').onclick = () => {
+      if (document.querySelectorAll('#formaciones .bloque').length > 1) div.remove();
+    };
     return div;
   }
 
@@ -673,9 +663,8 @@
   document.getElementById('addExperiencia').onclick = () =>
     document.getElementById('experiencias').appendChild(bloqueExperiencia());
 
-  // Primaria y Secundaria vienen fijas; el resto se agrega con el botón.
-  document.getElementById('formaciones').appendChild(bloqueFormacionFija('Primaria'));
-  document.getElementById('formaciones').appendChild(bloqueFormacionFija('Secundaria'));
+  // Arranca con una formación; se agregan más con el botón.
+  document.getElementById('formaciones').appendChild(bloqueFormacion());
   agregarIdioma();
   document.getElementById('experiencias').appendChild(bloqueExperiencia());
 
@@ -1113,16 +1102,6 @@
       else el.value = obj[k] || '';
     });
   }
-  function llenarFormacionFija(div, obj) {
-    const centro = div.querySelector('[data-c="centro"]'); if (centro) centro.value = obj.centro || '';
-    const comp = div.querySelector('[data-c="completada"]');
-    const hastaWrap = div.querySelector('[data-hasta]');
-    const hasta = div.querySelector('[data-c="hasta"]');
-    const completada = (String(obj.completada).toLowerCase() === 'sí') || (!!obj.hasta && String(obj.hasta).length > 0);
-    if (comp) comp.checked = completada;
-    if (hastaWrap) hastaWrap.classList.toggle('oculto', !completada);
-    if (hasta) hasta.value = obj.hasta || '';
-  }
   function cargarPerfilEnWizard(p) {
     const F = form.elements;
     const setN = (n, v) => { if (F[n]) F[n].value = v || ''; };
@@ -1146,14 +1125,16 @@
 
     const forms = parseJSONarr(p.formacion);
     const contF = document.getElementById('formaciones'); contF.innerHTML = '';
-    const prim = forms.filter(f => f.nivel === 'Primaria')[0];
-    const sec = forms.filter(f => f.nivel === 'Secundaria')[0];
-    const fijaP = bloqueFormacionFija('Primaria'); contF.appendChild(fijaP); if (prim) llenarFormacionFija(fijaP, prim);
-    const fijaS = bloqueFormacionFija('Secundaria'); contF.appendChild(fijaS); if (sec) llenarFormacionFija(fijaS, sec);
-    forms.filter(f => f.nivel !== 'Primaria' && f.nivel !== 'Secundaria').forEach(f => {
-      const b = bloqueFormacion(); contF.appendChild(b); llenarBloque(b, f);
-      const est = b.querySelector('[data-c="estado"]'); if (est) est.dispatchEvent(new Event('change'));
-    });
+    if (!forms.length) {
+      contF.appendChild(bloqueFormacion());
+    } else {
+      forms.forEach(f => {
+        const b = bloqueFormacion(); contF.appendChild(b); llenarBloque(b, f);
+        // Sincroniza "Cursando actualmente" según el estado guardado.
+        const chk = b.querySelector('.chk-cursando');
+        if (chk) { chk.checked = String(f.estado || '').toLowerCase() === 'cursando'; chk.dispatchEvent(new Event('change')); }
+      });
+    }
 
     const idis = parseJSONarr(p.idiomas);
     document.getElementById('idiomas').innerHTML = '';
