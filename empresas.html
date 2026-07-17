@@ -127,6 +127,11 @@
   tr.fila-sel:hover { background: #f7ebf6; }
   .sel-info { color: var(--acento); font-weight: 700; font-size: .9rem; margin-left: 4px; }
 
+  /* Acciones de CV (ver / descargar) en el detalle */
+  .cv-acciones { display: inline-flex; gap: 8px; flex-wrap: wrap; }
+  .btn-cv { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border: 1px solid var(--borde); border-radius: 8px; background: #fff; color: var(--dark); font-size: .85rem; font-weight: 600; text-decoration: none; cursor: pointer; transition: background .12s, border-color .12s; }
+  .btn-cv:hover { background: #faf7fd; border-color: var(--acento); color: var(--acento); }
+
   .cargando, .vacio { text-align: center; padding: 48px; color: var(--muted); }
 
   /* Modal detalle */
@@ -2510,9 +2515,12 @@
 
       <div class="seccion"><h3>Contacto</h3>
         ${dato('Email', r.Email)}${dato('Teléfono', r.Telefono)}
-        ${dato('Identificación', r.Identificacion)}${dato('Fecha de nacimiento', r.FechaNacimiento)}
+        ${dato('Identificación', r.Identificacion)}${r.FechaNacimiento ? dato('Fecha de nacimiento', fecha(r.FechaNacimiento)) : ''}
         ${dato('Provincia', r.Provincia)}${dato('Ciudad / CP', r.CodigoPostalCiudad)}
-        ${r.CVUrl ? `<div class="dato"><span class="k">CV</span><a href="${esc(r.CVUrl)}" target="_blank" rel="noopener">📄 Ver / descargar CV</a></div>` : ''}
+        ${r.CVUrl ? `<div class="dato"><span class="k">CV</span><span class="cv-acciones">
+          <a class="btn-cv" href="${esc(driveVerUrl(r.CVUrl))}" target="_blank" rel="noopener">👁 Ver</a>
+          <a class="btn-cv" href="${esc(driveDescargarUrl(r.CVUrl))}" target="_blank" rel="noopener" download>⬇ Descargar</a>
+        </span></div>` : ''}
       </div>
 
       <div class="seccion"><h3>Perfil profesional</h3>
@@ -2546,19 +2554,8 @@
         <div class="item-list"><strong>${esc(x.pregunta)}</strong>${esc(x.respuesta) || '<span style="color:var(--muted)">Sin responder</span>'}</div>`).join('') + `</div>`;
     }
 
-    // Firmas
-    html += `<div class="seccion"><h3>Firmas</h3>`;
-    if (r.FirmaConsentimientoUrl) {
-      html += `<div class="dato"><span class="k">Consentimiento</span><span><img src="${esc(r.FirmaConsentimientoUrl)}" class="firma-preview" alt="Firma consentimiento"> <small style="color:var(--ok)">✓ Firmado</small></span></div>`;
-    } else {
-      html += `<div class="dato"><span class="k">Consentimiento</span><span style="color:var(--muted)">Pendiente</span></div>`;
-    }
-    if (r.FirmaConformidadUrl) {
-      html += `<div class="dato"><span class="k">Conformidad</span><span><img src="${esc(r.FirmaConformidadUrl)}" class="firma-preview" alt="Firma conformidad"> <small style="color:var(--ok)">✓ Firmado</small></span></div>`;
-    } else {
-      html += `<div class="dato"><span class="k">Conformidad</span><span style="color:var(--muted)">Pendiente</span></div>`;
-    }
-    html += `</div>`;
+    // Las firmas (consentimiento / conformidad) son documentación interna:
+    // solo se muestran en el panel de SuperAdmin (admin.html), no a las empresas.
 
     document.getElementById('modal').innerHTML = html;
     document.getElementById('overlay').classList.remove('oculto');
@@ -2610,6 +2607,21 @@
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
   function csvCampo(s) { const t = (s == null ? '' : String(s)).replace(/"/g, '""'); return `"${t}"`; }
   function dato(k, v) { return v ? `<div class="dato"><span class="k">${k}</span><span>${esc(v)}</span></div>` : ''; }
+  // ID de un archivo de Google Drive dentro de su URL (/d/ID/view o ?id=ID).
+  function driveId(url) {
+    const s = String(url || '');
+    const m = s.match(/\/d\/([-\w]+)/) || s.match(/[?&]id=([-\w]+)/);
+    return m ? m[1] : '';
+  }
+  // Enlace para VER el CV (visor de Drive) y para DESCARGARLO directamente.
+  function driveVerUrl(url) {
+    const id = driveId(url);
+    return id ? `https://drive.google.com/file/d/${id}/view` : String(url || '');
+  }
+  function driveDescargarUrl(url) {
+    const id = driveId(url);
+    return id ? `https://drive.google.com/uc?export=download&id=${id}` : String(url || '');
+  }
   function fecha(iso) {
     if (!iso) return '—';
     const s = String(iso);

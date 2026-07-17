@@ -38,6 +38,11 @@
 
   .cargando, .vacio { text-align: center; padding: 48px; color: var(--muted); }
 
+  /* Acciones de CV (ver / descargar) en el detalle */
+  .cv-acciones { display: inline-flex; gap: 8px; flex-wrap: wrap; }
+  .btn-cv { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border: 1px solid var(--borde); border-radius: 8px; background: #fff; color: var(--dark); font-size: .85rem; font-weight: 600; text-decoration: none; cursor: pointer; transition: background .12s, border-color .12s; }
+  .btn-cv:hover { background: #faf7fd; border-color: var(--acento); color: var(--acento); }
+
   .est { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: .78rem; font-weight: 700; }
   .est-pendiente { background: rgba(228,199,106,.22); color: #92700a; }
   .est-aprobado { background: rgba(18,185,129,.16); color: #0f766e; }
@@ -477,9 +482,12 @@
       <p class="puesto">${esc(r.PuestoDeseado) || 'Sin puesto especificado'}</p>
       <div class="seccion"><h3>Contacto</h3>
         ${dato('Email', r.Email)}${dato('Teléfono', r.Telefono)}
-        ${dato('Identificación', r.Identificacion)}${dato('Fecha de nacimiento', r.FechaNacimiento)}
+        ${dato('Identificación', r.Identificacion)}${r.FechaNacimiento ? dato('Fecha de nacimiento', fecha(r.FechaNacimiento)) : ''}
         ${dato('Provincia', r.Provincia)}${dato('Ciudad / CP', r.CodigoPostalCiudad)}
-        ${r.CVUrl ? `<div class="dato"><span class="k">CV</span><a href="${esc(r.CVUrl)}" target="_blank" rel="noopener">📄 Ver / descargar CV</a></div>` : ''}
+        ${r.CVUrl ? `<div class="dato"><span class="k">CV</span><span class="cv-acciones">
+          <a class="btn-cv" href="${esc(driveVerUrl(r.CVUrl))}" target="_blank" rel="noopener">👁 Ver</a>
+          <a class="btn-cv" href="${esc(driveDescargarUrl(r.CVUrl))}" target="_blank" rel="noopener" download>⬇ Descargar</a>
+        </span></div>` : ''}
       </div>
       <div class="seccion"><h3>Perfil profesional</h3>
         <p>${esc(r.PerfilProfesional) || '—'}</p>
@@ -575,6 +583,21 @@
     if (!iso) return '—';
     const d = new Date(iso); if (isNaN(d)) return String(iso).slice(0,10);
     return d.toLocaleDateString('es');
+  }
+  // ID de un archivo de Google Drive dentro de su URL (/d/ID/view o ?id=ID).
+  function driveId(url) {
+    const s = String(url || '');
+    const m = s.match(/\/d\/([-\w]+)/) || s.match(/[?&]id=([-\w]+)/);
+    return m ? m[1] : '';
+  }
+  // Enlace para VER el CV (visor de Drive) y para DESCARGARLO directamente.
+  function driveVerUrl(url) {
+    const id = driveId(url);
+    return id ? `https://drive.google.com/file/d/${id}/view` : String(url || '');
+  }
+  function driveDescargarUrl(url) {
+    const id = driveId(url);
+    return id ? `https://drive.google.com/uc?export=download&id=${id}` : String(url || '');
   }
 
   // Restaurar sesión
