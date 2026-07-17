@@ -148,9 +148,10 @@
       const ICON_PIN = svg('<path d="M12 21s-6-5.2-6-10a6 6 0 0 1 12 0c0 4.8-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/>');
       const ICON_RELOJ = svg('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>');
 
+      let lista = [];
       try {
         const r = await apiCall({ action: 'busquedasPublicas' });
-        const lista = (r && r.ok && Array.isArray(r.busquedas)) ? r.busquedas : [];
+        lista = (r && r.ok && Array.isArray(r.busquedas)) ? r.busquedas : [];
         if (!lista.length) { seccion.classList.add('oculto'); return; }
 
         seccion.classList.remove('oculto');
@@ -180,15 +181,28 @@
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrirDetalleBusqueda(b); }
           });
         });
+
+        // Si se llegó con un link directo (?busqueda=ID), abre esa publicación.
+        const idURL = new URLSearchParams(location.search).get('busqueda');
+        if (idURL) {
+          const bURL = lista.find(x => String(x.ID) === String(idURL));
+          if (bURL) abrirDetalleBusqueda(bURL, false);
+        }
       } catch (e) {
         // Si el backend no responde, no rompemos la página de inicio.
         seccion.classList.add('oculto');
       }
 
       /* ---------- Detalle de la búsqueda ---------- */
-      function abrirDetalleBusqueda(b) {
+      function abrirDetalleBusqueda(b, pushUrl) {
         const href = 'postular.html?busqueda=' + encodeURIComponent(b.ID || '') +
           '&puesto=' + encodeURIComponent(b.Puesto || '');
+        // Link compartible de ESTA búsqueda (para copiar de la barra o del botón).
+        const linkBusqueda = location.origin + location.pathname + '?busqueda=' + encodeURIComponent(b.ID || '');
+        // Refleja la búsqueda en la URL del navegador para que se pueda copiar/compartir.
+        if (pushUrl !== false) {
+          try { history.pushState({ busqueda: b.ID }, '', '?busqueda=' + encodeURIComponent(b.ID || '')); } catch (e) {}
+        }
         const chips = [b.Modalidad, b.TipoContrato, b.Localidad].filter(Boolean)
           .map(x => `<span class="bd-chip">${esc(x)}</span>`).join('');
         const salario = (b.SalarioMin || b.SalarioMax)
@@ -216,21 +230,48 @@
             ${sec('Salario', salario)}
             ${sec('Horario y jornada', esc(b.Horario))}
             ${benef.length ? `<div class="bd-sec"><h4>Beneficios</h4>${tags(benef)}</div>` : ''}
-            <a class="btn btn-prim bd-cta" href="${href}">Postularme ahora →</a>
+            <div class="bd-acciones" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
+              <a class="btn btn-prim bd-cta" href="${href}">Postularme ahora →</a>
+              <button type="button" class="btn btn-sec bd-copiar">🔗 Copiar link</button>
+              <span class="bd-copiado" style="display:none;color:#0f766e;font-weight:700;font-size:.9rem">¡Link copiado!</span>
+            </div>
           </div>`;
         const modal = document.getElementById('bdModal');
         modal.innerHTML = html;
         modal.querySelector('.bd-close').onclick = cerrarDetalleBusqueda;
+        const btnCopiar = modal.querySelector('.bd-copiar');
+        if (btnCopiar) btnCopiar.onclick = async () => {
+          try {
+            await navigator.clipboard.writeText(linkBusqueda);
+          } catch (e) {
+            const ta = document.createElement('textarea');
+            ta.value = linkBusqueda; ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta); ta.select();
+            try { document.execCommand('copy'); } catch (_) {}
+            document.body.removeChild(ta);
+          }
+          const ok = modal.querySelector('.bd-copiado');
+          if (ok) { ok.style.display = 'inline'; setTimeout(() => { ok.style.display = 'none'; }, 2500); }
+        };
         document.getElementById('bdOverlay').classList.remove('oculto');
       }
       function cerrarDetalleBusqueda() {
         document.getElementById('bdOverlay').classList.add('oculto');
+        // Vuelve la URL a la página de inicio (sin ?busqueda=…).
+        if (location.search) { try { history.replaceState(null, '', location.pathname); } catch (e) {} }
       }
       document.getElementById('bdOverlay').addEventListener('click', (e) => {
         if (e.target.id === 'bdOverlay') cerrarDetalleBusqueda();
       });
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') cerrarDetalleBusqueda();
+      });
+      // Botón atrás/adelante: sincroniza el modal con la URL.
+      window.addEventListener('popstate', () => {
+        const id = new URLSearchParams(location.search).get('busqueda');
+        const b = id ? lista.find(x => String(x.ID) === String(id)) : null;
+        if (b) abrirDetalleBusqueda(b, false);
+        else document.getElementById('bdOverlay').classList.add('oculto');
       });
     })();
   </script>
