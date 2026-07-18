@@ -25,6 +25,51 @@
   .tarjeta { padding: 26px; }
   .etapa { display: none; }
   .etapa.activa { display: block; animation: aparecer .25s ease; }
+  .edit-tabs { display: none; }
+  .wizard-editando .pasos-explicacion,
+  .wizard-editando .pasos,
+  .wizard-editando .paso-label {
+    display: none;
+  }
+  .wizard-editando .edit-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 0 0 16px;
+  }
+  .edit-tab {
+    border: 1px solid var(--borde);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--muted);
+    cursor: pointer;
+    font: inherit;
+    font-size: .88rem;
+    font-weight: 800;
+    padding: 9px 13px;
+    transition: background .16s ease, color .16s ease, border-color .16s ease;
+  }
+  .edit-tab:hover {
+    color: var(--dark);
+    border-color: rgba(178,60,166,.28);
+  }
+  .edit-tab.activo {
+    background: var(--grad);
+    border-color: transparent;
+    color: var(--dark);
+  }
+  .wizard-editando .etapa {
+    display: none;
+    animation: none;
+  }
+  .wizard-editando .etapa.edit-activa {
+    display: block;
+  }
+  .wizard-editando .etapa + .etapa {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
   @keyframes aparecer { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; } }
 
   .etapa h2 { font-size: 1.25rem; margin: 0 0 4px; }
@@ -224,6 +269,8 @@
     .navegacion { gap: 10px; }
     .navegacion .btn { flex: 1; padding: 12px 14px; }
     .pasos-explicacion { grid-template-columns: 1fr; }
+    .wizard-editando .edit-tabs { flex-direction: column; }
+    .edit-tab { width: 100%; text-align: left; }
     .final-hero { padding: 30px 18px 22px; }
     .final-body { padding: 20px 16px 24px; }
     .final-resumen { grid-template-columns: 1fr; }
@@ -420,6 +467,14 @@
   <div class="paso-label" id="pasoLabel">Paso 1 de 6 · Datos personales</div>
 
   <div class="aviso" id="aviso"></div>
+
+  <div class="edit-tabs" id="editTabs" aria-label="Secciones para editar perfil">
+    <button type="button" class="edit-tab activo" data-edit-tab="1" onclick="activarTabEdicion(1)">Datos personales</button>
+    <button type="button" class="edit-tab" data-edit-tab="2" onclick="activarTabEdicion(2)">Información y ubicación</button>
+    <button type="button" class="edit-tab" data-edit-tab="3" onclick="activarTabEdicion(3)">Formación</button>
+    <button type="button" class="edit-tab" data-edit-tab="4" onclick="activarTabEdicion(4)">Disponibilidad e idiomas</button>
+    <button type="button" class="edit-tab" data-edit-tab="5" onclick="activarTabEdicion(5)">Experiencia laboral</button>
+  </div>
 
   <form id="form" class="card tarjeta" novalidate>
 
@@ -950,17 +1005,35 @@
   }
 
   /* ---------- Navegación de etapas ---------- */
+  function totalEtapasActual() {
+    return modoWizard === 'editar' ? 5 : totalEtapas;
+  }
+
   function mostrarEtapa(n) {
+    const total = totalEtapasActual();
+    if (n > total) n = total;
+    etapaActual = n;
     document.querySelectorAll('.etapa').forEach(s =>
       s.classList.toggle('activa', +s.dataset.etapa === n));
     document.querySelectorAll('#pasos .p').forEach((p, i) => {
       p.classList.toggle('activo', i === n - 1);
       p.classList.toggle('hecho', i < n - 1);
     });
-    document.getElementById('pasoLabel').textContent = `Paso ${n} de ${totalEtapas} · ${etiquetas[n-1]}`;
+    document.getElementById('pasoLabel').textContent = `Paso ${n} de ${total} · ${etiquetas[n-1]}`;
+    if (modoWizard === 'editar') {
+      document.querySelectorAll('.etapa').forEach(s =>
+        s.classList.toggle('edit-activa', +s.dataset.etapa === n));
+      document.querySelectorAll('[data-edit-tab]').forEach(tab =>
+        tab.classList.toggle('activo', Number(tab.dataset.editTab) === n));
+      btnAtras.classList.add('oculto');
+      btnSiguiente.classList.add('oculto');
+      btnEnviar.classList.remove('oculto');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     btnAtras.classList.toggle('oculto', n === 1);
-    btnSiguiente.classList.toggle('oculto', n === totalEtapas);
-    btnEnviar.classList.toggle('oculto', n !== totalEtapas);
+    btnSiguiente.classList.toggle('oculto', n === total);
+    btnEnviar.classList.toggle('oculto', n !== total);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -988,9 +1061,47 @@
     return ok;
   }
 
+  function validarEdicionPerfil() {
+    let ok = true;
+    for (let n = 1; n <= 5; n++) {
+      if (!validarEtapa(n)) ok = false;
+    }
+    if (!ok) {
+      const primero = form.querySelector('.campo.invalido input, .campo.invalido select, .campo.invalido textarea');
+      if (primero) {
+        const etapa = primero.closest('.etapa');
+        if (etapa) mostrarTabEdicion(Number(etapa.dataset.etapa));
+        setTimeout(() => primero.focus(), 0);
+      }
+    }
+    return ok;
+  }
+
+  function mostrarTabEdicion(n) {
+    const tab = Math.max(1, Math.min(5, Number(n) || 1));
+    etapaActual = tab;
+    document.querySelectorAll('.etapa').forEach(s => {
+      s.classList.remove('activa');
+      s.classList.toggle('edit-activa', Number(s.dataset.etapa) === tab);
+    });
+    document.querySelectorAll('[data-edit-tab]').forEach(btn => {
+      btn.classList.toggle('activo', Number(btn.dataset.editTab) === tab);
+    });
+    btnAtras.classList.add('oculto');
+    btnSiguiente.classList.add('oculto');
+    btnEnviar.classList.remove('oculto');
+  }
+
+  function activarTabEdicion(n) {
+    mostrarTabEdicion(n);
+    const tabs = document.getElementById('editTabs');
+    const top = (tabs || form).getBoundingClientRect().top + window.scrollY - 16;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  }
+
   btnSiguiente.onclick = () => {
     if (!validarEtapa(etapaActual)) return;
-    if (etapaActual < totalEtapas) { etapaActual++; mostrarEtapa(etapaActual); }
+    if (etapaActual < totalEtapasActual()) { etapaActual++; mostrarEtapa(etapaActual); }
   };
   btnAtras.onclick = () => {
     if (etapaActual > 1) { etapaActual--; mostrarEtapa(etapaActual); }
@@ -1018,7 +1129,9 @@
   /* ---------- Envío ---------- */
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!validarEtapa(etapaActual)) return;
+    if (modoWizard === 'editar') {
+      if (!validarEdicionPerfil()) return;
+    } else if (!validarEtapa(etapaActual)) return;
 
     // Validar firmas si estamos en la etapa 6 (solo al registrarse; al editar
     // el perfil ya se firmó una vez, no se re-exige).
@@ -1083,6 +1196,10 @@
       cvBase64: cvBase64, cvNombre: cvNombre, cvTipo: cvTipo,
       firmaConsentimientoBase64: firmaConsentBase64, firmaConformidadBase64: firmaConfBase64
     };
+    if (modoWizard === 'editar') {
+      delete perfil.firmaConsentimientoBase64;
+      delete perfil.firmaConformidadBase64;
+    }
     const payload = (modoWizard === 'registro')
       ? Object.assign({ action: 'registrarPostulante', password: document.getElementById('regPassword').value }, perfil)
       : Object.assign({ action: 'actualizarPerfil', token: perfilToken }, perfil);
@@ -1103,7 +1220,7 @@
       } else {
         perfilActual = r.perfil || perfilActual;
         if (busquedaOrigenId) mostrarAplicar();
-        else mostrarExito('Perfil actualizado', 'Tus cambios se guardaron correctamente.', 'perfil');
+        else mostrarExito('Datos guardados', 'Actualizamos tu perfil correctamente.', 'perfil');
       }
     } catch (err) {
       aviso.textContent = 'Error: ' + err.message;
@@ -1114,6 +1231,23 @@
   });
 
   function textoBtnEnviar() { return modoWizard === 'registro' ? 'Crear cuenta' : 'Guardar cambios'; }
+
+  function configurarPasosWizard() {
+    const esEdicion = modoWizard === 'editar';
+    document.getElementById('wizardWrap').classList.toggle('wizard-editando', esEdicion);
+    document.querySelectorAll('#pasos .p').forEach((p, i) => {
+      p.classList.toggle('oculto', esEdicion && i >= 5);
+    });
+    document.querySelectorAll('.pasos-explicacion .paso-info').forEach((p, i) => {
+      p.classList.toggle('oculto', esEdicion && i >= 5);
+    });
+    const introTexto = document.querySelector('#wizardWrap .intro p');
+    if (introTexto) {
+      introTexto.textContent = esEdicion
+        ? 'Actualizá tus datos cargados. No hace falta volver a firmar el consentimiento.'
+        : 'Completá tus datos en 6 pasos. Tu perfil quedará disponible para empresas y consultoras.';
+    }
+  }
 
   mostrarEtapa(1);
 
@@ -1268,14 +1402,18 @@
     document.getElementById('cvArchivo').required = (modo === 'registro');
     document.getElementById('wizardTitulo').textContent = (modo === 'registro') ? 'Creá tu cuenta' : 'Mi perfil / CV';
     btnEnviar.textContent = textoBtnEnviar();
+    configurarPasosWizard();
     form.classList.remove('oculto');
     document.getElementById('pasos').classList.remove('oculto');
     document.getElementById('pasoLabel').classList.remove('oculto');
     document.querySelector('#wizardWrap .intro').classList.remove('oculto');
     document.querySelector('.pasos-explicacion').classList.remove('oculto');
+    document.getElementById('editTabs').classList.toggle('oculto', modo !== 'editar');
     document.getElementById('pantallaFinal').classList.add('oculto');
     aviso.style.display = 'none';
-    etapaActual = 1; mostrarEtapa(1);
+    etapaActual = 1;
+    if (modo === 'editar') mostrarTabEdicion(1);
+    else mostrarEtapa(1);
   }
 
   function mostrarRegistro() { prepararWizard('registro'); mostrarSeccion('wizard'); }
@@ -1523,6 +1661,7 @@
   }
 
   function mostrarExito(titulo, sub, tipo) {
+    window.ultimoExitoTipo = tipo || '';
     const pasosFinales = {
       cuenta: [
         ['Perfil listo', 'Ya podés usar tu cuenta para postularte sin volver a cargar tus datos.'],
@@ -1551,16 +1690,26 @@
       ]
     };
     const resumen = pasosFinales[tipo || 'cuenta'] || pasosFinales.cuenta;
-    document.getElementById('finalResumen').innerHTML = resumen.map(function (item) {
+    const esPerfil = tipo === 'perfil';
+    const finalResumen = document.getElementById('finalResumen');
+    finalResumen.classList.toggle('oculto', esPerfil);
+    finalResumen.innerHTML = resumen.map(function (item) {
       return '<div class="final-step"><strong>' + escHtml(item[0]) + '</strong><span>' + escHtml(item[1]) + '</span></div>';
     }).join('');
     document.getElementById('finalTitulo').textContent = titulo;
     document.getElementById('finalSub').textContent = sub;
+    document.getElementById('finalVerVacantes').textContent = esPerfil ? 'Ver mis datos' : 'Ver oportunidades';
+    document.getElementById('finalEditarPerfil').textContent = esPerfil ? 'Seguir editando' : 'Editar mi perfil';
+    document.getElementById('btnFinalVolver').textContent = esPerfil ? 'Volver al panel' : 'Volver';
+    document.querySelector('.final-nota').textContent = esPerfil
+      ? 'Tus datos ya quedaron actualizados.'
+      : 'Podés actualizar tu CV o tus datos cuando quieras desde Mis datos.';
     form.classList.add('oculto');
     document.getElementById('pasos').classList.add('oculto');
     document.getElementById('pasoLabel').classList.add('oculto');
     document.querySelector('#wizardWrap .intro').classList.add('oculto');
     document.querySelector('.pasos-explicacion').classList.add('oculto');
+    document.getElementById('editTabs').classList.add('oculto');
     document.getElementById('pantallaFinal').classList.remove('oculto');
     mostrarSeccion('wizard');
   }
@@ -1587,15 +1736,27 @@
   document.getElementById('btnVacantesPost').onclick = () => mostrarVacantesPostulante();
   document.getElementById('btnEditarDatos').onclick = () => mostrarEditarPerfil();
   document.getElementById('btnActualizarPerfilDesdeVacantes').onclick = () => mostrarEditarPerfil();
-  document.getElementById('btnRecargarVacantes').onclick = () => cargarVacantesPostulante();
+  const btnRecargarVacantesEl = document.getElementById('btnRecargarVacantes');
+  if (btnRecargarVacantesEl) btnRecargarVacantesEl.onclick = () => cargarVacantesPostulante();
   if (buscarVacantesEl) buscarVacantesEl.addEventListener('input', pintarVacantesPostulante);
+  document.addEventListener('click', (ev) => {
+    const tab = ev.target.closest('[data-edit-tab]');
+    if (!tab) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    activarTabEdicion(Number(tab.dataset.editTab));
+  });
   Object.keys(filtrosVacantes).forEach(function (k) {
     if (filtrosVacantes[k]) filtrosVacantes[k].addEventListener('change', pintarVacantesPostulante);
   });
-  document.getElementById('btnLimpiarVacantes').onclick = () => limpiarFiltrosVacantes();
+  const btnLimpiarVacantesEl = document.getElementById('btnLimpiarVacantes');
+  if (btnLimpiarVacantesEl) btnLimpiarVacantesEl.onclick = () => limpiarFiltrosVacantes();
   document.getElementById('btnAplicarEditar').onclick = () => mostrarEditarPerfil();
   document.getElementById('finalEditarPerfil').onclick = () => mostrarEditarPerfil();
-  document.getElementById('finalVerVacantes').onclick = () => mostrarVacantesPostulante();
+  document.getElementById('finalVerVacantes').onclick = () => {
+    if (window.ultimoExitoTipo === 'perfil') mostrarPanel('datos');
+    else mostrarVacantesPostulante();
+  };
   document.getElementById('btnFinalVolver').onclick = () => {
     if (perfilToken) volverAlPanel(); else location.reload();
   };
@@ -1641,6 +1802,23 @@
 
   /* Prefill del perfil en el wizard (modo editar) */
   function parseJSONarr(v) { if (!v) return []; if (Array.isArray(v)) return v; try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch (e) { return []; } }
+  function fechaParaInput(v) {
+    if (!v) return '';
+    const s = String(v).trim();
+    const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+    const local = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+    if (local) return `${local[3]}-${local[2].padStart(2, '0')}-${local[1].padStart(2, '0')}`;
+    const serial = Number(s);
+    if (Number.isFinite(serial) && serial > 20000 && serial < 80000) {
+      const base = new Date(Date.UTC(1899, 11, 30));
+      base.setUTCDate(base.getUTCDate() + serial);
+      return `${base.getUTCFullYear()}-${String(base.getUTCMonth() + 1).padStart(2, '0')}-${String(base.getUTCDate()).padStart(2, '0')}`;
+    }
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return '';
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
   function llenarBloque(div, obj) {
     div.querySelectorAll('[data-c]').forEach(el => {
       const k = el.dataset.c;
@@ -1653,7 +1831,7 @@
     const F = form.elements;
     const setN = (n, v) => { if (F[n]) F[n].value = v || ''; };
     setN('nombre', p.nombre); setN('apellido', p.apellido); setN('email', p.email);
-    setN('telefono', p.telefono); setN('fechaNacimiento', p.fechaNacimiento);
+    setN('telefono', p.telefono); setN('fechaNacimiento', fechaParaInput(p.fechaNacimiento));
     setN('identificacion', p.identificacion); setN('perfilProfesional', p.perfilProfesional);
     setN('descripcionPerfil', p.descripcionPerfil);
     setN('provincia', p.provincia || 'Tucumán');
@@ -1716,8 +1894,8 @@
   })();
 
   /* ---------- Firmas ---------- */
-  let firmaConsent = null;
-  let firmaConf = null;
+  var firmaConsent = null;
+  var firmaConf = null;
 
   function initFirmas() {
     firmaConsent = initFirma('consentimiento', { penColor: '#1a181d' });

@@ -29,6 +29,7 @@ var HOJA_USUARIOS    = 'Usuarios';
 var HOJA_BUSQUEDAS   = 'Busquedas';
 var HOJA_PERFILES    = 'Perfiles';
 var HOJA_NOTIFICACIONES_VACANTES = 'NotificacionesVacantes';
+var HOJA_EMAILS = 'Emails';
 
 // Carpeta de Google Drive donde se guardan los archivos de CV.
 var CARPETA_CV = 'CVs Postulantes';
@@ -119,6 +120,10 @@ var COLUMNAS_NOTIFICACIONES_VACANTES = [
   'Puntaje', 'Motivos', 'Estado', 'Error'
 ];
 
+var COLUMNAS_EMAILS = [
+  'Fecha', 'Contexto', 'Destinatario', 'Asunto', 'Estado', 'Error'
+];
+
 // Duración del token de sesión (horas)
 var TOKEN_HORAS = 12;
 
@@ -163,6 +168,7 @@ function manejar(e) {
       case 'eliminarBusqueda':      return json(eliminarBusqueda(datos));
       case 'busquedasPublicas':     return json(busquedasPublicas(datos));
       case 'probarMatchVacante':    return json(probarMatchVacante(datos));
+      case 'probarEmail':           return json(probarEmail(datos));
       // Cuenta del postulante (perfil reutilizable)
       case 'registrarPostulante':  return json(registrarPostulante(datos));
       case 'loginPostulante':      return json(loginPostulante(datos));
@@ -219,6 +225,7 @@ function setup() {
   var busq = obtenerHoja(ss, HOJA_BUSQUEDAS, COLUMNAS_BUSQUEDAS);
   var perf = obtenerHoja(ss, HOJA_PERFILES, COLUMNAS_PERFILES);
   var notif = obtenerHoja(ss, HOJA_NOTIFICACIONES_VACANTES, COLUMNAS_NOTIFICACIONES_VACANTES);
+  var emails = obtenerHoja(ss, HOJA_EMAILS, COLUMNAS_EMAILS);
 
   // Crea un usuario de ejemplo (empresa) si la hoja está vacía.
   if (usu.getLastRow() < 2) {
@@ -241,8 +248,9 @@ function setup() {
   aplicarEstiloHoja(busq, '#6be1e3');
   aplicarEstiloHoja(perf, '#8b5cf6');
   aplicarEstiloHoja(notif, '#b23ca6');
+  aplicarEstiloHoja(emails, '#0f766e');
 
-  Logger.log('Setup completo. Hojas listas: %s, %s, %s, %s, %s', HOJA_POSTULANTES, HOJA_USUARIOS, HOJA_BUSQUEDAS, HOJA_PERFILES, HOJA_NOTIFICACIONES_VACANTES);
+  Logger.log('Setup completo. Hojas listas: %s, %s, %s, %s, %s, %s', HOJA_POSTULANTES, HOJA_USUARIOS, HOJA_BUSQUEDAS, HOJA_PERFILES, HOJA_NOTIFICACIONES_VACANTES, HOJA_EMAILS);
 }
 
 /**
@@ -421,7 +429,8 @@ function guardarPostulante(d) {
     ok: true,
     id: id,
     mensaje: '¡Postulación registrada correctamente!',
-    emailPostulacionOk: !!(emailPostulacion && emailPostulacion.ok)
+    emailPostulacionOk: !!(emailPostulacion && emailPostulacion.ok),
+    emailPostulacionError: emailPostulacion && emailPostulacion.error ? emailPostulacion.error : ''
   };
 }
 
@@ -584,20 +593,45 @@ function plantillaEmail_(opts) {
 }
 
 function enviarEmailSeguro_(opciones, contexto) {
+  var destinatario = opciones && opciones.to ? limpiar(opciones.to) : '';
+  var asunto = opciones && opciones.subject ? limpiar(opciones.subject) : '';
   try {
-    if (!opciones || !emailValido_(opciones.to)) return { ok: false, error: 'Email inválido.' };
+    if (!opciones || !emailValido_(opciones.to)) {
+      registrarEmail_(contexto, destinatario, asunto, 'error', 'Email inválido.');
+      return { ok: false, error: 'Email inválido.' };
+    }
     var payload = {
-      to: limpiar(opciones.to),
-      subject: limpiar(opciones.subject),
+      to: destinatario,
+      subject: asunto,
       body: limpiar(opciones.body),
       name: limpiar(opciones.name) || 'ONE Talent Hub'
     };
     if (opciones.htmlBody) payload.htmlBody = opciones.htmlBody;
     MailApp.sendEmail(payload);
+    registrarEmail_(contexto, destinatario, asunto, 'enviado', '');
     return { ok: true };
   } catch (err) {
-    Logger.log('Error enviando email%s: %s', contexto ? ' (' + contexto + ')' : '', String(err && err.message ? err.message : err));
-    return { ok: false, error: String(err && err.message ? err.message : err) };
+    var error = String(err && err.message ? err.message : err);
+    Logger.log('Error enviando email%s: %s', contexto ? ' (' + contexto + ')' : '', error);
+    registrarEmail_(contexto, destinatario, asunto, 'error', error);
+    return { ok: false, error: error };
+  }
+}
+
+function registrarEmail_(contexto, destinatario, asunto, estado, error) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var hoja = obtenerHoja(ss, HOJA_EMAILS, COLUMNAS_EMAILS);
+    hoja.appendRow([
+      new Date(),
+      limpiar(contexto),
+      limpiar(destinatario),
+      limpiar(asunto),
+      limpiar(estado),
+      limpiar(error)
+    ]);
+  } catch (logErr) {
+    Logger.log('No se pudo registrar auditoría de email: %s', String(logErr && logErr.message ? logErr.message : logErr));
   }
 }
 
@@ -820,6 +854,30 @@ function emailPostulacionExitosa_(d, id) {
     body: body,
     htmlBody: html
   }, 'postulación exitosa');
+}
+
+function probarEmail(d) {
+  if (!requireAdmin(d.token)) return { ok: false, error: 'Acceso exclusivo del administrador.' };
+  var email = limpiar(d.email);
+  if (!emailValido_(email)) return { ok: false, error: 'Indicá un email válido para la prueba.' };
+
+  var html = plantillaEmail_({
+    titulo: 'Email de prueba',
+    subtitulo: 'El sistema de correos de ONE Talent Hub está funcionando.',
+    contenido:
+      parrafoEmail_('Este mensaje confirma que Apps Script pudo enviar emails desde la cuenta configurada.') +
+      parrafoEmail_('Si este correo llegó, los permisos de MailApp están activos.'),
+    ctaTexto: 'Abrir plataforma'
+  });
+  var resultado = enviarEmailSeguro_({
+    to: email,
+    subject: 'Prueba de email - ONE Talent Hub',
+    body: 'Email de prueba enviado desde ONE Talent Hub.',
+    htmlBody: html
+  }, 'prueba manual');
+
+  if (!resultado.ok) return { ok: false, error: resultado.error || 'No se pudo enviar el email de prueba.' };
+  return { ok: true, mensaje: 'Email de prueba enviado.' };
 }
 
 /* -------------------------------------------------------------------
@@ -1188,6 +1246,16 @@ function empresaDesdeFila(fila) {
   };
 }
 
+function empresaParaCuenta_(empresa) {
+  var salida = Object.assign({}, empresa);
+  delete salida.selfieUrl;
+  delete salida.selfieLivenessUrl;
+  delete salida.dniFrenteUrl;
+  delete salida.dniDorsoUrl;
+  delete salida.firmaLegalUrl;
+  return salida;
+}
+
 function miEmpresa(d) {
   var sesion = validarToken(d.token);
   if (!sesion) return { ok: false, error: 'SesiÃ³n invÃ¡lida o expirada.' };
@@ -1200,7 +1268,7 @@ function miEmpresa(d) {
 
   for (var i = 1; i < valores.length; i++) {
     if (String(valores[i][0]).trim().toLowerCase() === usuario) {
-      return { ok: true, empresa: empresaDesdeFila(valores[i]) };
+      return { ok: true, empresa: empresaParaCuenta_(empresaDesdeFila(valores[i])) };
     }
   }
   return { ok: false, error: 'Empresa no encontrada.' };
@@ -2377,6 +2445,13 @@ function perfilDesdeFila(fila) {
   };
 }
 
+function perfilParaPostulante_(perfil) {
+  var salida = Object.assign({}, perfil);
+  delete salida.firmaConsentimientoUrl;
+  delete salida.firmaConformidadUrl;
+  return salida;
+}
+
 // Valida el token del perfil y devuelve { hoja, filaNum, fila, email } o null.
 function validarTokenPerfil(token) {
   if (!token) return null;
@@ -2433,9 +2508,10 @@ function registrarPostulante(d) {
   return {
     ok: true,
     token: token,
-    perfil: perfilDesdeFila(fila),
+    perfil: perfilParaPostulante_(perfilDesdeFila(fila)),
     mensaje: 'Cuenta creada correctamente.',
-    emailRegistroOk: !!(emailRegistro && emailRegistro.ok)
+    emailRegistroOk: !!(emailRegistro && emailRegistro.ok),
+    emailRegistroError: emailRegistro && emailRegistro.error ? emailRegistro.error : ''
   };
 }
 
@@ -2455,7 +2531,7 @@ function loginPostulante(d) {
       hoja.getRange(i + 1, 4).setValue(expira);
       var fila = hoja.getRange(i + 1, 1, 1, COLUMNAS_PERFILES.length).getValues()[0];
       fila[2] = token; fila[3] = expira;
-      return { ok: true, token: token, perfil: perfilDesdeFila(fila) };
+      return { ok: true, token: token, perfil: perfilParaPostulante_(perfilDesdeFila(fila)) };
     }
   }
   return { ok: false, error: 'Email o contraseña incorrectos.' };
@@ -2464,7 +2540,7 @@ function loginPostulante(d) {
 function miPerfil(d) {
   var s = validarTokenPerfil(d.token);
   if (!s) return { ok: false, error: 'Sesión inválida o expirada.' };
-  return { ok: true, perfil: perfilDesdeFila(s.fila) };
+  return { ok: true, perfil: perfilParaPostulante_(perfilDesdeFila(s.fila)) };
 }
 
 function actualizarPerfil(d) {
@@ -2499,7 +2575,7 @@ function actualizarPerfil(d) {
   ]]);
 
   var fila = hoja.getRange(filaNum, 1, 1, COLUMNAS_PERFILES.length).getValues()[0];
-  return { ok: true, mensaje: 'Perfil actualizado.', perfil: perfilDesdeFila(fila) };
+  return { ok: true, mensaje: 'Perfil actualizado.', perfil: perfilParaPostulante_(perfilDesdeFila(fila)) };
 }
 
 // Crea una postulación (fila en Postulantes) copiando el perfil del postulante
@@ -2547,7 +2623,13 @@ function postularConPerfil(d) {
     busquedaPuesto: d.busquedaPuesto
   }, id);
 
-  return { ok: true, id: id, mensaje: '¡Postulación enviada!', emailPostulacionOk: !!(emailPostulacion && emailPostulacion.ok) };
+  return {
+    ok: true,
+    id: id,
+    mensaje: '¡Postulación enviada!',
+    emailPostulacionOk: !!(emailPostulacion && emailPostulacion.ok),
+    emailPostulacionError: emailPostulacion && emailPostulacion.error ? emailPostulacion.error : ''
+  };
 }
 
 // Devuelve las búsquedas a las que se postuló el postulante logueado.
