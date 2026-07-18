@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ONE Talent Hub — Conectamos talento con oportunidades</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="estilos.css">
 <style>
   .hero { max-width: 900px; margin: 0 auto; padding: 40px 20px 72px; text-align: center; }
@@ -96,13 +97,29 @@
 
     <div class="cards">
       <a class="card cta-card" href="postular.html">
-        <div class="tile tile-a">📝</div>
+        <div class="tile tile-a" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/>
+            <circle cx="9.5" cy="7" r="4"/>
+            <path d="M17 8h4"/>
+            <path d="M19 6v4"/>
+          </svg>
+        </div>
         <h2>Soy postulante</h2>
         <p>Cargá tu CV en 5 pasos simples y quedá visible para las empresas.</p>
         <span class="ir">Comenzar mi postulación →</span>
       </a>
       <a class="card cta-card" href="empresas.html">
-        <div class="tile tile-b">🏢</div>
+        <div class="tile tile-b" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 21V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v16"/>
+            <path d="M17 8h1a2 2 0 0 1 2 2v11"/>
+            <path d="M8 7h5"/>
+            <path d="M8 11h5"/>
+            <path d="M8 15h5"/>
+            <path d="M3 21h18"/>
+          </svg>
+        </div>
         <h2>Soy empresa / consultora</h2>
         <p>Buscá, filtrá y exportá perfiles de candidatos desde tu panel.</p>
         <span class="ir">Acceder al panel →</span>
@@ -157,6 +174,7 @@
         'stroke-linecap="round" stroke-linejoin="round">' + paths + '</svg>';
       const ICON_PIN = svg('<path d="M12 21s-6-5.2-6-10a6 6 0 0 1 12 0c0 4.8-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/>');
       const ICON_RELOJ = svg('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>');
+      const ICON_LINK = svg('<path d="M10 13a5 5 0 0 0 7.1 0l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1"/><path d="M14 11a5 5 0 0 0-7.1 0l-2 2a5 5 0 0 0 7.1 7.1l1.1-1.1"/>');
 
       let lista = [];
       try {
@@ -242,7 +260,7 @@
             ${benef.length ? `<div class="bd-sec"><h4>Beneficios</h4>${tags(benef)}</div>` : ''}
             <div class="bd-acciones" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
               <a class="btn btn-prim bd-cta" href="${href}">Postularme ahora →</a>
-              <button type="button" class="btn btn-sec bd-copiar">🔗 Copiar link</button>
+              <button type="button" class="btn btn-sec bd-copiar">${ICON_LINK} Copiar link</button>
               <span class="bd-copiado" style="display:none;color:#0f766e;font-weight:700;font-size:.9rem">¡Link copiado!</span>
             </div>
           </div>`;
