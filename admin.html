@@ -113,6 +113,7 @@
     .evidencias-grid { grid-template-columns: 1fr; }
     .evidencia-card.firma { max-width: none; }
   }
+  #panelWrap:not(.oculto) ~ .site-footer { display: none; }
 </style>
 </head>
 <body>
@@ -243,6 +244,15 @@
 <div class="overlay oculto" id="overlay">
   <div class="modal" id="modal"></div>
 </div>
+
+<footer class="site-footer site-footer--compact">
+  <div class="footer-links">
+    <a href="politica-privacidad.html">Política de Privacidad</a>
+    <a href="terminos-condiciones.html">Términos y Condiciones</a>
+  </div>
+  <p class="footer-credit">Desarrollado por <strong>Fundación para el Desarrollo Profesional</strong> — Contribución de <strong>Escencial Consultora</strong></p>
+  <img class="footer-logo" src="assets/logo2-trim.png" alt="ONE">
+</footer>
 
 <script src="config.js"></script>
 <script>

@@ -3,82 +3,96 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ONE Talent Hub — Conectamos talento con oportunidades</title>
+<title>ONE Talent Hub — Búsquedas activas</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="estilos.css">
-<style>
-  .hero { max-width: 900px; margin: 0 auto; padding: 40px 20px 72px; text-align: center; }
-  .hero h1 { font-size: clamp(2.2rem, 5vw, 3.2rem); font-weight: 800; margin: 22px 0 14px; line-height: 1.08; }
-  .hero .lead { color: var(--muted); font-size: 1.12rem; max-width: 560px; margin: 0 auto 44px; }
-
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 22px; max-width: 780px; margin: 0 auto; }
-  .cta-card {
-    text-align: left; text-decoration: none; color: inherit; padding: 30px;
-    display: flex; flex-direction: column; gap: 14px; position: relative; overflow: hidden;
-    transition: transform .16s ease, box-shadow .2s ease, border-color .2s ease;
-  }
-  .cta-card:hover { transform: translateY(-5px); box-shadow: 0 22px 44px rgba(26,24,29,.12); border-color: var(--pink); }
-  .cta-card h2 { margin: 4px 0 0; font-size: 1.35rem; }
-  .cta-card p { margin: 0; color: var(--muted); font-size: .96rem; }
-  .cta-card .ir { margin-top: 8px; font-weight: 700; color: var(--acento); display: inline-flex; align-items: center; gap: 6px; }
-  .cta-card:hover .ir { gap: 10px; }
-  .hero-actions { display: flex; justify-content: center; margin: -18px 0 38px; }
-
-  /* ---------- Responsive ---------- */
-  @media (max-width: 640px) {
-    .hero { padding: 24px 16px 56px; }
-    .hero .lead { font-size: 1rem; margin-bottom: 32px; }
-    .hero-actions { margin: -14px 0 30px; }
-    .cards { gap: 16px; }
-    .cta-card { padding: 24px; }
-  }
-</style>
 </head>
 <body>
   <div class="appbar">
     <a class="logo" href="index.html"><img class="logo-img" src="assets/logo-trim.png" alt="ONE" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-block'"><span class="ring" style="display:none"></span><span class="marca-txt">Talent Hub</span></a>
-    <a class="btn btn-sec" href="empresas.html">Acceder</a>
+    <a class="btn btn-sec" href="index.html">Inicio</a>
   </div>
 
-  <main class="hero">
-    <span class="pill"><span class="dot"></span>Plataforma de reclutamiento de talento</span>
-    <h1>Conectamos <span class="grad-text">talento</span><br>con oportunidades.</h1>
-    <p class="lead">Los postulantes cargan su CV en pocos pasos y las empresas encuentran, filtran y exportan los perfiles ideales — todo en un solo lugar.</p>
-    <div class="hero-actions">
-      <a class="btn btn-prim" href="busquedas.html">Ver búsquedas activas</a>
+  <main class="busquedas-publicas" id="busquedasInicio">
+    <div class="busquedas-publicas-head">
+      <span class="pill"><span class="dot"></span>Oportunidades activas</span>
+      <h1>Búsquedas disponibles</h1>
+      <p>Explorá las vacantes publicadas por empresas y consultoras. Abrí el detalle de cada búsqueda y postulate con tu perfil.</p>
     </div>
+    <section class="busq-layout" aria-label="Listado de búsquedas laborales">
+      <aside class="busq-filtros card" aria-label="Filtros">
+        <div class="busq-filtros-head">
+          <h2>Filtros</h2>
+          <button type="button" class="busq-limpiar" id="busqLimpiar">Limpiar</button>
+        </div>
 
-    <div class="cards">
-      <a class="card cta-card" href="postular.html">
-        <div class="tile tile-a" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/>
-            <circle cx="9.5" cy="7" r="4"/>
-            <path d="M17 8h4"/>
-            <path d="M19 6v4"/>
-          </svg>
+        <div class="campo">
+          <label for="filtroTexto">Buscar</label>
+          <input id="filtroTexto" type="search" placeholder="Puesto, empresa, habilidad...">
         </div>
-        <h2>Soy postulante</h2>
-        <p>Cargá tu CV en 5 pasos simples y quedá visible para las empresas.</p>
-        <span class="ir">Comenzar mi postulación →</span>
-      </a>
-      <a class="card cta-card" href="empresas.html">
-        <div class="tile tile-b" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 21V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v16"/>
-            <path d="M17 8h1a2 2 0 0 1 2 2v11"/>
-            <path d="M8 7h5"/>
-            <path d="M8 11h5"/>
-            <path d="M8 15h5"/>
-            <path d="M3 21h18"/>
-          </svg>
+
+        <div class="campo">
+          <label for="filtroUbicacion">Ubicación</label>
+          <input id="filtroUbicacion" type="search" placeholder="Provincia o localidad">
         </div>
-        <h2>Soy empresa / consultora</h2>
-        <p>Buscá, filtrá y exportá perfiles de candidatos desde tu panel.</p>
-        <span class="ir">Acceder al panel →</span>
-      </a>
-    </div>
+
+        <div class="campo">
+          <label for="filtroModalidad">Modalidad</label>
+          <select id="filtroModalidad">
+            <option value="">Todas</option>
+          </select>
+        </div>
+
+        <div class="campo">
+          <label for="filtroArea">Área</label>
+          <select id="filtroArea">
+            <option value="">Todas</option>
+          </select>
+        </div>
+
+        <div class="campo">
+          <label for="filtroContrato">Tipo de contratación</label>
+          <select id="filtroContrato">
+            <option value="">Todos</option>
+          </select>
+        </div>
+
+        <div class="campo">
+          <label for="filtroIdioma">Idioma</label>
+          <select id="filtroIdioma">
+            <option value="">Todos</option>
+          </select>
+        </div>
+
+        <div class="campo">
+          <label for="filtroSalario">Salario mínimo pretendido</label>
+          <input id="filtroSalario" type="number" min="0" step="10000" placeholder="Ej: 600000">
+        </div>
+
+        <div class="campo">
+          <label for="filtroOrden">Ordenar por</label>
+          <select id="filtroOrden">
+            <option value="recientes">Más recientes</option>
+            <option value="puesto">Puesto A-Z</option>
+            <option value="empresa">Empresa A-Z</option>
+            <option value="salario">Mejor salario</option>
+          </select>
+        </div>
+      </aside>
+
+      <section class="busq-resultados" aria-live="polite">
+        <div class="busq-resultados-head">
+          <p id="busqResumen">Cargando búsquedas...</p>
+        </div>
+        <div class="busq-inicio-estado" id="busqInicioEstado">Cargando búsquedas...</div>
+        <div class="busq-inicio-grid" id="busqInicioGrid"></div>
+      </section>
+    </section>
   </main>
+
+  <div class="bd-overlay oculto" id="bdOverlay" role="dialog" aria-modal="true">
+    <div class="bd-modal" id="bdModal"></div>
+  </div>
 
   <div class="whatsapp-float">
     <span class="whatsapp-float__bubble">¿Necesitás ayuda?</span>
@@ -124,6 +138,9 @@
       <p>Contribución de <strong>Fundación para el Desarrollo Profesional</strong></p>
     </div>
   </footer>
+
+  <script src="config.js"></script>
   <script src="soporte.js"></script>
+  <script src="busquedas-publicas.js"></script>
 </body>
 </html>

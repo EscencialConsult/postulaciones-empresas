@@ -6,7 +6,8 @@
     '¿Consultas?',
     'Soporte por WhatsApp'
   ];
-  var INTERVALO_MS = 12000;
+  var INTERVALO_MS = 10000;
+  var TRANSICION_MS = 2000;
 
   function elegirMensaje(actual) {
     if (MENSAJES_AYUDA.length < 2) return MENSAJES_AYUDA[0] || '';
@@ -23,7 +24,11 @@
       burbuja.textContent = mensaje;
       setInterval(function () {
         mensaje = elegirMensaje(mensaje);
-        burbuja.textContent = mensaje;
+        burbuja.classList.add('is-changing');
+        setTimeout(function () {
+          burbuja.textContent = mensaje;
+          burbuja.classList.remove('is-changing');
+        }, TRANSICION_MS);
       }, INTERVALO_MS);
     });
   }

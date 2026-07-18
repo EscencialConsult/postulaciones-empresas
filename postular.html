@@ -108,6 +108,68 @@
   .final-step span { display: block; color: var(--muted); font-size: .84rem; line-height: 1.4; }
   .final-acciones { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
   .final-nota { margin: 18px auto 0; color: var(--muted); font-size: .84rem; }
+  body.post-panel-activo .appbar { display: none; }
+  body.post-panel-activo .contenedor { max-width: none; width: 100%; min-height: calc(100vh - 54px); margin: 0; padding: 0 0 0 250px; display: flex; flex-direction: column; }
+  body.post-panel-activo .post-public-footer { display: none; }
+  body.post-panel-activo #panelWrap { flex: 1; }
+  body.post-panel-activo #vacantesWrap,
+  body.post-panel-activo #aplicarWrap,
+  body.post-panel-activo #wizardWrap { flex: 1; }
+  body.post-panel-activo #panelWrap,
+  body.post-panel-activo #vacantesWrap,
+  body.post-panel-activo #aplicarWrap,
+  body.post-panel-activo #wizardWrap { width: 100%; max-width: 1080px; margin: 0 auto; padding: 30px 34px 40px; }
+  .cuenta-bar { padding: 0; margin: 0; display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+  body.post-panel-activo .cuenta-bar {
+    position: fixed; inset: 0 auto 0 0; z-index: 55; width: 250px; height: 100vh;
+    border-radius: 0; border-width: 0 1px 0 0; box-shadow: none; background: #fff;
+  }
+  .cuenta-logo { display: flex; align-items: center; gap: 9px; padding: 20px 20px 18px; text-decoration: none; border-bottom: 1px solid var(--borde); color: var(--dark); }
+  .cuenta-logo .logo-img { height: 30px; }
+  .cuenta-logo .marca-txt { font-weight: 800; font-size: 1.1rem; color: var(--dark); }
+  .cuenta-info { min-width: 0; }
+  .cuenta-label { display: block; color: var(--muted); font-size: .74rem; margin-top: 2px; }
+  .cuenta-email { display: block; color: var(--dark); font-weight: 800; font-size: .88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cuenta-nav { display: flex; flex-direction: column; gap: 4px; padding: 16px 12px; flex: 1; overflow-y: auto; }
+  .cuenta-nav .cap { font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 6px 14px 4px; }
+  .cuenta-nav .btn { justify-content: flex-start; min-height: 42px; padding: 11px 14px; font-size: .94rem; border: 0; box-shadow: none; background: transparent; color: var(--muted); }
+  .cuenta-nav .btn:hover { background: #faf7fd; color: var(--dark); transform: none; }
+  .cuenta-nav .btn.activo { background: var(--grad); color: var(--dark); box-shadow: none; }
+  .cuenta-nav .btn svg { width: 20px; height: 20px; flex: 0 0 auto; }
+  .cuenta-foot { margin-top: auto; padding: 14px 12px; border-top: 1px solid var(--borde); display: flex; flex-direction: column; gap: 10px; }
+  .cuenta-user { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 2px; }
+  .cuenta-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--grad); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; flex: 0 0 auto; }
+  .cuenta-nav .btn-salir { justify-content: center; border: 1px solid var(--borde); background: #fff; color: var(--dark); }
+  .post-panel-footer {
+    display: none;
+    border-top: 1px solid var(--borde);
+    background: #fff;
+    padding: 16px 34px;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: .82rem;
+    color: var(--muted);
+  }
+  .post-panel-footer a { color: var(--muted); text-decoration: none; margin-right: 16px; }
+  .post-panel-footer a:hover { color: var(--acento); }
+  body.post-panel-activo .post-panel-footer { display: flex; margin-left: 250px; }
+  .panel-intro { margin-bottom: 22px; }
+  .panel-intro h1 { margin-bottom: 8px; }
+  .panel-card { padding: 26px; }
+  .empty-state { text-align: center; padding: 34px 20px; display: grid; justify-items: center; gap: 12px; }
+  .empty-state p { max-width: 440px; color: var(--muted); font-size: 1rem; margin: 0; }
+  .postulacion-card { margin-bottom: 12px; padding: 18px 20px; }
+  .postulacion-row { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .postulacion-card h3 { margin: 0; font-size: 1.08rem; line-height: 1.3; }
+  .postulacion-meta { color: var(--muted); margin: 4px 0 0; font-size: .9rem; }
+  .postulacion-fecha { color: var(--muted); font-size: .84rem; white-space: nowrap; }
+  .dato-perfil { display: grid; grid-template-columns: minmax(140px, 180px) minmax(0, 1fr); gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--borde); }
+  .dato-perfil span:first-child { color: var(--muted); font-size: .9rem; }
+  .dato-perfil span:last-child { font-weight: 650; min-width: 0; overflow-wrap: anywhere; }
+  .perfil-acciones { padding-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .panel-actions { margin-top: 14px; display: flex; justify-content: flex-end; }
   .panel-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-end; margin-bottom: 18px; }
   .panel-head .intro { margin: 0; }
   .panel-head .intro p { margin-bottom: 0; }
@@ -129,6 +191,21 @@
   .aviso { background: rgba(209,67,111,.08); color: var(--error); padding: 12px 14px; border-radius: 10px; font-size: .9rem; margin-bottom: 16px; display: none; }
 
   /* ---------- Responsive ---------- */
+  @media (max-width: 860px) {
+    body.post-panel-activo .contenedor { min-height: calc(100vh - 54px); padding: 0; }
+    body.post-panel-activo .post-panel-footer { margin-left: 0; padding: 14px 16px; }
+    body.post-panel-activo #panelWrap,
+    body.post-panel-activo #vacantesWrap,
+    body.post-panel-activo #aplicarWrap,
+    body.post-panel-activo #wizardWrap { padding: 22px 16px 40px; }
+    body.post-panel-activo .cuenta-bar { position: static; width: auto; height: auto; border-width: 0 0 1px 0; }
+    .cuenta-logo { padding: 16px; }
+    .cuenta-nav { flex-direction: row; overflow-x: auto; flex: initial; padding: 10px 12px; }
+    .cuenta-nav .cap { display: none; }
+    .cuenta-nav .btn { white-space: nowrap; width: auto; flex: 0 0 auto; }
+    .cuenta-foot { flex-direction: row; align-items: center; justify-content: space-between; }
+    .cuenta-foot .btn { width: auto; min-width: 110px; }
+  }
   @media (max-width: 640px) {
     .contenedor { padding: 8px 12px 48px; }
     .intro h1 { font-size: 1.5rem; }
@@ -142,6 +219,10 @@
     .final-body { padding: 20px 16px 24px; }
     .final-resumen { grid-template-columns: 1fr; }
     .final-acciones .btn { width: 100%; }
+    .panel-card { padding: 20px 16px; }
+    .empty-state { padding: 28px 10px; }
+    .dato-perfil { grid-template-columns: 1fr; gap: 2px; }
+    .panel-actions .btn { width: 100%; }
     .panel-head { align-items: stretch; flex-direction: column; }
     .panel-head .btn, .vacantes-toolbar .btn { width: 100%; }
   }
@@ -159,14 +240,26 @@
 <div class="contenedor">
 
   <!-- Barra de sesión + navegación (logueado) -->
-  <div id="cuentaBar" class="oculto card" style="padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-    <span style="font-size:.9rem;color:var(--muted)">Sesión: <strong id="cuentaEmail" style="color:var(--dark)"></strong></span>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-sec" id="navPostulaciones" type="button">Mis postulaciones</button>
-      <button class="btn btn-sec" id="btnVacantesPost" type="button">Vacantes</button>
-      <button class="btn btn-sec" id="navDatos" type="button">Mis datos</button>
-      <a class="btn btn-sec" href="index.html">Explorar busquedas</a>
-      <button class="btn btn-sec" id="btnSalirPost" type="button">Salir</button>
+  <div id="cuentaBar" class="oculto card cuenta-bar">
+    <a class="cuenta-logo" href="index.html">
+      <img class="logo-img" src="assets/logo-trim.png" alt="ONE" onerror="this.style.display='none'">
+      <span class="marca-txt">Talent Hub</span>
+    </a>
+    <div class="cuenta-nav">
+      <span class="cap">Menú</span>
+      <button class="btn btn-sec" id="navPostulaciones" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9.5 14.5l1.8 1.8 3.2-3.6"/></svg> Mis postulaciones</button>
+      <button class="btn btn-sec" id="btnVacantesPost" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7.5" width="18" height="12" rx="2"/><path d="M8 7.5V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1.5"/><path d="M3 12.5h18"/></svg> Vacantes</button>
+      <button class="btn btn-sec" id="navDatos" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg> Mis datos</button>
+    </div>
+    <div class="cuenta-foot">
+      <div class="cuenta-user">
+        <span class="cuenta-avatar" id="cuentaAvatar">P</span>
+        <div class="cuenta-info">
+          <strong class="cuenta-email" id="cuentaEmail"></strong>
+          <span class="cuenta-label">Cuenta de postulante</span>
+        </div>
+      </div>
+      <button class="btn btn-sec btn-salir" id="btnSalirPost" type="button">Salir</button>
     </div>
   </div>
 
@@ -174,7 +267,7 @@
   <div id="panelWrap" class="oculto">
     <!-- Mis postulaciones -->
     <div id="vistaPostulaciones">
-      <div class="intro" style="margin-bottom:14px">
+      <div class="intro panel-intro">
         <span class="pill"><span class="dot"></span>Tu actividad</span>
         <h1>Mis postulaciones</h1>
         <p>Estas son las busquedas a las que te postulaste.</p>
@@ -183,13 +276,13 @@
     </div>
     <!-- Mis datos -->
     <div id="vistaDatos" class="oculto">
-      <div class="intro" style="margin-bottom:14px">
+      <div class="intro panel-intro">
         <span class="pill"><span class="dot"></span>Tu perfil</span>
         <h1>Mis datos</h1>
         <p>Esta es la informacion de tu perfil en la plataforma.</p>
       </div>
-      <div class="card tarjeta" id="misDatosCont"></div>
-      <div style="margin-top:14px">
+      <div class="card panel-card" id="misDatosCont"></div>
+      <div class="panel-actions">
         <button class="btn btn-prim" id="btnEditarDatos" type="button">Editar mis datos</button>
       </div>
     </div>
@@ -505,22 +598,30 @@
   </div>
 </div>
 
-<a class="whatsapp-float" href="https://wa.me/message/IKT5STIPRP56J1" target="_blank" rel="noopener" aria-label="Consultar por WhatsApp">
+<div class="whatsapp-float">
   <span class="whatsapp-float__bubble">¿Necesitás ayuda?</span>
-  <span class="whatsapp-float__icon" aria-hidden="true">
+  <a class="whatsapp-float__icon" href="https://wa.me/message/IKT5STIPRP56J1" target="_blank" rel="noopener" aria-label="Consultar por WhatsApp">
     <svg viewBox="0 0 32 32" focusable="false" aria-hidden="true">
       <path d="M16 3.2A12.8 12.8 0 0 0 5.1 22.7L3.7 28.8l6.2-1.6A12.8 12.8 0 1 0 16 3.2Zm0 23.1c-2.1 0-4.1-.6-5.8-1.8l-.4-.2-3.7 1 1-3.6-.3-.4A10.3 10.3 0 1 1 16 26.3Zm5.8-7.7c-.3-.2-1.9-.9-2.2-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.5-.6c.2-.2.2-.3.3-.5.1-.2 0-.4 0-.6-.1-.2-.7-1.7-1-2.3-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.2-1.2 2.9s1.2 3.3 1.4 3.5c.2.2 2.4 3.7 5.9 5.1.8.4 1.5.6 2 .7.8.3 1.6.2 2.2.1.7-.1 1.9-.8 2.2-1.5.3-.8.3-1.4.2-1.5-.2-.2-.5-.3-.8-.4Z"/>
     </svg>
-  </span>
-</a>
+  </a>
+</div>
 
-<footer class="site-footer">
+<footer class="site-footer site-footer--compact post-public-footer">
   <div class="footer-links">
     <a href="politica-privacidad.html">Política de Privacidad</a>
     <a href="terminos-condiciones.html">Términos y Condiciones</a>
   </div>
-  <p><a href="https://wa.link/n9zz8z" target="_blank" rel="noopener">Desarrollado por <strong>Fundación para el Desarrollo Profesional</strong> — Contribución de <strong>Escencial Consultora</strong></a></p>
+  <p class="footer-credit">Desarrollado por <strong>Fundación para el Desarrollo Profesional</strong> — Contribución de <strong>Escencial Consultora</strong></p>
   <img class="footer-logo" src="assets/logo2-trim.png" alt="ONE">
+</footer>
+
+<footer class="post-panel-footer">
+  <div>
+    <a href="politica-privacidad.html">Política de Privacidad</a>
+    <a href="terminos-condiciones.html">Términos y Condiciones</a>
+  </div>
+  <span>© ONE Talent Hub · Fundación para el Desarrollo Profesional</span>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@5.1.3/dist/signature_pad.umd.min.js"></script>
@@ -987,10 +1088,17 @@
     wizardEl.classList.toggle('oculto', cual !== 'wizard');
     panelEl.classList.toggle('oculto', cual !== 'panel');
     cuentaBarEl.classList.toggle('oculto', cual === 'gate' || !perfilToken);
+    document.body.classList.toggle('post-panel-activo', cual !== 'gate' && !!perfilToken);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   /* ---------- Panel del postulante ---------- */
+  function setCuentaTab(tab) {
+    document.getElementById('navPostulaciones').classList.toggle('activo', tab === 'postulaciones');
+    document.getElementById('btnVacantesPost').classList.toggle('activo', tab === 'vacantes');
+    document.getElementById('navDatos').classList.toggle('activo', tab === 'datos');
+  }
+
   function fechaCorta(iso) {
     if (!iso) return '';
     var d = new Date(iso);
@@ -1005,6 +1113,7 @@
 
   // Muestra el panel y la pestaña indicada ('postulaciones' | 'datos').
   function mostrarPanel(tab) {
+    setCuentaTab(tab || 'postulaciones');
     document.getElementById('vistaPostulaciones').classList.toggle('oculto', tab === 'datos');
     document.getElementById('vistaDatos').classList.toggle('oculto', tab !== 'datos');
     mostrarSeccion('panel');
@@ -1014,29 +1123,29 @@
 
   async function cargarMisPostulaciones() {
     const cont = document.getElementById('misPostulacionesLista');
-    cont.innerHTML = '<div class="card tarjeta"><p style="color:var(--muted);margin:0">Cargando…</p></div>';
+    cont.innerHTML = '<div class="card panel-card empty-state"><p>Cargando postulaciones...</p></div>';
     try {
       const r = await apiCall({ action: 'misPostulaciones', token: perfilToken });
       if (!r.ok) throw new Error(r.error);
       const lista = r.postulaciones || [];
       if (!lista.length) {
-        cont.innerHTML = '<div class="card tarjeta" style="text-align:center">' +
-          '<p style="margin:0 0 12px">Todavía no te postulaste a ninguna búsqueda.</p>' +
-          '<a class="btn btn-prim" href="index.html">Explorar búsquedas</a></div>';
+        cont.innerHTML = '<div class="card panel-card empty-state">' +
+          '<p>Todavía no te postulaste a ninguna búsqueda.</p>' +
+          '<a class="btn btn-prim" href="busquedas.html">Explorar búsquedas</a></div>';
         return;
       }
       cont.innerHTML = lista.map(function (p) {
         const est = estadoBusqLabel(p.estado);
         const meta = [p.empresa, est].filter(Boolean).map(escHtml).join(' · ');
-        return '<div class="card tarjeta" style="margin-bottom:12px">' +
-          '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">' +
-          '<div><p style="font-weight:800;font-size:1.08rem;margin:0">' + escHtml(p.puesto || 'Búsqueda') + '</p>' +
-          (meta ? '<p style="color:var(--muted);margin:3px 0 0;font-size:.9rem">' + meta + '</p>' : '') + '</div>' +
-          '<span style="color:var(--muted);font-size:.85rem;white-space:nowrap">Postulado el ' + escHtml(fechaCorta(p.fecha)) + '</span>' +
+        return '<div class="card postulacion-card">' +
+          '<div class="postulacion-row">' +
+          '<div><h3>' + escHtml(p.puesto || 'Búsqueda') + '</h3>' +
+          (meta ? '<p class="postulacion-meta">' + meta + '</p>' : '') + '</div>' +
+          '<span class="postulacion-fecha">Postulado el ' + escHtml(fechaCorta(p.fecha)) + '</span>' +
           '</div></div>';
       }).join('');
     } catch (ex) {
-      cont.innerHTML = '<div class="card tarjeta"><p style="color:var(--error);margin:0">Error: ' + escHtml(ex.message) + '</p></div>';
+      cont.innerHTML = '<div class="card panel-card"><p style="color:var(--error);margin:0">Error: ' + escHtml(ex.message) + '</p></div>';
     }
   }
 
@@ -1045,9 +1154,9 @@
     const cont = document.getElementById('misDatosCont');
     function fila(k, v) {
       if (!v) return '';
-      return '<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--borde);flex-wrap:wrap">' +
-        '<span style="min-width:170px;color:var(--muted);font-size:.9rem">' + k + '</span>' +
-        '<span style="font-weight:600">' + escHtml(v) + '</span></div>';
+      return '<div class="dato-perfil">' +
+        '<span>' + k + '</span>' +
+        '<span>' + escHtml(v) + '</span></div>';
     }
     const nombre = [p.nombre, p.apellido].filter(Boolean).join(' ');
     const idiomas = parseJSONarr(p.idiomas).map(function (x) {
@@ -1069,10 +1178,10 @@
     html += fila('Cambio de residencia', p.dispCambioResidencia);
     html += fila('Experiencia', primer ? 'Busca su primer empleo' : '');
     if (p.cvUrl) {
-      html += '<div style="padding:14px 0 0"><a class="btn btn-sec" href="' + escHtml(p.cvUrl) +
-        '" target="_blank" rel="noopener">👁 Ver mi CV</a></div>';
+      html += '<div class="perfil-acciones"><a class="btn btn-sec" href="' + escHtml(p.cvUrl) +
+        '" target="_blank" rel="noopener">Ver mi CV</a></div>';
     }
-    cont.innerHTML = html || '<p style="color:var(--muted);margin:0">Tu perfil está incompleto. Tocá “Editar mis datos” para completarlo.</p>';
+    cont.innerHTML = html || '<div class="empty-state"><p>Tu perfil está incompleto. Tocá "Editar mis datos" para completarlo.</p></div>';
   }
 
   // Vuelve al panel dejando de lado el flujo de postulación (limpia la URL).
@@ -1086,6 +1195,10 @@
     perfilToken = token; perfilActual = perfil || perfilActual;
     if (token) sessionStorage.setItem('perfilToken', token);
     if (perfilActual) document.getElementById('cuentaEmail').textContent = perfilActual.email || '';
+    if (perfilActual) {
+      const inicial = String(perfilActual.nombre || perfilActual.email || 'P').trim().charAt(0).toUpperCase();
+      document.getElementById('cuentaAvatar').textContent = inicial || 'P';
+    }
     cuentaBarEl.classList.remove('oculto');
   }
 
@@ -1189,12 +1302,14 @@
   }
 
   function mostrarVacantesPostulante() {
+    setCuentaTab('vacantes');
     mostrarSeccion('vacantes');
     if (!vacantesPostulante.length) cargarVacantesPostulante();
     else pintarVacantesPostulante();
   }
 
   function mostrarAplicar() {
+    setCuentaTab('');
     const b = busquedaAplicar;
     const info = document.getElementById('aplicarBusqInfo');
     if (b) {
