@@ -1,4 +1,5 @@
 (function () {
+  var whatsappOculto = false;
   var MENSAJES_AYUDA = [
     '¿Necesitás ayuda?',
     '¿Tenés dudas?',
@@ -19,6 +20,29 @@
   }
 
   function iniciarMensajesWhatsApp() {
+    document.querySelectorAll('.whatsapp-float').forEach(function (wrap) {
+      if (whatsappOculto) {
+        wrap.classList.add('is-hidden');
+        return;
+      }
+      if (!wrap.querySelector('.whatsapp-float__close')) {
+        var cerrar = document.createElement('button');
+        cerrar.type = 'button';
+        cerrar.className = 'whatsapp-float__close';
+        cerrar.setAttribute('aria-label', 'Ocultar ayuda de WhatsApp');
+        cerrar.textContent = '×';
+        cerrar.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          whatsappOculto = true;
+          wrap.classList.add('is-hidden');
+        });
+        wrap.appendChild(cerrar);
+      }
+    });
+
+    if (whatsappOculto) return;
+
     document.querySelectorAll('.whatsapp-float__bubble').forEach(function (burbuja) {
       var mensaje = elegirMensaje('');
       burbuja.textContent = mensaje;

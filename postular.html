@@ -173,8 +173,17 @@
   .panel-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-end; margin-bottom: 18px; }
   .panel-head .intro { margin: 0; }
   .panel-head .intro p { margin-bottom: 0; }
-  .vacantes-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
-  .vacantes-toolbar input { flex: 1; min-width: 220px; margin: 0; }
+  .vacantes-filtros { display: grid; gap: 14px; margin-bottom: 18px; }
+  .vacantes-filtros-top { display: flex; justify-content: flex-end; gap: 10px; align-items: center; }
+  .vacantes-filtros-grid { display: grid; grid-template-columns: repeat(5, minmax(140px, 1fr)); gap: 10px; align-items: end; }
+  .vacantes-filtros-grid .campo { margin: 0; }
+  .vacantes-filtros-actions { display: flex; gap: 8px; align-items: center; }
+  .vacantes-resumen { margin: 0 0 12px; color: var(--muted); font-size: .9rem; font-weight: 700; }
+  .btn-link-mini {
+    border: 0; background: transparent; color: var(--acento); font: inherit;
+    font-size: .88rem; font-weight: 800; cursor: pointer; padding: 8px 4px;
+  }
+  .btn-link-mini:hover { text-decoration: underline; text-underline-offset: 3px; }
   .vacantes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
   .vacante-card { padding: 18px; display: flex; flex-direction: column; gap: 10px; min-height: 230px; }
   .vacante-card h3 { margin: 0; font-size: 1.12rem; line-height: 1.25; }
@@ -224,7 +233,9 @@
     .dato-perfil { grid-template-columns: 1fr; gap: 2px; }
     .panel-actions .btn { width: 100%; }
     .panel-head { align-items: stretch; flex-direction: column; }
-    .panel-head .btn, .vacantes-toolbar .btn { width: 100%; }
+    .panel-head .btn, .vacantes-filtros-top .btn { width: 100%; }
+    .vacantes-filtros-grid { grid-template-columns: 1fr; }
+    .vacantes-filtros-actions { justify-content: space-between; }
   }
   @media (max-width: 400px) {
     .fila { flex-direction: column; gap: 0; }
@@ -299,10 +310,46 @@
       <button class="btn btn-sec" type="button" id="btnActualizarPerfilDesdeVacantes">Actualizar perfil</button>
     </div>
     <div class="card tarjeta">
-      <div class="vacantes-toolbar">
-        <input id="buscarVacantesPost" type="search" placeholder="Buscar por puesto, empresa, modalidad o localidad">
-        <button class="btn btn-sec" type="button" id="btnRecargarVacantes">Recargar</button>
+      <div class="vacantes-filtros" aria-label="Filtros de vacantes">
+        <div class="vacantes-filtros-grid">
+          <div class="campo">
+            <label for="filtroVacArea">Área</label>
+            <select id="filtroVacArea">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label for="filtroVacModalidad">Modalidad</label>
+            <select id="filtroVacModalidad">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label for="filtroVacUbicacion">Ubicación</label>
+            <select id="filtroVacUbicacion">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label for="filtroVacContrato">Contrato</label>
+            <select id="filtroVacContrato">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label for="ordenVacantesPost">Ordenar</label>
+            <select id="ordenVacantesPost">
+              <option value="recientes">Más recientes</option>
+              <option value="puesto">Puesto A-Z</option>
+              <option value="empresa">Empresa A-Z</option>
+            </select>
+          </div>
+        </div>
+        <div class="vacantes-filtros-actions">
+          <button class="btn-link-mini" type="button" id="btnLimpiarVacantes">Limpiar filtros</button>
+        </div>
       </div>
+      <p class="vacantes-resumen" id="resumenVacantesPost">Cargando vacantes...</p>
       <div class="estado-vacantes" id="estadoVacantesPost">Cargando vacantes...</div>
       <div class="vacantes-grid" id="gridVacantesPost"></div>
     </div>
@@ -620,6 +667,7 @@
   <div>
     <a href="politica-privacidad.html">Política de Privacidad</a>
     <a href="terminos-condiciones.html">Términos y Condiciones</a>
+    <a href="https://wa.me/message/IKT5STIPRP56J1" target="_blank" rel="noopener">Ayuda</a>
   </div>
   <span>© ONE Talent Hub · Fundación para el Desarrollo Profesional</span>
 </footer>
@@ -1079,6 +1127,14 @@
   const estadoVacantesEl = document.getElementById('estadoVacantesPost');
   const gridVacantesEl = document.getElementById('gridVacantesPost');
   const buscarVacantesEl = document.getElementById('buscarVacantesPost');
+  const resumenVacantesEl = document.getElementById('resumenVacantesPost');
+  const filtrosVacantes = {
+    area: document.getElementById('filtroVacArea'),
+    modalidad: document.getElementById('filtroVacModalidad'),
+    ubicacion: document.getElementById('filtroVacUbicacion'),
+    contrato: document.getElementById('filtroVacContrato'),
+    orden: document.getElementById('ordenVacantesPost')
+  };
   var vacantesPostulante = [];
 
   function mostrarSeccion(cual) {
@@ -1285,6 +1341,122 @@
     });
   }
 
+  function normTexto(s) {
+    return String(s == null ? '' : s)
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  }
+
+  function fechaOrdenVacante(v) {
+    if (!v) return 0;
+    const d = new Date(v);
+    if (!isNaN(d)) return d.getTime();
+    const n = Number(String(v).replace(/[^\d.-]/g, ''));
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function llenarSelectVacantes(select, valores, textoBase) {
+    if (!select) return;
+    const actual = select.value;
+    const opciones = Array.from(new Set(valores.filter(Boolean).map(function (v) {
+      return String(v).trim();
+    }))).sort(function (a, b) {
+      return a.localeCompare(b, 'es');
+    });
+    select.innerHTML = '<option value="">' + textoBase + '</option>' +
+      opciones.map(function (v) { return '<option value="' + escHtml(v) + '">' + escHtml(v) + '</option>'; }).join('');
+    if (opciones.indexOf(actual) >= 0) select.value = actual;
+  }
+
+  function prepararFiltrosVacantes() {
+    llenarSelectVacantes(filtrosVacantes.area, vacantesPostulante.map(function (b) { return b.Area; }), 'Todas');
+    llenarSelectVacantes(filtrosVacantes.modalidad, vacantesPostulante.map(function (b) { return b.Modalidad; }), 'Todas');
+    llenarSelectVacantes(filtrosVacantes.ubicacion, vacantesPostulante.map(function (b) {
+      return b.Localidad || b.Provincia;
+    }), 'Todas');
+    llenarSelectVacantes(filtrosVacantes.contrato, vacantesPostulante.map(function (b) { return b.TipoContrato; }), 'Todos');
+  }
+
+  function limpiarFiltrosVacantes() {
+    if (buscarVacantesEl) buscarVacantesEl.value = '';
+    Object.keys(filtrosVacantes).forEach(function (k) {
+      if (filtrosVacantes[k]) filtrosVacantes[k].value = k === 'orden' ? 'recientes' : '';
+    });
+    pintarVacantesPostulante();
+  }
+
+  function coincideFiltro(valorFiltro, valorVacante) {
+    return !valorFiltro || normTexto(valorFiltro) === normTexto(valorVacante);
+  }
+
+  function pintarVacantesPostulante() {
+    const q = buscarVacantesEl ? normTexto(buscarVacantesEl.value) : '';
+    const area = filtrosVacantes.area ? filtrosVacantes.area.value : '';
+    const modalidad = filtrosVacantes.modalidad ? filtrosVacantes.modalidad.value : '';
+    const ubicacion = filtrosVacantes.ubicacion ? filtrosVacantes.ubicacion.value : '';
+    const contrato = filtrosVacantes.contrato ? filtrosVacantes.contrato.value : '';
+    const orden = filtrosVacantes.orden ? filtrosVacantes.orden.value : 'recientes';
+    const lista = vacantesPostulante.filter(function (b) {
+      return (!q || normTexto(textoVacante(b)).indexOf(q) !== -1) &&
+        coincideFiltro(area, b.Area) &&
+        coincideFiltro(modalidad, b.Modalidad) &&
+        coincideFiltro(ubicacion, b.Localidad || b.Provincia) &&
+        coincideFiltro(contrato, b.TipoContrato);
+    }).sort(function (a, b) {
+      if (orden === 'puesto') return String(a.Puesto || '').localeCompare(String(b.Puesto || ''), 'es');
+      if (orden === 'empresa') return String(a.Empresa || '').localeCompare(String(b.Empresa || ''), 'es');
+      return fechaOrdenVacante(b.FechaActualizacion || b.FechaCreacion || b.Fecha) -
+        fechaOrdenVacante(a.FechaActualizacion || a.FechaCreacion || a.Fecha);
+    });
+
+    if (!vacantesPostulante.length) {
+      estadoVacantesEl.style.display = 'block';
+      estadoVacantesEl.textContent = 'Todavía no hay vacantes activas disponibles.';
+      if (resumenVacantesEl) resumenVacantesEl.textContent = '0 vacantes disponibles';
+      gridVacantesEl.innerHTML = '';
+      return;
+    }
+
+    if (!lista.length) {
+      estadoVacantesEl.style.display = 'block';
+      estadoVacantesEl.textContent = 'No encontramos vacantes con esos filtros.';
+      if (resumenVacantesEl) resumenVacantesEl.textContent = '0 vacantes encontradas';
+      gridVacantesEl.innerHTML = '';
+      return;
+    }
+
+    if (resumenVacantesEl) {
+      resumenVacantesEl.textContent = lista.length === 1 ? '1 vacante encontrada' : lista.length + ' vacantes encontradas';
+    }
+    estadoVacantesEl.style.display = 'none';
+    gridVacantesEl.innerHTML = lista.map(function (b, i) {
+      const meta = [b.Modalidad, b.Localidad, b.TipoContrato].filter(Boolean);
+      const desc = b.Descripcion || b.Responsabilidades || b.RequisitosExcluyentes || '';
+      return '<article class="card vacante-card">' +
+        (b.Area ? '<span class="vacante-chip">' + escHtml(b.Area) + '</span>' : '') +
+        '<h3>' + escHtml(b.Puesto || 'Vacante') + '</h3>' +
+        '<p class="vacante-empresa">' + escHtml(b.Empresa || 'Empresa') + '</p>' +
+        (meta.length ? '<div class="vacante-meta">' + meta.map(function (m) { return '<span class="vacante-chip">' + escHtml(m) + '</span>'; }).join('') + '</div>' : '') +
+        (desc ? '<p class="vacante-desc">' + escHtml(desc) + '</p>' : '') +
+        '<div class="vacante-actions">' +
+          '<button class="btn btn-prim" type="button" data-vacante-i="' + i + '">Ver y postularme</button>' +
+        '</div>' +
+      '</article>';
+    }).join('');
+
+    gridVacantesEl.querySelectorAll('[data-vacante-i]').forEach(function (btn) {
+      btn.onclick = function () {
+        const b = lista[Number(btn.dataset.vacanteI)];
+        busquedaAplicar = b;
+        busquedaOrigenId = String(b.ID || '');
+        puestoPrecargado = b.Puesto || puestoPrecargado;
+        mostrarAplicar();
+      };
+    });
+  }
+
   async function cargarVacantesPostulante() {
     estadoVacantesEl.style.display = 'block';
     estadoVacantesEl.textContent = 'Cargando vacantes...';
@@ -1293,6 +1465,7 @@
       const r = await apiCall({ action: 'busquedasPublicas' });
       if (!r || !r.ok) throw new Error((r && r.error) || 'No se pudieron cargar las vacantes.');
       vacantesPostulante = Array.isArray(r.busquedas) ? r.busquedas : [];
+      prepararFiltrosVacantes();
       pintarVacantesPostulante();
     } catch (e) {
       vacantesPostulante = [];
@@ -1415,7 +1588,11 @@
   document.getElementById('btnEditarDatos').onclick = () => mostrarEditarPerfil();
   document.getElementById('btnActualizarPerfilDesdeVacantes').onclick = () => mostrarEditarPerfil();
   document.getElementById('btnRecargarVacantes').onclick = () => cargarVacantesPostulante();
-  buscarVacantesEl.addEventListener('input', pintarVacantesPostulante);
+  if (buscarVacantesEl) buscarVacantesEl.addEventListener('input', pintarVacantesPostulante);
+  Object.keys(filtrosVacantes).forEach(function (k) {
+    if (filtrosVacantes[k]) filtrosVacantes[k].addEventListener('change', pintarVacantesPostulante);
+  });
+  document.getElementById('btnLimpiarVacantes').onclick = () => limpiarFiltrosVacantes();
   document.getElementById('btnAplicarEditar').onclick = () => mostrarEditarPerfil();
   document.getElementById('finalEditarPerfil').onclick = () => mostrarEditarPerfil();
   document.getElementById('finalVerVacantes').onclick = () => mostrarVacantesPostulante();
