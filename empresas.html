@@ -2704,10 +2704,23 @@
     a.click();
   }
 
+  function notificarExportacionCSV(datos, tipo, extra = {}) {
+    if (!datos || !datos.length) return;
+    apiCall(Object.assign({
+      action: 'notificarExportacionCandidatos',
+      token: token,
+      cantidad: datos.length,
+      tipo: tipo
+    }, extra)).catch(err => console.warn('No se pudo notificar la exportación comercial:', err));
+  }
+
   document.getElementById('btnExportar').onclick = () => {
     const sel = postulantesSeleccionados();
-    if (sel.length) { exportarCSV(sel, 'postulantes_seleccionados'); return; }
-    exportarCSV((registrosFiltrados && registrosFiltrados.length) ? registrosFiltrados : registros, 'postulantes');
+    const datos = sel.length ? sel : ((registrosFiltrados && registrosFiltrados.length) ? registrosFiltrados : registros);
+    notificarExportacionCSV(datos, sel.length ? 'Exportación de candidatos seleccionados' : 'Exportación de base de candidatos', {
+      alcance: sel.length ? 'Selección manual' : 'Base filtrada'
+    });
+    exportarCSV(datos, sel.length ? 'postulantes_seleccionados' : 'postulantes');
   };
 
   /* ---------- Helpers ---------- */
@@ -2920,6 +2933,7 @@
   /* ---------- Vista DETALLE de una búsqueda ---------- */
   let busqDetPostulantes = [];
   let dpFiltrados = [];
+  let busqDetActual = null;
   const dpSeleccion = new Set();   // __uid marcados para exportar en la vista de búsqueda
   const DP_CAMPOS = ['dpq', 'dpPuesto', 'dpLocalidad', 'dpIdioma', 'dpFormacion', 'dpViajar', 'dpExperiencia', 'dpCV', 'dpOrden'];
 
@@ -2929,6 +2943,7 @@
   }
 
   function abrirDetalleBusqueda(b) {
+    busqDetActual = b || null;
     busqDetPostulantes = postulantesDeBusqueda(b);
     dpSeleccion.clear();
     renderDetalleInfo(b);
@@ -3107,8 +3122,13 @@
   };
   document.getElementById('btnDpExportar').onclick = () => {
     const sel = dpPostulantesSeleccionados();
-    if (sel.length) { exportarCSV(sel, 'postulantes_busqueda_seleccionados'); return; }
-    exportarCSV(dpFiltrados.length ? dpFiltrados : busqDetPostulantes, 'postulantes_busqueda');
+    const datos = sel.length ? sel : (dpFiltrados.length ? dpFiltrados : busqDetPostulantes);
+    notificarExportacionCSV(datos, sel.length ? 'Exportación de candidatos seleccionados por búsqueda' : 'Exportación de candidatos por búsqueda', {
+      alcance: sel.length ? 'Selección manual en búsqueda' : 'Detalle de búsqueda',
+      busquedaId: busqDetActual ? busqDetActual.ID : '',
+      busquedaPuesto: busqDetActual ? busqDetActual.Puesto : ''
+    });
+    exportarCSV(datos, sel.length ? 'postulantes_busqueda_seleccionados' : 'postulantes_busqueda');
   };
 
   function abrirFormBusqueda(b) {

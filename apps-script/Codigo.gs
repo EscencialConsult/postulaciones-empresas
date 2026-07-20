@@ -29,6 +29,7 @@ var HOJA_USUARIOS    = 'Usuarios';
 var HOJA_BUSQUEDAS   = 'Busquedas';
 var HOJA_PERFILES    = 'Perfiles';
 var HOJA_NOTIFICACIONES_VACANTES = 'NotificacionesVacantes';
+var HOJA_EVENTOS_COMERCIALES = 'EventosComerciales';
 
 // Carpeta de Google Drive donde se guardan los archivos de CV.
 var CARPETA_CV = 'CVs Postulantes';
@@ -36,6 +37,12 @@ var CARPETA_CV = 'CVs Postulantes';
 var CV_MAX_MB = 5;
 var URL_PLATAFORMA = 'https://hubtalent.onelabs.pro/';
 var URL_LOGO_EMAIL = 'https://hubtalent.onelabs.pro/assets/logo-trim.png';
+var URL_TESTS_PAGOS = 'https://hubtalent.onelabs.pro/';
+// Emails internos que reciben avisos operativos. También puede configurarse
+// desde Propiedades del script con la clave EMAILS_RRHH_NOTIFICACIONES.
+var EMAILS_RRHH_NOTIFICACIONES = '';
+// Emails internos para avisos comerciales. Si queda vacío, usa RRHH.
+var EMAILS_COMERCIAL_NOTIFICACIONES = '';
 var MATCH_MINIMO_NOTIFICACION = 55;
 var MAX_NOTIFICACIONES_DIARIAS_POSTULANTE = 3;
 
@@ -119,6 +126,11 @@ var COLUMNAS_NOTIFICACIONES_VACANTES = [
   'Puntaje', 'Motivos', 'Estado', 'Error'
 ];
 
+var COLUMNAS_EVENTOS_COMERCIALES = [
+  'Fecha', 'TipoEvento', 'Empresa', 'Usuario', 'Detalle',
+  'Canal', 'Destinatarios', 'EstadoNotificacion', 'Error'
+];
+
 // Duración del token de sesión (horas)
 var TOKEN_HORAS = 12;
 
@@ -151,7 +163,9 @@ function manejar(e) {
       case 'actualizarMiEmpresa': return json(actualizarMiEmpresa(datos));
       case 'listar':    return json(listarPostulantes(datos));
       case 'exportar':  return json(exportarPostulantes(datos));
+      case 'notificarExportacionCandidatos': return json(notificarExportacionCandidatos(datos));
       case 'listarEmpresas': return json(listarEmpresas(datos));
+      case 'listarEventosComerciales': return json(listarEventosComerciales(datos));
       case 'aprobarEmpresa': return json(aprobarEmpresa(datos));
       case 'cambiarEstadoVerificacion': return json(cambiarEstadoVerificacion(datos));
       // Búsquedas (avisos de empleo)
@@ -219,6 +233,7 @@ function setup() {
   var busq = obtenerHoja(ss, HOJA_BUSQUEDAS, COLUMNAS_BUSQUEDAS);
   var perf = obtenerHoja(ss, HOJA_PERFILES, COLUMNAS_PERFILES);
   var notif = obtenerHoja(ss, HOJA_NOTIFICACIONES_VACANTES, COLUMNAS_NOTIFICACIONES_VACANTES);
+  var eventos = obtenerHoja(ss, HOJA_EVENTOS_COMERCIALES, COLUMNAS_EVENTOS_COMERCIALES);
 
   // Crea un usuario de ejemplo (empresa) si la hoja está vacía.
   if (usu.getLastRow() < 2) {
@@ -241,8 +256,16 @@ function setup() {
   aplicarEstiloHoja(busq, '#6be1e3');
   aplicarEstiloHoja(perf, '#8b5cf6');
   aplicarEstiloHoja(notif, '#b23ca6');
+  aplicarEstiloHoja(eventos, '#0f766e');
 
-  Logger.log('Setup completo. Hojas listas: %s, %s, %s, %s, %s', HOJA_POSTULANTES, HOJA_USUARIOS, HOJA_BUSQUEDAS, HOJA_PERFILES, HOJA_NOTIFICACIONES_VACANTES);
+  Logger.log('Setup completo. Hojas listas: %s, %s, %s, %s, %s, %s', HOJA_POSTULANTES, HOJA_USUARIOS, HOJA_BUSQUEDAS, HOJA_PERFILES, HOJA_NOTIFICACIONES_VACANTES, HOJA_EVENTOS_COMERCIALES);
+}
+
+function setupAuditoria() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var eventos = obtenerHoja(ss, HOJA_EVENTOS_COMERCIALES, COLUMNAS_EVENTOS_COMERCIALES);
+  aplicarEstiloHoja(eventos, '#0f766e');
+  Logger.log('Setup auditoría completo. Hoja lista: %s', HOJA_EVENTOS_COMERCIALES);
 }
 
 /**
@@ -261,6 +284,26 @@ function obtenerHoja(ss, nombre, columnas) {
     asegurarColumnas(hoja, columnas);
   }
   return hoja;
+}
+
+function registrarEventoComercial_(evento) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var hoja = obtenerHoja(ss, HOJA_EVENTOS_COMERCIALES, COLUMNAS_EVENTOS_COMERCIALES);
+    hoja.appendRow([
+      new Date(),
+      limpiar(evento.tipo),
+      limpiar(evento.empresa),
+      limpiar(evento.usuario),
+      limpiar(evento.detalle),
+      limpiar(evento.canal),
+      limpiar(evento.destinatarios),
+      limpiar(evento.estado),
+      limpiar(evento.error)
+    ]);
+  } catch (err) {
+    Logger.log('No se pudo registrar evento comercial: %s', String(err && err.message ? err.message : err));
+  }
 }
 
 /**
@@ -516,6 +559,29 @@ function emailValido_(email) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(limpiar(email));
 }
 
+function emailsNotificacionRRHH_() {
+  var configurados = EMAILS_RRHH_NOTIFICACIONES;
+  try {
+    configurados = PropertiesService.getScriptProperties().getProperty('EMAILS_RRHH_NOTIFICACIONES') || configurados;
+  } catch (e) {}
+  return String(configurados || '')
+    .split(',')
+    .map(function (email) { return limpiar(email).toLowerCase(); })
+    .filter(function (email, idx, arr) { return emailValido_(email) && arr.indexOf(email) === idx; });
+}
+
+function emailsNotificacionComercial_() {
+  var configurados = EMAILS_COMERCIAL_NOTIFICACIONES;
+  try {
+    configurados = PropertiesService.getScriptProperties().getProperty('EMAILS_COMERCIAL_NOTIFICACIONES') || configurados;
+  } catch (e) {}
+  var emails = String(configurados || '')
+    .split(',')
+    .map(function (email) { return limpiar(email).toLowerCase(); })
+    .filter(function (email, idx, arr) { return emailValido_(email) && arr.indexOf(email) === idx; });
+  return emails.length ? emails : emailsNotificacionRRHH_();
+}
+
 function escaparHtml_(v) {
   return limpiar(v)
     .replace(/&/g, '&amp;')
@@ -644,35 +710,115 @@ function emailRegistroEmpresa_(d) {
   }, 'registro empresa');
 }
 
+function emailNuevaEmpresaPendiente_(d) {
+  var destinatarios = emailsNotificacionRRHH_();
+  if (!destinatarios.length) {
+    Logger.log('No se envió aviso interno de empresa pendiente: falta configurar EMAILS_RRHH_NOTIFICACIONES.');
+    return { ok: false, error: 'Falta configurar EMAILS_RRHH_NOTIFICACIONES.' };
+  }
+
+  var representante = [d.nombre, d.apellido].filter(Boolean).join(' ');
+  var adminUrl = URL_PLATAFORMA.replace(/\/?$/, '/') + 'admin.html';
+  var body = [
+    'Nueva empresa registrada en ONE Talent Hub.',
+    '',
+    'Empresa: ' + limpiar(d.empresa),
+    'Representante: ' + limpiar(representante),
+    'Email: ' + limpiar(d.email),
+    'Teléfono: ' + limpiar(d.telefono),
+    'CUIT/CUIL: ' + limpiar(d.cuit),
+    'Rubro: ' + limpiar(d.rubro),
+    'Estado: pendiente de revisión',
+    '',
+    'Selfie: ' + limpiar(d.selfieUrl),
+    'Firma legal: ' + limpiar(d.firmaLegalUrl),
+    '',
+    'Revisar en admin:',
+    adminUrl
+  ].join('\n');
+  var html = plantillaEmail_({
+    titulo: 'Nueva empresa pendiente',
+    subtitulo: 'Hay una cuenta de empresa esperando revisión manual.',
+    contenido:
+      parrafoEmail_('Se registró una nueva empresa y quedó pendiente de aprobación.') +
+      '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:16px 0;border-top:1px solid #eee8f5;border-bottom:1px solid #eee8f5;">' +
+        datoEmail_('Empresa', d.empresa) +
+        datoEmail_('Representante', representante) +
+        datoEmail_('Email', d.email) +
+        datoEmail_('Teléfono', d.telefono) +
+        datoEmail_('CUIT/CUIL', d.cuit) +
+        datoEmail_('Rubro', d.rubro) +
+        datoEmail_('Estado', 'Pendiente de revisión') +
+      '</table>' +
+      parrafoEmail_('Revisá la selfie y la firma legal desde el panel de administración antes de aprobar la cuenta.') +
+      '<div style="margin-top:12px;">' +
+        (d.selfieUrl ? '<a href="' + escaparHtml_(d.selfieUrl) + '" style="display:inline-block;margin:0 8px 8px 0;color:#b23ca6;font-weight:900;">Ver selfie</a>' : '') +
+        (d.firmaLegalUrl ? '<a href="' + escaparHtml_(d.firmaLegalUrl) + '" style="display:inline-block;margin:0 8px 8px 0;color:#b23ca6;font-weight:900;">Ver firma</a>' : '') +
+      '</div>',
+    ctaTexto: 'Abrir panel admin',
+    ctaUrl: adminUrl,
+    nota: 'Aviso interno automático para acelerar la revisión de empresas en períodos de alta demanda.'
+  });
+
+  return enviarEmailSeguro_({
+    to: destinatarios.join(','),
+    subject: 'Nueva empresa pendiente de revisión - ' + limpiar(d.empresa),
+    body: body,
+    htmlBody: html
+  }, 'nueva empresa pendiente');
+}
+
 function emailEmpresaAprobada_(empresa) {
   var nombre = nombreCompleto_(empresa);
+  var empresaNombre = empresa.empresa || empresa.Empresa || '';
   var body = [
     'Hola ' + nombre + ',',
     '',
-    'Tu cuenta de empresa en ONE Talent Hub fue aprobada.',
+    'Tu cuenta de empresa en ONE Talent Hub fue aprobada. Ya podés comenzar a gestionar búsquedas desde el panel.',
     '',
-    'Ya podés ingresar al panel para revisar postulantes y publicar búsquedas:',
+    'Primeros pasos recomendados:',
+    '1. Ingresá al panel de empresas.',
+    '2. Publicá tu primera búsqueda.',
+    '3. Revisá postulantes y exportá candidatos cuando lo necesites.',
+    '',
+    'También podés consultar por los tests pagos para evaluar candidatos en etapas avanzadas del proceso:',
+    URL_TESTS_PAGOS,
+    '',
+    'Ingresar al panel:',
     URL_PLATAFORMA,
     '',
     'Saludos,',
     'ONE Talent Hub'
   ].join('\n');
   var html = plantillaEmail_({
-    titulo: 'Cuenta aprobada',
-    subtitulo: 'Ya podés ingresar al panel de empresas.',
+    titulo: 'Tu cuenta ya está aprobada',
+    subtitulo: 'Ya podés publicar búsquedas y revisar candidatos desde el panel.',
     contenido:
       parrafoEmail_('Hola ' + nombre + ',') +
-      parrafoEmail_('Tu cuenta de empresa en ONE Talent Hub fue aprobada.') +
+      parrafoEmail_('Tu cuenta de empresa en ONE Talent Hub fue aprobada. A partir de ahora podés comenzar a gestionar tus procesos de selección desde la plataforma.') +
       '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:16px 0;border-top:1px solid #eee8f5;border-bottom:1px solid #eee8f5;">' +
-        datoEmail_('Empresa', empresa.empresa || empresa.Empresa) +
+        datoEmail_('Empresa', empresaNombre) +
         datoEmail_('Estado', 'Aprobada') +
       '</table>' +
-      parrafoEmail_('Ya podés revisar postulantes, publicar búsquedas y gestionar tus procesos desde el panel.'),
-    ctaTexto: 'Ingresar al panel'
+      '<div style="margin:16px 0;padding:16px;border:1px solid #eee8f5;border-radius:14px;background:#fbfafd;">' +
+        '<p style="margin:0 0 10px;color:#1a181d;font-size:15px;font-weight:900;">Primeros pasos recomendados</p>' +
+        '<ol style="margin:0;padding-left:20px;color:#514d62;font-size:14px;line-height:1.65;">' +
+          '<li>Ingresá al panel de empresas.</li>' +
+          '<li>Publicá tu primera búsqueda laboral.</li>' +
+          '<li>Revisá postulantes y exportá candidatos cuando lo necesites.</li>' +
+        '</ol>' +
+      '</div>' +
+      parrafoEmail_('Si querés sumar una instancia de evaluación, podés consultar por los tests pagos para candidatos preseleccionados.') +
+      '<div style="margin-top:12px;">' +
+        '<a href="' + escaparHtml_(URL_TESTS_PAGOS) + '" style="display:inline-block;color:#b23ca6;font-weight:900;">Conocer tests pagos</a>' +
+      '</div>',
+    ctaTexto: 'Ingresar al panel',
+    ctaUrl: URL_PLATAFORMA,
+    nota: 'Este mensaje se envía automáticamente cuando administración aprueba la cuenta de empresa.'
   });
   return enviarEmailSeguro_({
     to: empresa.email || empresa.usuario,
-    subject: 'Tu cuenta de empresa fue aprobada',
+    subject: 'Tu cuenta de empresa ya está aprobada',
     body: body,
     htmlBody: html
   }, 'empresa aprobada');
@@ -961,11 +1107,33 @@ function registrarEmpresa(d) {
     nombre: nombre,
     apellido: apellido
   });
+  var avisoInterno = emailNuevaEmpresaPendiente_({
+    empresa: empresa,
+    email: email,
+    nombre: nombre,
+    apellido: apellido,
+    telefono: telefono,
+    cuit: cuit,
+    rubro: rubro,
+    selfieUrl: selfieGuardada.url,
+    firmaLegalUrl: firmaLegal.url
+  });
+  registrarEventoComercial_({
+    tipo: 'empresa_registrada',
+    empresa: empresa,
+    usuario: usuario,
+    detalle: 'Cuenta pendiente de revisión manual. Representante: ' + [nombre, apellido].filter(Boolean).join(' '),
+    canal: 'email',
+    destinatarios: emailsNotificacionRRHH_().join(','),
+    estado: avisoInterno && avisoInterno.ok ? 'enviado' : 'pendiente_sin_aviso',
+    error: avisoInterno && avisoInterno.error ? avisoInterno.error : ''
+  });
 
   return {
     ok: true,
     pendiente: estadoCuenta !== 'aprobado',
     verificacion: estadoVerificacion,
+    avisoInternoOk: !!(avisoInterno && avisoInterno.ok),
     mensaje: 'Tu cuenta fue creada y quedó pendiente de revisión. Administración revisará la selfie y la firma registrada.'
   };
 }
@@ -1904,6 +2072,90 @@ function exportarPostulantes(d) {
   return { ok: true, registros: resultado.registros };
 }
 
+function notificarExportacionCandidatos(d) {
+  var sesion = validarToken(d.token);
+  if (!sesion) return { ok: false, error: 'Sesión inválida o expirada.' };
+  if (sesion.rol === 'admin') return { ok: true, omitido: true };
+
+  var destinatarios = emailsNotificacionComercial_();
+  if (!destinatarios.length) {
+    Logger.log('No se envió aviso comercial de exportación: faltan emails internos.');
+    registrarEventoComercial_({
+      tipo: 'csv_exportado',
+      empresa: sesion.empresa,
+      usuario: sesion.usuario,
+      detalle: 'Exportación sin aviso: faltan emails internos.',
+      canal: 'email',
+      destinatarios: '',
+      estado: 'error',
+      error: 'Faltan emails internos.'
+    });
+    return { ok: false, error: 'Faltan emails internos.' };
+  }
+
+  var cantidad = Math.max(0, Number(d.cantidad || 0));
+  var tipo = limpiar(d.tipo) || 'Exportación CSV';
+  var busqueda = limpiar(d.busquedaPuesto);
+  var busquedaId = limpiar(d.busquedaId);
+  var alcance = limpiar(d.alcance);
+  var empresaNombre = limpiar(sesion.empresa);
+  var usuario = limpiar(sesion.usuario);
+  var panelUrl = URL_PLATAFORMA.replace(/\/?$/, '/') + 'empresas.html';
+  var detalle = busqueda ? busqueda : (alcance || 'Base de postulantes');
+
+  var body = [
+    'Una empresa exportó candidatos desde ONE Talent Hub.',
+    '',
+    'Empresa: ' + empresaNombre,
+    'Usuario: ' + usuario,
+    'Acción: ' + tipo,
+    'Detalle: ' + detalle,
+    'Búsqueda ID: ' + busquedaId,
+    'Cantidad exportada: ' + cantidad,
+    '',
+    'Sugerencia comercial: contactar a la empresa para ofrecer tests pagos en este momento de alta intención.',
+    '',
+    'Panel:',
+    panelUrl
+  ].join('\n');
+  var html = plantillaEmail_({
+    titulo: 'Empresa exportó candidatos',
+    subtitulo: 'Momento recomendado para seguimiento comercial.',
+    contenido:
+      parrafoEmail_('Una empresa exportó candidatos desde ONE Talent Hub. Esta acción suele indicar intención real de avanzar con el proceso.') +
+      '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:16px 0;border-top:1px solid #eee8f5;border-bottom:1px solid #eee8f5;">' +
+        datoEmail_('Empresa', empresaNombre) +
+        datoEmail_('Usuario', usuario) +
+        datoEmail_('Acción', tipo) +
+        datoEmail_('Detalle', detalle) +
+        datoEmail_('Búsqueda ID', busquedaId) +
+        datoEmail_('Cantidad', cantidad) +
+      '</table>' +
+      parrafoEmail_('Sugerencia: contactar a la empresa para ofrecer tests pagos o una instancia de evaluación para candidatos preseleccionados.'),
+    ctaTexto: 'Abrir panel',
+    ctaUrl: panelUrl,
+    nota: 'Aviso automático generado al exportar candidatos desde una cuenta de empresa.'
+  });
+
+  var resultado = enviarEmailSeguro_({
+    to: destinatarios.join(','),
+    subject: 'Seguimiento comercial: ' + empresaNombre + ' exportó candidatos',
+    body: body,
+    htmlBody: html
+  }, 'exportación candidatos');
+  registrarEventoComercial_({
+    tipo: 'csv_exportado',
+    empresa: empresaNombre,
+    usuario: usuario,
+    detalle: tipo + ' | ' + detalle + ' | cantidad: ' + cantidad,
+    canal: 'email',
+    destinatarios: destinatarios.join(','),
+    estado: resultado && resultado.ok ? 'enviado' : 'error',
+    error: resultado && resultado.error ? resultado.error : ''
+  });
+  return resultado;
+}
+
 /* -------------------------------------------------------------------
  *  ADMINISTRACIÓN (solo rol admin)
  * ----------------------------------------------------------------- */
@@ -1941,6 +2193,28 @@ function listarEmpresas(d) {
   return { ok: true, total: empresas.length, empresas: empresas };
 }
 
+function listarEventosComerciales(d) {
+  if (!requireAdmin(d.token)) return { ok: false, error: 'Acceso exclusivo del administrador.' };
+
+  var limite = Math.max(1, Math.min(Number(d.limite || 100), 300));
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = obtenerHoja(ss, HOJA_EVENTOS_COMERCIALES, COLUMNAS_EVENTOS_COMERCIALES);
+  var valores = hoja.getDataRange().getValues();
+  var eventos = [];
+
+  for (var i = 1; i < valores.length; i++) {
+    eventos.push(filaAObjeto(COLUMNAS_EVENTOS_COMERCIALES, valores[i]));
+  }
+  eventos.sort(function (a, b) {
+    return fechaValor_(b.Fecha) - fechaValor_(a.Fecha);
+  });
+  return {
+    ok: true,
+    total: eventos.length,
+    eventos: eventos.slice(0, limite)
+  };
+}
+
 /**
  * Cambia el estado de una empresa: aprobado | rechazado | pendiente.
  */
@@ -1970,10 +2244,32 @@ function aprobarEmpresa(d) {
         hoja.getRange(i + 1, 5).setValue('');    // TokenExpira
       }
       if (nuevo === 'aprobado' && estadoAnterior !== 'aprobado') {
-        emailEmpresaAprobada_(empresaDesdeFila(hoja.getRange(i + 1, 1, 1, COLUMNAS_USUARIOS.length).getValues()[0]));
+        var empresaAprobada = empresaDesdeFila(hoja.getRange(i + 1, 1, 1, COLUMNAS_USUARIOS.length).getValues()[0]);
+        var emailAprobada = emailEmpresaAprobada_(empresaAprobada);
+        registrarEventoComercial_({
+          tipo: 'empresa_aprobada',
+          empresa: empresaAprobada.empresa,
+          usuario: empresaAprobada.usuario,
+          detalle: 'Cuenta aprobada por administración.',
+          canal: 'email',
+          destinatarios: empresaAprobada.email || empresaAprobada.usuario,
+          estado: emailAprobada && emailAprobada.ok ? 'enviado' : 'error',
+          error: emailAprobada && emailAprobada.error ? emailAprobada.error : ''
+        });
       }
       if (nuevo === 'rechazado' && estadoAnterior !== 'rechazado') {
-        emailEmpresaRechazada_(empresaDesdeFila(hoja.getRange(i + 1, 1, 1, COLUMNAS_USUARIOS.length).getValues()[0]));
+        var empresaRechazada = empresaDesdeFila(hoja.getRange(i + 1, 1, 1, COLUMNAS_USUARIOS.length).getValues()[0]);
+        var emailRechazada = emailEmpresaRechazada_(empresaRechazada);
+        registrarEventoComercial_({
+          tipo: 'empresa_rechazada',
+          empresa: empresaRechazada.empresa,
+          usuario: empresaRechazada.usuario,
+          detalle: 'Cuenta rechazada por administración.',
+          canal: 'email',
+          destinatarios: empresaRechazada.email || empresaRechazada.usuario,
+          estado: emailRechazada && emailRechazada.ok ? 'enviado' : 'error',
+          error: emailRechazada && emailRechazada.error ? emailRechazada.error : ''
+        });
       }
       return { ok: true, estado: nuevo };
     }
@@ -2072,7 +2368,18 @@ function cambiarEstadoVerificacion(d) {
       hoja.getRange(i + 1, 16).setValue(nuevo);
       hoja.getRange(i + 1, 17).setValue(new Date());
       if (nuevo === 'rechazado' && estadoAnterior !== 'rechazado') {
-        emailVerificacionRechazada_(empresaDesdeFila(hoja.getRange(i + 1, 1, 1, COLUMNAS_USUARIOS.length).getValues()[0]));
+        var empresaVerif = empresaDesdeFila(hoja.getRange(i + 1, 1, 1, COLUMNAS_USUARIOS.length).getValues()[0]);
+        var emailVerif = emailVerificacionRechazada_(empresaVerif);
+        registrarEventoComercial_({
+          tipo: 'verificacion_rechazada',
+          empresa: empresaVerif.empresa,
+          usuario: empresaVerif.usuario,
+          detalle: 'Verificación de identidad rechazada por administración.',
+          canal: 'email',
+          destinatarios: empresaVerif.email || empresaVerif.usuario,
+          estado: emailVerif && emailVerif.ok ? 'enviado' : 'error',
+          error: emailVerif && emailVerif.error ? emailVerif.error : ''
+        });
       }
       return { ok: true, estadoVerificacion: nuevo };
     }

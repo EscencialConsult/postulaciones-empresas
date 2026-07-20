@@ -36,6 +36,9 @@
   tbody tr:last-child td { border-bottom: none; }
   .fila-click { cursor: pointer; }
   .fila-click:hover { background: #faf7fd; }
+  .paginacion { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 12px; color: var(--muted); font-size: .86rem; font-weight: 700; }
+  .paginacion span { min-width: 120px; text-align: center; }
+  .paginacion .btn-mini { min-width: 92px; }
 
   .cargando, .vacio { text-align: center; padding: 48px; color: var(--muted); }
 
@@ -104,6 +107,9 @@
     .barra-busqueda input { max-width: none; }
     .barra-busqueda .btn { width: 100%; }
     th, td { padding: 10px 12px; }
+    .paginacion { justify-content: stretch; flex-wrap: wrap; }
+    .paginacion span { flex: 1 0 100%; order: -1; }
+    .paginacion .btn-mini { flex: 1; }
     .acciones-cel { flex-direction: column; }
     .acciones-cel .btn-mini { width: 100%; }
     .modal { padding: 22px 18px; }
@@ -156,6 +162,7 @@
       <button class="tab activo" data-tab="postulantes">Postulantes</button>
       <button class="tab" data-tab="busquedas">Búsquedas</button>
       <button class="tab" data-tab="empresas">Empresas <span id="badgePend"></span></button>
+      <button class="tab" data-tab="auditoria">Auditor&iacute;a</button>
     </div>
 
     <!-- TAB POSTULANTES -->
@@ -177,6 +184,7 @@
         </table>
         <div class="vacio oculto" id="vacioPost">No hay postulantes.</div>
       </div>
+      <div class="paginacion" id="paginacionPost"></div>
     </section>
 
     <!-- TAB BÚSQUEDAS -->
@@ -237,6 +245,25 @@
       </div>
     </section>
 
+    <!-- TAB AUDITORIA -->
+    <section id="tabAuditoria" class="oculto">
+      <div class="barra-busqueda">
+        <button class="btn btn-sec" id="btnRecargarAuditoria">Recargar</button>
+      </div>
+      <div class="resumen" id="resumenAuditoria"></div>
+      <div class="card tabla-wrap">
+        <div class="cargando" id="cargandoAuditoria">Cargando auditor&iacute;a...</div>
+        <table id="tablaAuditoria" class="oculto">
+          <thead><tr>
+            <th>Fecha</th><th>Evento</th><th>Empresa</th><th>Usuario</th><th>Detalle</th><th>Canal</th><th>Estado</th>
+          </tr></thead>
+          <tbody id="tbodyAuditoria"></tbody>
+        </table>
+        <div class="vacio oculto" id="vacioAuditoria">Todav&iacute;a no hay eventos registrados.</div>
+      </div>
+      <div class="paginacion" id="paginacionAuditoria"></div>
+    </section>
+
   </div>
 </div>
 
@@ -260,6 +287,10 @@
   let postulantes = [];
   let empresas = [];
   let busquedas = [];
+  let auditorias = [];
+  const PAGE_SIZE = 25;
+  let paginaPost = 1;
+  let paginaAuditoria = 1;
 
   const loginWrap = document.getElementById('loginWrap');
   const panelWrap = document.getElementById('panelWrap');
@@ -300,6 +331,7 @@
     await cargarPostulantes();   // primero: las búsquedas cuentan sus postulantes desde acá
     cargarEmpresas();
     cargarBusquedasAdmin();
+    cargarAuditoria();
   }
 
   /* ---------- TABS ---------- */
@@ -311,12 +343,40 @@
       document.getElementById('tabPostulantes').classList.toggle('oculto', tab !== 'postulantes');
       document.getElementById('tabBusquedas').classList.toggle('oculto', tab !== 'busquedas');
       document.getElementById('tabEmpresas').classList.toggle('oculto', tab !== 'empresas');
+      document.getElementById('tabAuditoria').classList.toggle('oculto', tab !== 'auditoria');
+      if (tab === 'auditoria') cargarAuditoria();
     };
   });
 
   function sesionExpirada(msg) {
     if (/sesión|exclusivo|administrador/i.test(msg || '')) { document.getElementById('btnSalir').click(); return true; }
     return false;
+  }
+
+  function paginaInfo(total, pagina) {
+    const totalPag = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    const actual = Math.min(Math.max(1, pagina), totalPag);
+    const inicio = total ? ((actual - 1) * PAGE_SIZE) + 1 : 0;
+    const fin = Math.min(actual * PAGE_SIZE, total);
+    return { totalPag, actual, inicio, fin };
+  }
+
+  function porPagina(lista, pagina) {
+    const info = paginaInfo(lista.length, pagina);
+    return lista.slice((info.actual - 1) * PAGE_SIZE, info.actual * PAGE_SIZE);
+  }
+
+  function renderPaginacion(id, total, pagina, onChange) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (total <= PAGE_SIZE) { el.innerHTML = ''; return; }
+    const info = paginaInfo(total, pagina);
+    el.innerHTML = `
+      <button class="btn-mini" type="button" data-pag="prev" ${info.actual <= 1 ? 'disabled' : ''}>Anterior</button>
+      <span>P&aacute;gina ${info.actual} de ${info.totalPag}</span>
+      <button class="btn-mini" type="button" data-pag="next" ${info.actual >= info.totalPag ? 'disabled' : ''}>Siguiente</button>`;
+    el.querySelector('[data-pag="prev"]').onclick = () => onChange(info.actual - 1);
+    el.querySelector('[data-pag="next"]').onclick = () => onChange(info.actual + 1);
   }
 
   /* ---------- POSTULANTES ---------- */
@@ -329,8 +389,8 @@
       const r = await apiCall({ action: 'listar', token: token, q: document.getElementById('q').value });
       if (!r.ok) { if (sesionExpirada(r.error)) return; throw new Error(r.error); }
       postulantes = r.registros;
+      paginaPost = 1;
       pintarPostulantes(postulantes);
-      document.getElementById('resumenPost').textContent = `${r.total} postulante(s)`;
     } catch (ex) {
       document.getElementById('resumenPost').textContent = 'Error: ' + ex.message;
     } finally { cargando.classList.add('oculto'); }
@@ -341,9 +401,17 @@
     const tabla = document.getElementById('tablaPost');
     const vacio = document.getElementById('vacioPost');
     tbody.innerHTML = '';
-    if (!lista.length) { vacio.classList.remove('oculto'); tabla.classList.add('oculto'); return; }
+    if (!lista.length) {
+      vacio.classList.remove('oculto'); tabla.classList.add('oculto');
+      document.getElementById('paginacionPost').innerHTML = '';
+      document.getElementById('resumenPost').textContent = '0 postulante(s)';
+      return;
+    }
     vacio.classList.add('oculto'); tabla.classList.remove('oculto');
-    lista.forEach(r => {
+    const info = paginaInfo(lista.length, paginaPost);
+    paginaPost = info.actual;
+    document.getElementById('resumenPost').textContent = `${lista.length} postulante(s) · mostrando ${info.inicio}-${info.fin}`;
+    porPagina(lista, paginaPost).forEach(r => {
       const idiomas = parseArr(r.Idiomas).map(x => x.idioma).filter(Boolean).join(', ');
       const tr = document.createElement('tr');
       tr.className = 'fila-click';
@@ -357,6 +425,10 @@
         <td>${fecha(r.FechaRegistro)}</td>`;
       tr.onclick = () => abrirDetalle(r);
       tbody.appendChild(tr);
+    });
+    renderPaginacion('paginacionPost', lista.length, paginaPost, page => {
+      paginaPost = page;
+      pintarPostulantes(postulantes);
     });
   }
 
@@ -716,6 +788,62 @@
   function cerrarModal() { document.getElementById('overlay').classList.add('oculto'); }
   document.getElementById('overlay').onclick = (e) => { if (e.target.id === 'overlay') cerrarModal(); };
 
+  /* ---------- AUDITORIA ---------- */
+  async function cargarAuditoria() {
+    const cargando = document.getElementById('cargandoAuditoria');
+    const tabla = document.getElementById('tablaAuditoria');
+    const vacio = document.getElementById('vacioAuditoria');
+    cargando.classList.remove('oculto'); tabla.classList.add('oculto'); vacio.classList.add('oculto');
+    try {
+      const r = await apiCall({ action: 'listarEventosComerciales', token: token, limite: 300 });
+      if (!r.ok) { if (sesionExpirada(r.error)) return; throw new Error(r.error); }
+      auditorias = Array.isArray(r.eventos) ? r.eventos : [];
+      paginaAuditoria = 1;
+      pintarAuditoria(auditorias);
+    } catch (ex) {
+      document.getElementById('resumenAuditoria').textContent = 'Error: ' + ex.message;
+      vacio.textContent = 'No se pudo cargar la auditoría.';
+      vacio.classList.remove('oculto');
+    } finally {
+      cargando.classList.add('oculto');
+    }
+  }
+
+  function pintarAuditoria(lista) {
+    const tbody = document.getElementById('tbodyAuditoria');
+    const tabla = document.getElementById('tablaAuditoria');
+    const vacio = document.getElementById('vacioAuditoria');
+    tbody.innerHTML = '';
+    if (!lista.length) {
+      vacio.classList.remove('oculto'); tabla.classList.add('oculto');
+      document.getElementById('paginacionAuditoria').innerHTML = '';
+      document.getElementById('resumenAuditoria').textContent = '0 evento(s) registrados';
+      return;
+    }
+    vacio.classList.add('oculto'); tabla.classList.remove('oculto');
+    const info = paginaInfo(lista.length, paginaAuditoria);
+    paginaAuditoria = info.actual;
+    document.getElementById('resumenAuditoria').textContent = `${lista.length} evento(s) · mostrando ${info.inicio}-${info.fin}`;
+    porPagina(lista, paginaAuditoria).forEach(e => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${fechaHora(e.Fecha)}</td>
+        <td><strong>${esc(e.TipoEvento)}</strong></td>
+        <td>${esc(e.Empresa)}</td>
+        <td>${esc(e.Usuario)}</td>
+        <td>${esc(e.Detalle)}${e.Error ? '<br><span style="color:var(--error)">' + esc(e.Error) + '</span>' : ''}</td>
+        <td>${esc(e.Canal)}</td>
+        <td>${esc(e.EstadoNotificacion)}</td>`;
+      tbody.appendChild(tr);
+    });
+    renderPaginacion('paginacionAuditoria', lista.length, paginaAuditoria, page => {
+      paginaAuditoria = page;
+      pintarAuditoria(auditorias);
+    });
+  }
+
+  document.getElementById('btnRecargarAuditoria').onclick = cargarAuditoria;
+
   /* ---------- EXPORTAR CSV ---------- */
   // Exporta una lista de postulantes a CSV (reutilizable en varias vistas).
   function exportarPostulantesCSV(lista, nombreBase) {
@@ -772,6 +900,11 @@
     if (!iso) return '—';
     const d = new Date(iso); if (isNaN(d)) return String(iso).slice(0,10);
     return d.toLocaleDateString('es');
+  }
+  function fechaHora(iso) {
+    if (!iso) return '-';
+    const d = new Date(iso); if (isNaN(d)) return String(iso);
+    return d.toLocaleString('es');
   }
   // ID de un archivo de Google Drive dentro de su URL (/d/ID/view o ?id=ID).
   function driveId(url) {
