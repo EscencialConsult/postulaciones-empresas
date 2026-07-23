@@ -1013,7 +1013,7 @@ function verificarIdentidadDNI(d) {
 
 function registrarEmpresa(d) {
   var empresa  = limpiar(d.empresa);
-  var password = String(d.password || '');
+  var password = String(d.password || '').trim();
   var email    = limpiar(d.email).toLowerCase();
   var usuario  = email; // el email es el usuario de acceso, para que sea fácil de recordar
   var cuit     = limpiar(d.cuit).replace(/[^0-9]/g, '');
@@ -1140,7 +1140,7 @@ function registrarEmpresa(d) {
 
 function login(d) {
   var usuario  = limpiar(d.usuario).toLowerCase();
-  var password = String(d.password || '');
+  var password = String(d.password || '').trim();
 
   if (!usuario || !password) {
     return { ok: false, error: 'Ingresa usuario y contraseña.' };
@@ -1153,7 +1153,7 @@ function login(d) {
   for (var i = 1; i < valores.length; i++) {
     var fila = valores[i];
     var u = String(fila[0]).trim().toLowerCase();
-    var p = String(fila[1]);
+    var p = String(fila[1]).trim();
     if (u === usuario && p === password) {
       var rol = String(fila[7] || 'empresa').toLowerCase();
       var estado = String(fila[8] || 'aprobado').toLowerCase();
@@ -1255,7 +1255,7 @@ function recuperarPassword(d) {
 function resetearPassword(d) {
   var tipo = limpiar(d.tipo).toLowerCase() === 'postulante' ? 'postulante' : 'empresa';
   var token = limpiar(d.token);
-  var nueva = String(d.nuevaPassword || '');
+  var nueva = String(d.nuevaPassword || '').trim();
   if (!token) return { ok: false, error: 'Enlace inválido.' };
   if (nueva.length < 6) return { ok: false, error: 'La contraseña debe tener al menos 6 caracteres.' };
 
@@ -1384,8 +1384,8 @@ function actualizarMiEmpresa(d) {
   var nombre   = limpiar(d.nombre);
   var apellido = limpiar(d.apellido);
   var telefono = limpiar(d.telefono);
-  var passwordActual = String(d.passwordActual || '');
-  var nuevaPassword = String(d.nuevaPassword || '');
+  var passwordActual = String(d.passwordActual || '').trim();
+  var nuevaPassword = String(d.nuevaPassword || '').trim();
 
   if (!nombre || !apellido || !telefono) {
     return { ok: false, error: 'Completá nombre, apellido y teléfono del responsable.' };
@@ -1403,7 +1403,7 @@ function actualizarMiEmpresa(d) {
     if (String(valores[i][0]).trim().toLowerCase() === usuario) {
       if (nuevaPassword) {
         if (!passwordActual) return { ok: false, error: 'Ingresá tu contraseña actual para cambiarla.' };
-        if (String(valores[i][1]) !== passwordActual) return { ok: false, error: 'La contraseña actual no es correcta.' };
+        if (String(valores[i][1]).trim() !== passwordActual) return { ok: false, error: 'La contraseña actual no es correcta.' };
         hoja.getRange(i + 1, 2).setValue(nuevaPassword);
       }
       hoja.getRange(i + 1, 12).setValue(nombre);    // Nombre del responsable
@@ -2703,7 +2703,7 @@ function validarTokenPerfil(token) {
 
 function registrarPostulante(d) {
   var email = limpiar(d.email).toLowerCase();
-  var password = String(d.password || '');
+  var password = String(d.password || '').trim();
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { ok: false, error: 'Ingresá un email válido.' };
   if (password.length < 6) return { ok: false, error: 'La contraseña debe tener al menos 6 caracteres.' };
   if (!limpiar(d.nombre) || !limpiar(d.apellido)) return { ok: false, error: 'Completá nombre y apellido.' };
@@ -2748,14 +2748,14 @@ function registrarPostulante(d) {
 
 function loginPostulante(d) {
   var email = limpiar(d.email).toLowerCase();
-  var password = String(d.password || '');
+  var password = String(d.password || '').trim();
   if (!email || !password) return { ok: false, error: 'Ingresá email y contraseña.' };
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var hoja = obtenerHoja(ss, HOJA_PERFILES, COLUMNAS_PERFILES);
   var valores = hoja.getDataRange().getValues();
   for (var i = 1; i < valores.length; i++) {
-    if (String(valores[i][0]).trim().toLowerCase() === email && String(valores[i][1]) === password) {
+    if (String(valores[i][0]).trim().toLowerCase() === email && String(valores[i][1]).trim() === password) {
       var token = Utilities.getUuid();
       var expira = new Date().getTime() + TOKEN_HORAS * 3600 * 1000;
       hoja.getRange(i + 1, 3).setValue(token);
@@ -2791,8 +2791,9 @@ function actualizarPerfil(d) {
   if (d.firmaConformidadBase64) { var ff = guardarArchivoFirma(d.firmaConformidadBase64, 'conf_perfil_' + s.email + '.png'); if (ff.url) firmaConfUrl = ff.url; }
 
   if (d.nuevaPassword) {
-    if (String(d.nuevaPassword).length < 6) return { ok: false, error: 'La nueva contraseña debe tener al menos 6 caracteres.' };
-    hoja.getRange(filaNum, 2).setValue(String(d.nuevaPassword));
+    var nuevaPassword = String(d.nuevaPassword).trim();
+    if (nuevaPassword.length < 6) return { ok: false, error: 'La nueva contraseña debe tener al menos 6 caracteres.' };
+    hoja.getRange(filaNum, 2).setValue(nuevaPassword);
   }
 
   hoja.getRange(filaNum, 6).setValue(new Date()); // FechaActualizacion
